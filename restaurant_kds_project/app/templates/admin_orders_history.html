@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  /* ── layout ── */
+  .oh-wrap { display:flex; flex-direction:column; gap:18px; }
+  .oh-top { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+  .oh-title { margin:0; }
+  .oh-exports { display:flex; gap:8px; flex-wrap:wrap; }
+  .btn-export { padding:10px 16px; border:none; border-radius:10px; font-weight:700; font-size:14px; cursor:pointer; text-decoration:none; display:inline-block; }
+  .btn-csv   { background:rgba(104,211,145,0.18); color:var(--green); }
+  .btn-excel { background:rgba(77,163,255,0.18);  color:var(--blue);  }
+  .btn-pdf   { background:rgba(228,91,91,0.18);   color:var(--red);   }
+
+  /* ── filter bar ── */
+  .filter-bar { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:18px 20px; }
+  .filter-bar form { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
+  .filter-group { display:flex; flex-direction:column; gap:4px; min-width:140px; }
+  .filter-group label { font-size:12px; color:#b7becd; font-weight:600; }
+  .filter-group input, .filter-group select {
+    background:#10141b; border:1px solid var(--border); border-radius:8px;
+    padding:8px 10px; color:var(--text); font-size:14px;
+  }
+  .filter-actions { display:flex; gap:8px; align-items:flex-end; }
+  .btn-filter { background:var(--accent); color:#111; border:none; border-radius:8px; padding:9px 18px; font-weight:700; cursor:pointer; }
+  .btn-clear  { background:var(--muted);  color:var(--text); border:none; border-radius:8px; padding:9px 14px; font-weight:700; cursor:pointer; text-decoration:none; display:inline-block; }
+
+  /* ── presets ── */
+  .presets { display:flex; gap:8px; flex-wrap:wrap; }
+  .preset { background:var(--muted); border:none; border-radius:8px; padding:7px 12px; font-size:13px; font-weight:700; cursor:pointer; color:var(--text); }
+  .preset:hover { border:1px solid var(--accent); }
+
+  /* ── summary bar ── */
+  .summary-bar { display:flex; gap:14px; flex-wrap:wrap; }
+  .summary-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px 20px; flex:1; min-width:160px; }
+  .summary-card .label { font-size:12px; color:#b7becd; margin-bottom:4px; }
+  .summary-card .value { font-size:24px; font-weight:800; color:var(--accent); }
+
+  /* ── table ── */
+  .table-wrap { background:var(--card); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+  .big-table { width:100%; border-collapse:collapse; font-size:14px; }
+  .big-table th { padding:12px 14px; background:#10141b; color:#b7becd; font-weight:700; text-align:left; white-space:nowrap; }
+  .big-table td { padding:10px 14px; border-top:1px solid var(--border); vertical-align:top; }
+  .big-table tr:hover td { background:rgba(255,255,255,0.03); }
+  .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:700; }
+  .badge-nuevo      { background:rgba(245,197,24,0.15);   color:#f5c518; }
+  .badge-aceptado   { background:rgba(77,163,255,0.15);   color:var(--blue); }
+  .badge-preparando { background:rgba(245,197,24,0.15);   color:#f5c518; }
+  .badge-listo      { background:rgba(104,211,145,0.15);  color:var(--green); }
+  .badge-despachado { background:rgba(104,211,145,0.25);  color:var(--green); }
+  .badge-cancelado  { background:rgba(228,91,91,0.15);    color:var(--red); }
+  .badge-station    { background:rgba(104,211,145,0.12);  color:var(--green); font-size:11px; }
+  .badge-kitchen    { background:rgba(245,197,24,0.12);   color:#f5c518; font-size:11px; }
+  .cancelled-row td { opacity:0.55; }
+  .items-cell { max-width:240px; color:#b7becd; font-size:13px; line-height:1.5; }
+  .amount { font-variant-numeric:tabular-nums; }
+
+  /* ── pagination ── */
+  .pagination { display:flex; gap:6px; justify-content:center; align-items:center; flex-wrap:wrap; }
+  .page-btn { background:var(--muted); border:none; border-radius:8px; padding:8px 14px; color:var(--text); font-weight:700; text-decoration:none; cursor:pointer; }
+  .page-btn.active { background:var(--accent); color:#111; }
+  .page-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  .page-info { color:#b7becd; font-size:14px; }
+</style>
+
+<div class="oh-wrap">
+
+  <!-- top bar -->
+  <div class="oh-top">
+    <h1 class="oh-title">Historial de Órdenes</h1>
+    <div class="oh-exports">
+      <a class="btn-export btn-csv"   href="{{ export_url('csv') }}">&#8595; CSV</a>
+      <a class="btn-export btn-excel" href="{{ export_url('excel') }}">&#8595; Excel</a>
+      <a class="btn-export btn-pdf"   href="{{ export_url('pdf') }}">&#8595; PDF</a>
+    </div>
+  </div>
+
+  <!-- quick presets -->
+  <div class="presets">
+    <button class="preset" data-preset="today">Hoy</button>
+    <button class="preset" data-preset="week">Últimos 7 días</button>
+    <button class="preset" data-preset="month">Este mes</button>
+  </div>
+
+  <!-- filter bar -->
+  <div class="filter-bar">
+    <form id="filterForm" method="get" action="/admin/orders/history">
+      <div class="filter-group">
+        <label>Desde</label>
+        <input type="date" name="date_from" value="{{ params.get('date_from','') }}" />
+      </div>
+      <div class="filter-group">
+        <label>Hasta</label>
+        <input type="date" name="date_to" value="{{ params.get('date_to','') }}" />
+      </div>
+      <div class="filter-group">
+        <label>Estado</label>
+        <select name="status">
+          <option value="">Todos</option>
+          {% for s in ['nuevo','aceptado','preparando','listo','despachado','cancelado'] %}
+          <option value="{{ s }}" {% if params.get('status')==s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Origen</label>
+        <select name="source_role">
+          <option value="">Todos</option>
+          <option value="station_a" {% if params.get('source_role')=='station_a' %}selected{% endif %}>Salón</option>
+          <option value="kitchen"   {% if params.get('source_role')=='kitchen'   %}selected{% endif %}>Kitchen</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Mesero</label>
+        <input type="text" name="waiter_name" value="{{ params.get('waiter_name','') }}" placeholder="Nombre…" />
+      </div>
+      <div class="filter-group">
+        <label>Producto</label>
+        <select name="product_id">
+          <option value="">Todos</option>
+          {% for p in products %}
+          <option value="{{ p.id }}" {% if params.get('product_id')|string == p.id|string %}selected{% endif %}>{{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button type="submit" class="btn-filter">Filtrar</button>
+        <a href="/admin/orders/history" class="btn-clear">Limpiar</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- summary bar -->
+  {% set active_orders = orders | selectattr('was_cancelled', 'equalto', false) | list %}
+  {% set total_revenue = active_orders | sum(attribute='fin.total') %}
+  {% set total_tax     = active_orders | sum(attribute='fin.tax') %}
+  <div class="summary-bar">
+    <div class="summary-card"><div class="label">Total órdenes</div><div class="value">{{ total }}</div></div>
+    <div class="summary-card"><div class="label">En esta página</div><div class="value">{{ orders|length }}</div></div>
+    <div class="summary-card"><div class="label">Ingresos (pág.)</div><div class="value">${{ "%.2f"|format(total_revenue) }}</div></div>
+    <div class="summary-card"><div class="label">Impuestos (pág.)</div><div class="value">${{ "%.2f"|format(total_tax) }}</div></div>
+    <div class="summary-card"><div class="label">IVA aplicado</div><div class="value">{{ "%.1f"|format(tax_rate) }}%</div></div>
+  </div>
+
+  <!-- table -->
+  <div class="table-wrap">
+    <table class="big-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Fecha</th>
+          <th>Estado</th>
+          <th>Origen</th>
+          <th>Mesero</th>
+          <th>Items</th>
+          <th>Subtotal</th>
+          <th>Tax</th>
+          <th>Total</th>
+          <th>Pago</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in orders %}
+        <tr {% if o.was_cancelled %}class="cancelled-row"{% endif %}>
+          <td><strong>#{{ o.id }}</strong>{% if o.was_cancelled %}<br><span style="font-size:11px;color:var(--red);">CANCELADO</span>{% endif %}</td>
+          <td style="white-space:nowrap;">
+            {{ o.created_at.strftime('%Y-%m-%d') }}<br>
+            <span style="color:#6c757d;font-size:12px;">{{ o.created_at.strftime('%H:%M') }}</span>
+          </td>
+          <td><span class="badge badge-{{ o.status }}">{{ o.status }}</span></td>
+          <td>
+            {% if o.source_role == 'station_a' %}
+            <span class="badge badge-station">SALÓN</span>
+            {% else %}
+            <span class="badge badge-kitchen">KITCHEN</span>
+            {% endif %}
+          </td>
+          <td>{{ o.waiter_name or '-' }}</td>
+          <td class="items-cell">
+            {% for item in o.items %}
+            <div>{{ item.quantity }}× {{ item.product.name if item.product else '?' }}</div>
+            {% else %}
+            <span style="color:#6c757d;">-</span>
+            {% endfor %}
+          </td>
+          <td class="amount">${{ "%.2f"|format(o.fin.subtotal) }}</td>
+          <td class="amount">${{ "%.2f"|format(o.fin.tax) }}</td>
+          <td class="amount"><strong>${{ "%.2f"|format(o.fin.total) }}</strong></td>
+          <td><span style="color:#b7becd;">{{ o.fin.payment_method }}</span></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="10" style="text-align:center;color:#6c757d;padding:40px;">Sin órdenes con los filtros actuales.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- pagination -->
+  {% if total_pages > 1 %}
+  <div class="pagination">
+    {% if page > 1 %}
+    <a class="page-btn" href="{{ page_url(page-1) }}">&#8592; Anterior</a>
+    {% endif %}
+
+    {% for p in range([1, page-2]|max, [total_pages+1, page+3]|min) %}
+    <a class="page-btn {% if p == page %}active{% endif %}" href="{{ page_url(p) }}">{{ p }}</a>
+    {% endfor %}
+
+    {% if page < total_pages %}
+    <a class="page-btn" href="{{ page_url(page+1) }}">Siguiente &#8594;</a>
+    {% endif %}
+    <span class="page-info">Página {{ page }} de {{ total_pages }} · {{ total }} resultados</span>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+  // Preset date buttons
+  document.querySelectorAll(".preset").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const today = new Date();
+      const fmt = d => d.toISOString().split("T")[0];
+      const form = document.getElementById("filterForm");
+      const from = form.querySelector("[name=date_from]");
+      const to   = form.querySelector("[name=date_to]");
+      to.value = fmt(today);
+      const preset = btn.dataset.preset;
+      if (preset === "today") {
+        from.value = fmt(today);
+      } else if (preset === "week") {
+        const d = new Date(today); d.setDate(d.getDate() - 6);
+        from.value = fmt(d);
+      } else if (preset === "month") {
+        from.value = fmt(new Date(today.getFullYear(), today.getMonth(), 1));
+      }
+      form.submit();
+    });
+  });
+</script>
+{% endblock %}

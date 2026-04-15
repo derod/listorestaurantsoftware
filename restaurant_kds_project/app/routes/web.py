@@ -1,7 +1,8 @@
 import os
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request, Form, UploadFile, File
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.responses import RedirectResponse, JSONResponse, StreamingResponse
+import io as _io
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload
 from pathlib import Path
@@ -10,6 +11,10 @@ import shutil
 from ..database import get_db, DATA_DIR
 from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem
 from ..utils import duration_seconds
+from ..order_history import (
+    OrderHistoryFilters, get_order_history, get_all_for_export,
+    export_csv, export_excel, export_pdf,
+)
 
 router = APIRouter()
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -810,4 +815,118 @@ def reset_inventory(request: Request, confirm: str = Form(...), db: Session = De
     except Exception:
         db.rollback()
         raise
+
+
+# ─── admin order history ──────────────────────────────────────────────────────
+
+def _parse_int(val):
+    try:
+        return int(val) if val else None
+    except (ValueError, TypeError):
+        return None
+
+
+def _parse_float(val):
+    try:
+        return float(val) if val else None
+    except (ValueError, TypeError):
+        return None
+
+
+def _build_filters(request: Request) -> OrderHistoryFilters:
+    p = request.query_params
+    return OrderHistoryFilters(
+        date_from=p.get("date_from"),
+        date_to=p.get("date_to"),
+        status=p.get("status"),
+        source_role=p.get("source_role"),
+        waiter_name=p.get("waiter_name"),
+        product_id=_parse_int(p.get("product_id")),
+        payment_method=p.get("payment_method"),
+        min_total=_parse_float(p.get("min_total")),
+        max_total=_parse_float(p.get("max_total")),
+    )
+
+
+@router.get("/admin/orders/history")
+def orders_history(request: Request, db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    page = max(1, _parse_int(request.query_params.get("page")) or 1)
+    per_page = 50
+    filters = _build_filters(request)
+    orders, total, tax_rate = get_order_history(db, filters, page=page, per_page=per_page)
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    products = db.query(Product).filter(Product.active == True).order_by(Product.name.asc()).all()
+
+    # Build query string without page for helpers
+    base_params = {k: v for k, v in request.query_params.items() if k != "page"}
+
+    def _qs(extra: dict) -> str:
+        merged = {**base_params, **extra}
+        return "&".join(f"{k}={v}" for k, v in merged.items() if v)
+
+    def page_url(p: int) -> str:
+        return f"/admin/orders/history?{_qs({'page': p})}"
+
+    def export_url(fmt: str) -> str:
+        return f"/admin/orders/history/export/{fmt}?{_qs({})}"
+
+    return templates.TemplateResponse("admin_orders_history.html", {
+        "request": request,
+        "orders": orders,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "total_pages": total_pages,
+        "tax_rate": tax_rate * 100,
+        "products": products,
+        "filters": filters,
+        "params": dict(request.query_params),
+        "page_url": page_url,
+        "export_url": export_url,
+        "page_title": "Historial de Órdenes",
+    })
+
+
+@router.get("/admin/orders/history/export/csv")
+def orders_export_csv(request: Request, db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    filters = _build_filters(request)
+    orders, _ = get_all_for_export(db, filters)
+    data = export_csv(orders)
+    return StreamingResponse(
+        _io.BytesIO(data),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=ordenes.csv"},
+    )
+
+
+@router.get("/admin/orders/history/export/excel")
+def orders_export_excel(request: Request, db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    filters = _build_filters(request)
+    orders, _ = get_all_for_export(db, filters)
+    data = export_excel(orders)
+    return StreamingResponse(
+        _io.BytesIO(data),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=ordenes.xlsx"},
+    )
+
+
+@router.get("/admin/orders/history/export/pdf")
+def orders_export_pdf(request: Request, db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    filters = _build_filters(request)
+    orders, tax_rate = get_all_for_export(db, filters)
+    data = export_pdf(orders, filters, tax_rate)
+    return StreamingResponse(
+        _io.BytesIO(data),
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=ordenes.pdf"},
+    )
 
