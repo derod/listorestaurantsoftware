@@ -53,9 +53,16 @@ async function submitKitchenOrder() {
   pollOrders();
 }
 
+/* ─── Safari autoplay guard ─────────────────────────────────────────── */
+
+if (typeof window.userInteracted === "undefined") window.userInteracted = false;
+document.addEventListener("click", () => { window.userInteracted = true; }, { once: true, capture: true });
+document.addEventListener("touchstart", () => { window.userInteracted = true; }, { once: true, capture: true });
+
 /* ─── Audio ─────────────────────────────────────────────────────────── */
 
 function speakSpanish(text) {
+  if (!window.userInteracted) return;
   if (!window.KITCHEN_AUDIO.voiceEnabled) return;
   try {
     const utterance = new SpeechSynthesisUtterance(text);
@@ -71,9 +78,12 @@ function speakSpanish(text) {
 }
 
 function playSound(src) {
+  if (!window.userInteracted) return false;
   if (!src) return false;
   try {
     const audio = new Audio(src);
+    audio.preload = "auto";
+    audio.load();
     audio.volume = window.KITCHEN_AUDIO.volume ?? 1;
     audio.play().catch(() => {});
     return true;
@@ -81,6 +91,7 @@ function playSound(src) {
 }
 
 function beep(freq, durMs) {
+  if (!window.userInteracted) return;
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = ctx.createOscillator();
@@ -95,6 +106,7 @@ function beep(freq, durMs) {
 }
 
 function playAlertRing() {
+  if (!window.userInteracted) return;
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const vol = window.KITCHEN_AUDIO.volume ?? 1;

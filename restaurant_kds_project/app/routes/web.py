@@ -20,7 +20,9 @@ PRODUCT_IMG_DIR.mkdir(parents=True, exist_ok=True)
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "rodgabriel12@gmail.com")
-ADMIN_PASSCODE = os.getenv("ADMIN_PASSCODE", "Fuck2020!!!")
+ADMIN_PASSCODE = os.getenv("ADMIN_PASSCODE")
+if not ADMIN_PASSCODE:
+    raise RuntimeError("ADMIN_PASSCODE environment variable must be set")
 
 
 # ─── helpers ────────────────────────────────────────────────────────────────

@@ -156,14 +156,23 @@ function renderKitchenInternal(orders) {
   });
 }
 
+/* ─── Safari autoplay guard ─────────────────────────────────────────── */
+
+if (typeof window.userInteracted === "undefined") window.userInteracted = false;
+document.addEventListener("click", () => { window.userInteracted = true; }, { once: true, capture: true });
+document.addEventListener("touchstart", () => { window.userInteracted = true; }, { once: true, capture: true });
+
 /* ─── Audio helpers ─────────────────────────────────────────────────── */
 
 const AUDIO = window.STATION_AUDIO || {};
 
 function playSoundFile(src) {
+  if (!window.userInteracted) return false;
   if (!src) return false;
   try {
     const audio = new Audio(src);
+    audio.preload = "auto";
+    audio.load();
     audio.volume = AUDIO.volume ?? 1;
     audio.play().catch(() => {});
     return true;
@@ -171,6 +180,7 @@ function playSoundFile(src) {
 }
 
 function beep(freq, durMs) {
+  if (!window.userInteracted) return;
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = ctx.createOscillator();
@@ -185,6 +195,7 @@ function beep(freq, durMs) {
 }
 
 function speakSpanish(text) {
+  if (!window.userInteracted) return;
   if (!AUDIO.voiceEnabled) return;
   try {
     const u = new SpeechSynthesisUtterance(text);
