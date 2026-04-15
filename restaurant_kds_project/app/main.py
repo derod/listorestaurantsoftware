@@ -1,11 +1,12 @@
 import os
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from .database import Base, engine, SessionLocal, DATA_DIR
 from .seed import seed_initial_data
 from .routes import web, api
+from .websockets import manager
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 UPLOADS_DIR = DATA_DIR / "uploads"
@@ -55,3 +56,16 @@ with SessionLocal() as db:
 
 app.include_router(web.router)
 app.include_router(api.router, prefix="/api")
+
+
+@app.websocket("/ws/kitchen")
+async def websocket_kitchen(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            # Keep the connection alive; we only push from server → client.
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+    except Exception:
+        manager.disconnect(websocket)

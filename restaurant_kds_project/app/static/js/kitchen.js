@@ -363,3 +363,61 @@ renderKitchenSummary();
 renderOrders(visibleOrders());
 setInterval(pollOrders, 4000);
 setInterval(() => renderOrders(visibleOrders()), 1000);
+
+/* ─── WebSocket real-time layer (additive — polling remains as fallback) ── */
+
+(function initKitchenWS() {
+  let ws = null;
+  let retryTimer = null;
+  const RETRY_MS = 2000;
+
+  function connect() {
+    try {
+      const protocol = location.protocol === "https:" ? "wss://" : "ws://";
+      ws = new WebSocket(protocol + location.host + "/ws/kitchen");
+
+      ws.onopen = () => {
+        console.info("[KDS] WebSocket connected");
+        if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
+      };
+
+      ws.onmessage = (event) => {
+        let msg;
+        try { msg = JSON.parse(event.data); } catch { return; }
+
+        if (msg.event !== "new_order" || !msg.order) return;
+        const order = msg.order;
+
+        // Skip if we already know this order (prevents double-alert on reconnect)
+        if (knownOrderIds.has(order.id)) return;
+        knownOrderIds.add(order.id);
+
+        // Immediate audio alert
+        if (order.source_role === "station_a") {
+          if (!playSound(window.KITCHEN_AUDIO.stationSound)) beep(880, 400);
+          speakSpanish(`Nuevo pedido. ${formatSpeech(order.items)}.`);
+        } else {
+          if (!playSound(window.KITCHEN_AUDIO.kitchenSound)) beep(660, 400);
+        }
+
+        // Refresh the order list from the server so we get the canonical state
+        pollOrders();
+      };
+
+      ws.onerror = () => {
+        // onerror is always followed by onclose; let onclose handle reconnect
+      };
+
+      ws.onclose = () => {
+        console.warn("[KDS] WebSocket closed — retrying in", RETRY_MS, "ms");
+        ws = null;
+        retryTimer = setTimeout(connect, RETRY_MS);
+      };
+    } catch (e) {
+      console.warn("[KDS] WebSocket init failed:", e);
+      retryTimer = setTimeout(connect, RETRY_MS);
+    }
+  }
+
+  connect();
+})();

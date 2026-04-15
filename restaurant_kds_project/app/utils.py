@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 from sqlalchemy.orm import Session, joinedload
 from .models import Order, OrderItem, OrderEvent, Inventory, InventoryLog
@@ -14,7 +15,17 @@ def create_order(db: Session, source_role: str, items: list[dict], waiter_id: in
         db.add(OrderItem(order_id=order.id, product_id=item["product_id"], quantity=item["quantity"]))
     db.add(OrderEvent(order_id=order.id, event_type="created", actor_role=source_role, new_value=source_role))
     db.commit()
-    return get_order(db, order.id)
+    full_order = get_order(db, order.id)
+    # Fire-and-forget: push to connected kitchen clients via WebSocket.
+    # Runs only when an async event loop is active (i.e. inside a FastAPI request).
+    try:
+        from .websockets import broadcast_new_order
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.create_task(broadcast_new_order(full_order))
+    except Exception:
+        pass  # Never let WS failure affect order creation
+    return full_order
 
 
 def get_order(db: Session, order_id: int):
