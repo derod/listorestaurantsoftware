@@ -363,6 +363,32 @@ def move_product(product_id: int, request: Request, direction: str = Form(...), 
     return RedirectResponse(url="/admin/products", status_code=303)
 
 
+@router.post("/admin/products/{product_id}/rename")
+def rename_product(product_id: int, request: Request, name: str = Form(...), db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if product:
+        name = name.strip()
+        if name:
+            product.name = name
+            db.commit()
+    return RedirectResponse(url="/admin/products", status_code=303)
+
+
+@router.post("/admin/products/{product_id}/delete")
+def delete_product(product_id: int, request: Request, confirm: str = Form(...), db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    if confirm != "CONFIRMAR":
+        return RedirectResponse(url="/admin/products", status_code=303)
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if product:
+        db.delete(product)
+        db.commit()
+    return RedirectResponse(url="/admin/products", status_code=303)
+
+
 @router.get("/admin/audio")
 def admin_audio(request: Request, db: Session = Depends(get_db)):
     if not require_admin(request):

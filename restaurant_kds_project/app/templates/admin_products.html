@@ -1,46 +1,780 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Admin Productos</h1>
-<div class="panel form-panel">
-  <form method="post" action="/admin/products" class="big-form">
-    <input name="name" placeholder="Nombre del producto" required />
-    <button class="action primary" type="submit">+ Agregar producto</button>
-  </form>
+<style>
+  /* ── Scope reset ─────────────────────────────────────────────────── */
+  .ap-wrap, .ap-wrap * {
+    font-size: unset;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: unset;
+    box-sizing: border-box;
+  }
+
+  /* ── Shell ───────────────────────────────────────────────────────── */
+  .ap-wrap {
+    padding: 32px 28px 80px;
+    max-width: 1100px;
+    margin: 0 auto;
+    color: #e8edf8;
+  }
+
+  /* ── Page header ─────────────────────────────────────────────────── */
+  .ap-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+
+  .ap-header-left .ap-eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #ff8c42;
+    margin-bottom: 6px;
+  }
+
+  .ap-header-left h1 {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.4px;
+    color: #e8edf8;
+    margin: 0;
+    line-height: 1.15;
+  }
+
+  .ap-count {
+    font-size: 13px;
+    color: #4a5568;
+    margin-top: 4px;
+    font-weight: 400;
+  }
+
+  /* ── Add product form ────────────────────────────────────────────── */
+  .ap-add-form {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .ap-input {
+    height: 42px;
+    padding: 0 14px;
+    border-radius: 10px;
+    border: 1px solid #1c2538;
+    background: #12161f;
+    color: #e8edf8;
+    font-size: 14px;
+    font-weight: 500;
+    width: 220px;
+    transition: border-color 0.15s;
+    outline: none;
+  }
+
+  .ap-input:focus { border-color: #ff8c42; }
+  .ap-input::placeholder { color: #4a5568; }
+
+  .ap-btn {
+    height: 42px;
+    padding: 0 18px;
+    border-radius: 10px;
+    border: none;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    white-space: nowrap;
+    transition: background 0.15s, opacity 0.15s;
+  }
+
+  .ap-btn:active { opacity: 0.8; }
+  .ap-btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+  .ap-btn-primary { background: #ff8c42; color: #0b0f18; }
+  .ap-btn-primary:hover { background: #ffaa6e; }
+
+  .ap-btn-ghost {
+    background: #12161f;
+    border: 1px solid #1c2538;
+    color: #8393b0;
+  }
+  .ap-btn-ghost:hover { border-color: #4a5568; color: #e8edf8; }
+
+  .ap-btn-danger { background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.25); color: #f87171; }
+  .ap-btn-danger:hover { background: rgba(248,113,113,0.2); }
+
+  .ap-btn-sm { height: 34px; padding: 0 12px; font-size: 12px; border-radius: 8px; }
+
+  /* ── Table card ──────────────────────────────────────────────────── */
+  .ap-table-card {
+    background: #12161f;
+    border: 1px solid #1c2538;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .ap-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .ap-table thead tr {
+    border-bottom: 1px solid #1c2538;
+  }
+
+  .ap-table th {
+    padding: 12px 16px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #4a5568;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .ap-table tbody tr {
+    border-bottom: 1px solid #1c2538;
+    transition: background 0.12s;
+  }
+
+  .ap-table tbody tr:last-child { border-bottom: none; }
+  .ap-table tbody tr:hover { background: #161d2d; }
+
+  .ap-table td {
+    padding: 14px 16px;
+    font-size: 14px;
+    color: #e8edf8;
+    vertical-align: middle;
+  }
+
+  /* Photo cell */
+  .ap-photo {
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 1px solid #1c2538;
+    display: block;
+  }
+
+  .ap-photo-placeholder {
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
+    background: #0e1117;
+    border: 1px dashed #1c2538;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ap-photo-placeholder svg {
+    width: 18px;
+    height: 18px;
+    stroke: #2a3552;
+    fill: none;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* Name cell */
+  .ap-name {
+    font-weight: 600;
+    font-size: 15px;
+    color: #e8edf8;
+  }
+
+  .ap-id-badge {
+    font-size: 11px;
+    color: #4a5568;
+    font-family: "SF Mono", "Fira Code", monospace;
+    margin-top: 2px;
+  }
+
+  /* Status badge */
+  .ap-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  .ap-status-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+  .ap-status.active { background: rgba(74,222,128,0.1); color: #4ade80; }
+  .ap-status.active .ap-status-dot { background: #4ade80; }
+  .ap-status.inactive { background: rgba(74,85,104,0.2); color: #4a5568; }
+  .ap-status.inactive .ap-status-dot { background: #4a5568; }
+
+  /* Price inline edit */
+  .ap-price-form { display: inline-flex; align-items: center; gap: 6px; }
+  .ap-price-input {
+    width: 86px;
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: 1px solid #1c2538;
+    background: #0e1117;
+    color: #e8edf8;
+    font-size: 13px;
+    font-weight: 600;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .ap-price-input:focus { border-color: #ff8c42; }
+
+  /* Actions cell */
+  .ap-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+
+  /* Order buttons */
+  .ap-order-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    border: 1px solid #1c2538;
+    background: transparent;
+    color: #4a5568;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.15s, color 0.15s;
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .ap-order-btn:hover { border-color: #4a5568; color: #e8edf8; }
+  .ap-order-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ── Empty state ─────────────────────────────────────────────────── */
+  .ap-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #4a5568;
+    font-size: 14px;
+  }
+
+  .ap-empty svg { width: 40px; height: 40px; stroke: #2a3552; fill: none; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; margin: 0 auto 14px; display: block; }
+
+  /* ── Modal overlay ───────────────────────────────────────────────── */
+  .ap-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .ap-modal-overlay.open { display: flex; }
+
+  .ap-modal {
+    background: #12161f;
+    border: 1px solid #1c2538;
+    border-radius: 18px;
+    padding: 32px;
+    width: 100%;
+    max-width: 440px;
+    animation: modalIn 0.18s ease;
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.96) translateY(8px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .ap-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .ap-modal-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .ap-modal-icon svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .ap-modal-icon.edit { background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.2); }
+  .ap-modal-icon.edit svg { stroke: #38bdf8; }
+  .ap-modal-icon.danger { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.2); }
+  .ap-modal-icon.danger svg { stroke: #f87171; }
+
+  .ap-modal-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #e8edf8;
+    margin-bottom: 4px;
+    letter-spacing: -0.3px;
+  }
+
+  .ap-modal-subtitle {
+    font-size: 13px;
+    color: #4a5568;
+    line-height: 1.5;
+  }
+
+  .ap-modal-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid #1c2538;
+    background: transparent;
+    color: #4a5568;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.15s, color 0.15s;
+    flex-shrink: 0;
+    padding: 0;
+  }
+
+  .ap-modal-close:hover { border-color: #4a5568; color: #e8edf8; }
+  .ap-modal-close svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+
+  .ap-modal-body { margin-bottom: 24px; }
+
+  .ap-field-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #4a5568;
+    margin-bottom: 8px;
+  }
+
+  .ap-field-input {
+    width: 100%;
+    height: 46px;
+    padding: 0 14px;
+    border-radius: 10px;
+    border: 1px solid #1c2538;
+    background: #0e1117;
+    color: #e8edf8;
+    font-size: 15px;
+    font-weight: 500;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .ap-field-input:focus { border-color: #38bdf8; }
+  .ap-field-input.danger:focus { border-color: #f87171; }
+
+  /* Delete step indicators */
+  .ap-steps {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .ap-step {
+    flex: 1;
+    height: 3px;
+    border-radius: 2px;
+    background: #1c2538;
+    transition: background 0.3s;
+  }
+
+  .ap-step.active { background: #f87171; }
+
+  .ap-warning-box {
+    background: rgba(248,113,113,0.07);
+    border: 1px solid rgba(248,113,113,0.2);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: #f87171;
+    line-height: 1.55;
+    display: none;
+  }
+
+  .ap-warning-box.visible { display: block; }
+
+  .ap-confirm-hint {
+    font-size: 12px;
+    color: #4a5568;
+    margin-top: 8px;
+  }
+
+  .ap-confirm-hint code {
+    font-family: "SF Mono", "Fira Code", monospace;
+    color: #f87171;
+    background: rgba(248,113,113,0.1);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+
+  /* Modal footer */
+  .ap-modal-footer {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+
+  /* ── Photo upload label ───────────────────────────────────────────── */
+  .ap-photo-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 8px;
+    border: 1px solid #1c2538;
+    background: transparent;
+    color: #8393b0;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+
+  .ap-photo-label:hover { border-color: #4a5568; color: #e8edf8; }
+  .ap-photo-label svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ── Responsive ──────────────────────────────────────────────────── */
+  @media (max-width: 860px) {
+    .ap-wrap { padding: 24px 16px 60px; }
+    .ap-header { flex-direction: column; align-items: flex-start; gap: 16px; }
+    .ap-table th:nth-child(3),
+    .ap-table td:nth-child(3) { display: none; } /* hide order col */
+  }
+
+  @media (max-width: 600px) {
+    .ap-table th:nth-child(4),
+    .ap-table td:nth-child(4) { display: none; } /* hide price col on small */
+  }
+</style>
+
+<div class="ap-wrap">
+
+  <!-- Page header + add form -->
+  <div class="ap-header">
+    <div class="ap-header-left">
+      <div class="ap-eyebrow">Administración</div>
+      <h1>Productos</h1>
+      <div class="ap-count">{{ products|length }} producto{{ 's' if products|length != 1 else '' }} registrado{{ 's' if products|length != 1 else '' }}</div>
+    </div>
+
+    <form method="post" action="/admin/products" class="ap-add-form" id="addForm">
+      <input class="ap-input" name="name" placeholder="Nombre del producto" required autocomplete="off" maxlength="200" />
+      <button class="ap-btn ap-btn-primary" type="submit">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Agregar producto
+      </button>
+    </form>
+  </div>
+
+  <!-- Products table -->
+  <div class="ap-table-card">
+    {% if products %}
+    <table class="ap-table">
+      <thead>
+        <tr>
+          <th style="width:68px;">Foto</th>
+          <th>Nombre</th>
+          <th style="width:56px;">Orden</th>
+          <th style="width:160px;">Precio</th>
+          <th style="width:90px;">Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in products %}
+        <tr>
+          <!-- Photo -->
+          <td>
+            {% if p.image_path %}
+            <img src="{{ p.image_path }}" alt="{{ p.name }}" class="ap-photo">
+            {% else %}
+            <div class="ap-photo-placeholder">
+              <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+            </div>
+            {% endif %}
+          </td>
+
+          <!-- Name -->
+          <td>
+            <div class="ap-name">{{ p.name }}</div>
+            <div class="ap-id-badge">#{{ p.id }}</div>
+          </td>
+
+          <!-- Order -->
+          <td>
+            <div style="display:flex;gap:4px;align-items:center;">
+              <form method="post" action="/admin/products/{{ p.id }}/move">
+                <input type="hidden" name="direction" value="up">
+                <button class="ap-order-btn" type="submit" title="Subir">
+                  <svg viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></svg>
+                </button>
+              </form>
+              <form method="post" action="/admin/products/{{ p.id }}/move">
+                <input type="hidden" name="direction" value="down">
+                <button class="ap-order-btn" type="submit" title="Bajar">
+                  <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+              </form>
+            </div>
+          </td>
+
+          <!-- Price -->
+          <td>
+            <form method="post" action="/admin/products/{{ p.id }}/price" class="ap-price-form">
+              <input type="number" step="0.01" min="0" name="price"
+                     value="{{ '%.2f'|format(p.price or 0) }}"
+                     class="ap-price-input" />
+              <button class="ap-btn ap-btn-ghost ap-btn-sm" type="submit">
+                <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                Guardar
+              </button>
+            </form>
+          </td>
+
+          <!-- Status -->
+          <td>
+            <form method="post" action="/admin/products/{{ p.id }}/toggle" style="display:inline;">
+              <button type="submit" class="ap-status {{ 'active' if p.active else 'inactive' }}" style="border:none;cursor:pointer;background:inherit;" title="{{ 'Clic para desactivar' if p.active else 'Clic para activar' }}">
+                <span class="ap-status-dot"></span>
+                {{ 'Activo' if p.active else 'Inactivo' }}
+              </button>
+            </form>
+          </td>
+
+          <!-- Actions -->
+          <td>
+            <div class="ap-actions">
+              <!-- Upload photo -->
+              <form method="post" action="/admin/products/{{ p.id }}/photo" enctype="multipart/form-data" style="display:inline-flex;align-items:center;">
+                <label class="ap-photo-label" title="Subir foto">
+                  <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  Foto
+                  <input type="file" name="photo" accept="image/*" required style="display:none;" onchange="this.closest('form').submit()">
+                </label>
+              </form>
+
+              <!-- Edit name -->
+              <button class="ap-btn ap-btn-ghost ap-btn-sm"
+                      onclick="openEditModal({{ p.id }}, {{ p.name|tojson }})"
+                      type="button">
+                <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Editar
+              </button>
+
+              <!-- Delete -->
+              <button class="ap-btn ap-btn-danger ap-btn-sm"
+                      onclick="openDeleteModal({{ p.id }}, {{ p.name|tojson }})"
+                      type="button">
+                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                Eliminar
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="ap-empty">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v4M12 16h.01"/></svg>
+      No hay productos registrados aún. Agrega el primero usando el formulario de arriba.
+    </div>
+    {% endif %}
+  </div>
+
 </div>
-<div class="table-card">
-  <table class="big-table">
-    <thead><tr><th>Foto</th><th>Orden</th><th>Nombre</th><th>Precio</th><th>Activo</th><th>Acciones</th></tr></thead>
-    <tbody>
-      {% for p in products %}
-      <tr>
-        <td>
-          {% if p.image_path %}
-          <img src="{{ p.image_path }}" alt="{{ p.name }}" style="width:64px;height:64px;object-fit:cover;border-radius:10px;border:1px solid var(--border);">
-          {% else %}
-          <div style="width:64px;height:64px;border-radius:10px;background:#10141b;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:#6c757d;font-size:12px;">Sin foto</div>
-          {% endif %}
-        </td>
-        <td>{{ p.display_order }}</td>
-        <td>{{ p.name }}</td>
-        <td>
-          <form method="post" action="/admin/products/{{ p.id }}/price" style="display:inline-flex;gap:6px;align-items:center;">
-            <input type="number" step="0.01" min="0" name="price" value="{{ '%.2f'|format(p.price or 0) }}" style="width:90px;" />
-            <button class="small-action" type="submit">Guardar</button>
-          </form>
-        </td>
-        <td>{{ 'Sí' if p.active else 'No' }}</td>
-        <td class="actions-cell">
-          <form method="post" action="/admin/products/{{ p.id }}/photo" enctype="multipart/form-data" style="display:inline-flex;gap:6px;align-items:center;">
-            <input type="file" name="photo" accept="image/*" required style="max-width:160px;">
-            <button class="small-action" type="submit">Subir foto</button>
-          </form>
-          <form method="post" action="/admin/products/{{ p.id }}/toggle"><button class="small-action" type="submit">{{ 'Desactivar' if p.active else 'Activar' }}</button></form>
-          <form method="post" action="/admin/products/{{ p.id }}/move"><input type="hidden" name="direction" value="up"><button class="small-action" type="submit">Arriba</button></form>
-          <form method="post" action="/admin/products/{{ p.id }}/move"><input type="hidden" name="direction" value="down"><button class="small-action" type="submit">Abajo</button></form>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+
+
+<!-- ── Edit modal ─────────────────────────────────────────────────────── -->
+<div class="ap-modal-overlay" id="editModal" onclick="closeOnBackdrop(event,'editModal')">
+  <div class="ap-modal">
+    <div class="ap-modal-header">
+      <div style="display:flex;gap:14px;align-items:flex-start;flex:1;min-width:0;">
+        <div class="ap-modal-icon edit">
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </div>
+        <div>
+          <div class="ap-modal-title">Editar producto</div>
+          <div class="ap-modal-subtitle" id="editModalSubtitle">Modifica el nombre del producto.</div>
+        </div>
+      </div>
+      <button class="ap-modal-close" onclick="closeModal('editModal')">
+        <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <form method="post" id="editForm" action="">
+      <div class="ap-modal-body">
+        <div class="ap-field-label">Nombre del producto</div>
+        <input class="ap-field-input" type="text" name="name" id="editNameInput"
+               required autocomplete="off" maxlength="200"
+               placeholder="Nombre del producto" />
+      </div>
+      <div class="ap-modal-footer">
+        <button type="button" class="ap-btn ap-btn-ghost" onclick="closeModal('editModal')">Cancelar</button>
+        <button type="submit" class="ap-btn ap-btn-primary">
+          <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Guardar cambios
+        </button>
+      </div>
+    </form>
+  </div>
 </div>
+
+
+<!-- ── Delete modal ───────────────────────────────────────────────────── -->
+<div class="ap-modal-overlay" id="deleteModal" onclick="closeOnBackdrop(event,'deleteModal')">
+  <div class="ap-modal">
+    <div class="ap-modal-header">
+      <div style="display:flex;gap:14px;align-items:flex-start;flex:1;min-width:0;">
+        <div class="ap-modal-icon danger">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </div>
+        <div>
+          <div class="ap-modal-title">Eliminar producto</div>
+          <div class="ap-modal-subtitle" id="deleteModalSubtitle">Esta acción no se puede deshacer.</div>
+        </div>
+      </div>
+      <button class="ap-modal-close" onclick="closeModal('deleteModal')">
+        <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <form method="post" id="deleteForm" action="">
+      <div class="ap-modal-body">
+        <!-- Step indicators -->
+        <div class="ap-steps">
+          <div class="ap-step active" id="delStep1"></div>
+          <div class="ap-step" id="delStep2"></div>
+        </div>
+
+        <!-- Step 1 -->
+        <div id="deleteStep1">
+          <div class="ap-warning-box visible" id="deleteWarningBox">
+            Vas a eliminar permanentemente el producto <strong id="deleteProductName"></strong>.
+            Los pedidos históricos con este producto no se verán afectados, pero el producto
+            dejará de estar disponible de inmediato.
+          </div>
+          <div style="font-size:13px;color:#6b7a99;line-height:1.6;">
+            Para continuar, haz clic en <strong style="color:#e8edf8;">Continuar</strong>.
+            Para cancelar, cierra esta ventana.
+          </div>
+        </div>
+
+        <!-- Step 2 (hidden initially) -->
+        <div id="deleteStep2" style="display:none;">
+          <div class="ap-field-label">Confirmación final</div>
+          <input class="ap-field-input danger" type="text" name="confirm" id="deleteConfirmInput"
+                 placeholder='Escribe CONFIRMAR para proceder'
+                 autocomplete="off" />
+          <div class="ap-confirm-hint">Escribe exactamente <code>CONFIRMAR</code> y presiona Eliminar.</div>
+        </div>
+      </div>
+
+      <div class="ap-modal-footer">
+        <button type="button" class="ap-btn ap-btn-ghost" onclick="closeModal('deleteModal')">Cancelar</button>
+        <!-- Step 1 button -->
+        <button type="button" class="ap-btn ap-btn-danger" id="delContinueBtn" onclick="deleteStep2()">
+          <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><path d="M9 18l6-6-6-6"/></svg>
+          Continuar
+        </button>
+        <!-- Step 2 button (hidden initially) -->
+        <button type="submit" class="ap-btn ap-btn-danger" id="delConfirmBtn" style="display:none;">
+          <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          Eliminar definitivamente
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  /* ── Edit modal ────────────────────────────────────────────────────── */
+  function openEditModal(id, name) {
+    document.getElementById("editForm").action = "/admin/products/" + id + "/rename";
+    document.getElementById("editNameInput").value = name;
+    document.getElementById("editModalSubtitle").textContent = 'Editando: ' + name;
+    openModal("editModal");
+    setTimeout(function() { document.getElementById("editNameInput").focus(); }, 80);
+  }
+
+  /* ── Delete modal ──────────────────────────────────────────────────── */
+  function openDeleteModal(id, name) {
+    document.getElementById("deleteForm").action = "/admin/products/" + id + "/delete";
+    document.getElementById("deleteProductName").textContent = name;
+    document.getElementById("deleteModalSubtitle").textContent = 'Eliminando: ' + name;
+    document.getElementById("deleteConfirmInput").value = "";
+    // Reset to step 1
+    document.getElementById("deleteStep1").style.display = "";
+    document.getElementById("deleteStep2").style.display = "none";
+    document.getElementById("delContinueBtn").style.display = "";
+    document.getElementById("delConfirmBtn").style.display = "none";
+    document.getElementById("delStep1").classList.add("active");
+    document.getElementById("delStep2").classList.remove("active");
+    openModal("deleteModal");
+  }
+
+  function deleteStep2() {
+    document.getElementById("deleteStep1").style.display = "none";
+    document.getElementById("deleteStep2").style.display = "";
+    document.getElementById("delContinueBtn").style.display = "none";
+    document.getElementById("delConfirmBtn").style.display = "";
+    document.getElementById("delStep2").classList.add("active");
+    setTimeout(function() { document.getElementById("deleteConfirmInput").focus(); }, 80);
+  }
+
+  /* ── Generic modal helpers ─────────────────────────────────────────── */
+  function openModal(id) {
+    document.getElementById(id).classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove("open");
+    document.body.style.overflow = "";
+  }
+
+  function closeOnBackdrop(event, id) {
+    if (event.target === document.getElementById(id)) closeModal(id);
+  }
+
+  /* Close on Escape */
+  document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape") {
+      closeModal("editModal");
+      closeModal("deleteModal");
+    }
+  });
+</script>
 {% endblock %}
