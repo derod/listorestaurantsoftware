@@ -194,18 +194,36 @@ function beep(freq, durMs) {
   } catch (e) {}
 }
 
+/* ─── TTS voice loader ──────────────────────────────────────────────── */
+
+let _stationVoice = null;
+function _loadStationVoice() {
+  const voices = speechSynthesis.getVoices();
+  if (!voices.length) return;
+  _stationVoice = voices.find(v => v.lang === "es-ES")
+    || voices.find(v => v.lang.startsWith("es"))
+    || null;
+}
+_loadStationVoice();
+speechSynthesis.onvoiceschanged = _loadStationVoice;
+
 function speakSpanish(text) {
   if (!window.userInteracted) return;
   if (!AUDIO.voiceEnabled) return;
+  let spoken = false;
   try {
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = "es-ES"; u.rate = 0.95;
-    const voices = speechSynthesis.getVoices();
-    const chosen = voices.find(v => v.lang.toLowerCase().startsWith("es") && /monica|paulina|maria|female/i.test(v.name))
-      || voices.find(v => v.lang.toLowerCase().startsWith("es"));
-    if (chosen) u.voice = chosen;
-    speechSynthesis.speak(u);
-  } catch (e) {}
+    const utterance = new SpeechSynthesisUtterance(text);
+    if (_stationVoice) utterance.voice = _stationVoice;
+    utterance.lang = "es-ES";
+    utterance.volume = 1;
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    utterance.onstart = () => { spoken = true; };
+    utterance.onerror = () => { beep(880, 400); };
+    speechSynthesis.cancel();
+    setTimeout(() => { speechSynthesis.speak(utterance); }, 100);
+    setTimeout(() => { if (!spoken) beep(880, 400); }, 600);
+  } catch (e) { beep(880, 400); }
 }
 
 function formatItemsSpeech(items) {
