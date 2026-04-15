@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Listo Restaurant Software — Software para restaurantes</title>
+  <meta name="description" content="Plataforma de software para restaurantes desarrollada en Costa Rica. Kitchen Display System, punto de venta, inventario y más." />
+  <style>
+    /* ── Reset & tokens ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0b0f18;
+      --surface:  #111827;
+      --card:     #161d2e;
+      --border:   #1e2d45;
+      --accent:   #38bdf8;
+      --green:    #4ade80;
+      --yellow:   #facc15;
+      --red:      #f87171;
+      --text:     #f0f4ff;
+      --muted:    #8393b0;
+      --radius:   20px;
+      --shadow:   0 8px 40px rgba(0,0,0,0.45);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Language switcher ──────────────────────────────────────────── */
+    .lang-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(11,15,24,0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      padding: 10px 20px;
+      flex-wrap: wrap;
+    }
+    .lang-btn {
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s;
+      letter-spacing: 0.03em;
+    }
+    .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .lang-btn.active { background: var(--accent); border-color: var(--accent); color: #0b0f18; }
+
+    /* ── Language content blocks ────────────────────────────────────── */
+    [data-lang] { display: none; }
+    [data-lang].visible { display: block; }
+
+    /* ── Layout ─────────────────────────────────────────────────────── */
+    .page { max-width: 860px; margin: 0 auto; padding: 0 20px 80px; }
+
+    /* ── Hero ────────────────────────────────────────────────────────── */
+    .hero {
+      padding: 72px 0 56px;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-block;
+      padding: 5px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(56,189,248,0.35);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    .hero-title {
+      font-size: clamp(36px, 8vw, 72px);
+      font-weight: 900;
+      line-height: 1.08;
+      letter-spacing: -1.5px;
+      background: linear-gradient(135deg, #f0f4ff 0%, var(--accent) 60%, #818cf8 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-bottom: 20px;
+    }
+    .hero-sub {
+      font-size: clamp(16px, 2.5vw, 20px);
+      color: var(--muted);
+      max-width: 560px;
+      margin: 0 auto 40px;
+    }
+    .hero-tag {
+      display: inline-block;
+      padding: 3px 12px;
+      background: rgba(56,189,248,0.1);
+      border: 1px solid rgba(56,189,248,0.25);
+      border-radius: 8px;
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 600;
+      margin: 4px;
+    }
+
+    /* ── Section ─────────────────────────────────────────────────────── */
+    .section { margin-bottom: 56px; }
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+    .section-title {
+      font-size: clamp(24px, 5vw, 38px);
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 16px;
+      line-height: 1.2;
+    }
+    .section-body {
+      color: var(--muted);
+      font-size: clamp(15px, 2vw, 17px);
+      max-width: 680px;
+    }
+    .section-body + .section-body { margin-top: 12px; }
+
+    /* ── Feature grid ────────────────────────────────────────────────── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-top: 28px;
+    }
+    .feature-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 20px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .feature-card:hover { border-color: var(--accent); transform: translateY(-3px); }
+    .feature-icon { font-size: 32px; margin-bottom: 10px; }
+    .feature-name {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .feature-desc { font-size: 14px; color: var(--muted); }
+
+    /* ── About card ──────────────────────────────────────────────────── */
+    .about-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px 28px;
+      margin-top: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .cr-flag { font-size: 28px; }
+    .about-card p { color: var(--muted); font-size: 15px; }
+
+    /* ── CEO card ────────────────────────────────────────────────────── */
+    .ceo-card {
+      background: var(--card);
+      border: 1px solid rgba(56,189,248,0.3);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-top: 24px;
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
+    }
+    .ceo-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #818cf8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+    .ceo-name {
+      font-size: clamp(18px, 3.5vw, 22px);
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .ceo-title-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      background: rgba(56,189,248,0.12);
+      border: 1px solid rgba(56,189,248,0.3);
+      border-radius: 6px;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .ceo-desc { color: var(--muted); font-size: 14px; }
+
+    /* ── Divider ─────────────────────────────────────────────────────── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 48px 0;
+    }
+
+    /* ── CTA button ──────────────────────────────────────────────────── */
+    .cta-wrap {
+      text-align: center;
+      padding: 48px 0 24px;
+    }
+    .cta-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 20px 52px;
+      background: var(--accent);
+      color: #0b0f18;
+      font-size: 20px;
+      font-weight: 800;
+      border-radius: 999px;
+      text-decoration: none;
+      letter-spacing: 0.02em;
+      box-shadow: 0 0 40px rgba(56,189,248,0.3);
+      transition: transform 0.18s, box-shadow 0.18s;
+    }
+    .cta-btn:hover {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 0 60px rgba(56,189,248,0.45);
+    }
+    .cta-btn:active { transform: scale(0.97); }
+    .cta-arrow { font-size: 22px; }
+
+    /* ── Footer ──────────────────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 24px 20px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* ── Mobile tweaks ───────────────────────────────────────────────── */
+    @media (max-width: 480px) {
+      .hero { padding: 48px 0 36px; }
+      .ceo-card { flex-direction: column; }
+      .cta-btn { width: 100%; padding: 20px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Language switcher ──────────────────────────────────────────── -->
+  <div class="lang-bar" role="navigation" aria-label="Selector de idioma">
+    <button class="lang-btn active" data-target="es" onclick="setLang('es')">Español</button>
+    <button class="lang-btn"        data-target="en" onclick="setLang('en')">English</button>
+    <button class="lang-btn"        data-target="fr" onclick="setLang('fr')">Français</button>
+    <button class="lang-btn"        data-target="pt" onclick="setLang('pt')">Português BR</button>
+    <button class="lang-btn"        data-target="rp" onclick="setLang('rp')">Raptor Mini</button>
+  </div>
+
+  <div class="page">
+
+    <!-- ══════════════════════════════════════════════════════════════
+         ESPAÑOL
+    ═══════════════════════════════════════════════════════════════════ -->
+    <div data-lang="es" class="visible">
+
+      <section class="hero">
+        <div class="hero-badge">Costa Rica · Software</div>
+        <h1 class="hero-title">Listo Restaurant Software</h1>
+        <p class="hero-sub">La plataforma todo-en-uno que moderniza la operación de tu restaurante, desde la cocina hasta el salón.</p>
+        <div>
+          <span class="hero-tag">Kitchen Display</span>
+          <span class="hero-tag">Punto de Venta</span>
+          <span class="hero-tag">Inventario</span>
+          <span class="hero-tag">Tiempo Real</span>
+        </div>
+      </section>
+
+      <hr class="divider" />
+
+      <section class="section" id="bienvenida">
+        <div class="section-label">Bienvenida</div>
+        <h2 class="section-title">¿Qué hace Listo por tu restaurante?</h2>
+        <p class="section-body">Listo es una plataforma de software diseñada para optimizar cada etapa del servicio en un restaurante. Conecta a meseros, cocina, administración y punto de venta en un solo sistema en tiempo real, eliminando errores de comunicación y acelerando cada pedido.</p>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon">&#128066;</div>
+            <div class="feature-name">Kitchen Display (KDS)</div>
+            <div class="feature-desc">Pedidos enviados instantáneamente a la cocina con alertas sonoras y actualizaciones en vivo vía WebSocket.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#127869;</div>
+            <div class="feature-name">Módulo Salón</div>
+            <div class="feature-desc">Los meseros crean pedidos desde tablets o celulares sin necesidad de papel ni llamadas.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#128181;</div>
+            <div class="feature-name">Punto de Venta</div>
+            <div class="feature-desc">Cobros, métodos de pago, impuestos configurables y reportes de ventas integrados.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#128230;</div>
+            <div class="feature-name">Inventario</div>
+            <div class="feature-desc">Control automático de stock al despachar pedidos. Historial de movimientos y alertas de bajo inventario.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#128273;</div>
+            <div class="feature-name">Panel Admin</div>
+            <div class="feature-desc">Gestión de productos, agentes, reportes, exportación a CSV/Excel/PDF y configuración de audio.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#9889;</div>
+            <div class="feature-name">Tiempo Real</div>
+            <div class="feature-desc">Tecnología WebSocket para actualizaciones instantáneas sin recargar la página.</div>
+          </div>
+        </div>
+      </section>
+
+      <hr class="divider" />
+
+      <section class="section" id="nosotros">
+        <div class="section-label">Nosotros</div>
+        <h2 class="section-title">Sobre la empresa</h2>
+        <div class="about-card">
+          <div class="cr-flag">&#127464;&#127479;</div>
+          <p>Somos una empresa de desarrollo de software con sede en <strong>Costa Rica</strong>, especializada en soluciones tecnológicas para la industria de la restauración y la hospitalidad.</p>
+          <p>Nuestro enfoque es crear herramientas modernas, confiables y fáciles de usar que se adapten a la realidad operativa de restaurantes pequeños y medianos en toda América Latina.</p>
+          <p>Creemos que la tecnología debe simplificar el trabajo, no complicarlo. Por eso construimos Listo: una plataforma pensada por personas que entienden el negocio de los restaurantes.</p>
+        </div>
+      </section>
+
+      <hr class="divider" />
+
+      <section class="section" id="ceo">
+        <div class="section-label">Liderazgo</div>
+        <h2 class="section-title">Quién lidera el proyecto</h2>
+        <div class="ceo-card">
+          <div class="ceo-avatar">&#128104;&#8205;&#128187;</div>
+          <div>
+            <div class="ceo-name">Rodrigo Gabriel Zuñiga Rosabal</div>
+            <div class="ceo-title-badge">CEO &amp; Lead Developer</div>
+            <p class="ceo-desc">Rodrigo lidera actualmente el desarrollo de Listo Restaurant Software. Con visión técnica y experiencia en sistemas backend, sistemas en tiempo real y arquitectura de software, conduce el proyecto desde su concepción hasta su despliegue en producción.</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="cta-wrap">
+        <a href="/home" class="cta-btn">
+          Ingresar a la Plataforma <span class="cta-arrow">&#8594;</span>
+        </a>
+      </div>
+
+    </div><!-- /es -->
+
+
+    <!-- ══════════════════════════════════════════════════════════════
+         ENGLISH
+    ═══════════════════════════════════════════════════════════════════ -->
+    <div data-lang="en">
+
+      <section class="hero">
+        <div class="hero-badge">Costa Rica · Software</div>
+        <h1 class="hero-title">Listo Restaurant Software</h1>
+        <p class="hero-sub">The all-in-one platform that modernizes your restaurant operations, from the kitchen to the dining room.</p>
+        <div>
+          <span class="hero-tag">Kitchen Display</span>
+          <span class="hero-tag">Point of Sale</span>
+          <span class="hero-tag">Inventory</span>
+          <span class="hero-tag">Real-Time</span>
+        </div>
+      </section>
+
+      <hr class="divider" />
+
+      <section class="section">
+        <div class="section-label">Welcome</div>
+        <h2 class="section-title">What does Listo do for your restaurant?</h2>
+        <p class="section-body">Listo is a software platform designed to optimize every stage of restaurant service. It connects waitstaff, kitchen, management, and point-of-sale into a single real-time system — eliminating communication errors and speeding up every order.</p>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon">&#128066;</div>
+            <div class="feature-name">Kitchen Display (KDS)</div>
+            <div class="feature-desc">Orders pushed instantly to the kitchen with sound alerts and live updates via WebSocket.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#127869;</div>
+            <div class="feature-name">Dining Room Module</div>
+            <div class="feature-desc">Waitstaff create orders from tablets or phones — no paper, no calls needed.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#128181;</div>
+            <div class="feature-name">Point of Sale</div>
+            <div class="feature-desc">Payments, configurable taxes, multiple payment methods, and integrated sales reports.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#128230;</div>
+            <div class="feature-name">Inventory</div>
+            <div class="feature-desc">Automatic stock control when orders are dispatched. Movement history and low-stock alerts.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#128273;</div>
+            <div class="feature-name">Admin Panel</div>
+            <div class="feature-desc">Product and agent management, reports, CSV/Excel/PDF export, and audio settings.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#9889;</div>
+            <div class="feature-name">Real-Time</div>
+            <div class="feature-desc">WebSocket technology for instant updates without page reloads.</div>
+          </div>
+        </div>
+      </section>
+
+      <hr class="divider" />
+
+      <section class="section">
+        <div class="section-label">About Us</div>
+        <h2 class="section-title">About the company</h2>
+        <div class="about-card">
+          <div class="cr-flag">&#127464;&#127479;</div>
+          <p>We are a software development company headquartered in <strong>Costa Rica</strong>, specializing in technology solutions for the restaurant and hospitality industry.</p>
+          <p>Our focus is building modern, reliable, and easy-to-use tools tailored to the operational realities of small and mid-sized restaurants across Latin America.</p>
+          <p>We believe technology should simplify work, not complicate it. That's why we built Listo: a platform designed by people who understand the restaurant business.</p>
+        </div>
+      </section>
+
+      <hr class="divider" />
+
+      <section class="section">
+        <div class="section-label">Leadership</div>
+        <h2 class="section-title">Who leads the project</h2>
+        <div class="ceo-card">
+          <div class="ceo-avatar">&#128104;&#8205;&#128187;</div>
+          <div>
+            <div class="ceo-name">Rodrigo Gabriel Zuñiga Rosabal</div>
+            <div class="ceo-title-badge">CEO &amp; Lead Developer</div>
+            <p class="ceo-desc">Rodrigo currently leads the development of Listo Restaurant Software. With technical vision and experience in backend systems, real-time architectures, and software design, he drives the project from conception through production deployment.</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="cta-wrap">
+        <a href="/home" class="cta-btn">
+          Enter the Platform <span class="cta-arrow">&#8594;</span>
+        </a>
+      </div>
+
+    </div><!-- /en -->
+
+
+    <!-- ══════════════════════════════════════════════════════════════
+         FRANÇAIS
+    ═══════════════════════════════════════════════════════════════════ -->
+    <div data-lang="fr">
+
+      <section class="hero">
+        <div class="hero-badge">Costa Rica · Logiciel</div>
+        <h1 class="hero-title">Listo Restaurant Software</h1>
+        <p class="hero-sub">La plateforme tout-en-un qui modernise la gestion de votre restaurant, de la cuisine à la salle.</p>
+        <div>
+          <span class="hero-tag">Affichage Cuisine</span>
+          <span class="hero-tag">Point de Vente</span>
+          <span class="hero-tag">Inventaire</span>
+          <span class="hero-tag">Temps Réel</span>
+        </div>
+      </section>
+
+      <hr class="divider" />
+
+      <section class="section">
+        <div class="section-label">Bienvenue</div>
+        <h2 class="section-title">Que fait Listo pour votre restaurant ?</h2>
+        <p class="section-body">Listo est une plateforme logicielle conçue pour optimiser chaque étape du service en restaurant. Elle connecte le personnel de salle, la cuisine, la direction et la caisse en un seul système temps réel — éliminant les erreurs de communication et accélérant chaque commande.</p>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon">&#128066;</div>
+            <div class="feature-name">Affichage Cuisine (KDS)</div>
+            <div class="feature-desc">Commandes transmises instantanément en cuisine avec alertes sonores et mises à jour en direct via WebSocket.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#127869;</div>
+            <div class="feature-name">Module Salle</div>
+            <div class="feature-desc">Les serveurs créent des commandes depuis tablettes ou téléphones — sans papier ni appels.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#128181;</div>
+            <div class="feature-name">Point de Vente</div>
+            <div class="feature-desc">Paiements, taxes configurables, plusieurs modes de règlement et rapports de vente intégrés.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#128230;</div>
+            <div class="feature-name">Inventaire</div>
+            <div class="feature-desc">Contrôle automatique des stocks à l'expédition des commandes. Historique et alertes de stock bas.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#128273;</div>
+            <div class="feature-name">Panneau Admin</div>
+            <div class="feature-desc">Gestion des produits et agents, rapports, export CSV/Excel/PDF et réglages audio.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#9889;</div>
+            <div class="feature-name">Temps Réel</div>
+            <div class="feature-desc">Technologie WebSocket pour des mises à jour instantanées sans rechargement de page.</div>
+          </div>
+        </div>
+      </section>
+
+      <hr class="divider" />
+
+      <section class="section">
+        <div class="section-label">À propos</div>
+        <h2 class="section-title">À propos de l'entreprise</h2>
+        <div class="about-card">
+          <div class="cr-flag">&#127464;&#127479;</div>
+          <p>Nous sommes une société de développement logiciel basée au <strong>Costa Rica</strong>, spécialisée dans les solutions technologiques pour la restauration et l'hôtellerie.</p>
+          <p>Notre objectif est de créer des outils modernes, fiables et faciles à utiliser, adaptés aux réalités opérationnelles des restaurants petits et moyens en Amérique latine.</p>
+          <p>Nous croyons que la technologie doit simplifier le travail, pas le compliquer. C'est pourquoi nous avons créé Listo : une plateforme pensée par des personnes qui comprennent le secteur de la restauration.</p>
+        </div>
+      </section>
+
+      <hr class="divider" />
+
+      <section class="section">
+        <div class="section-label">Direction</div>
+        <h2 class="section-title">Qui dirige le projet</h2>
+        <div class="ceo-card">
+          <div class="ceo-avatar">&#128104;&#8205;&#128187;</div>
+          <div>
+            <div class="ceo-name">Rodrigo Gabriel Zuñiga Rosabal</div>
+            <div class="ceo-title-badge">PDG &amp; Développeur Principal</div>
+            <p class="ceo-desc">Rodrigo dirige actuellement le développement de Listo Restaurant Software. Avec une vision technique et une expérience en systèmes backend, architectures temps réel et conception logicielle, il mène le projet de sa conception jusqu'au déploiement en production.</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="cta-wrap">
+        <a href="/home" class="cta-btn">
+          Accéder à la Plateforme <span class="cta-arrow">&#8594;</span>
+        </a>
+      </div>
+
+    </div><!-- /fr -->
+
+
+    <!-- ══════════════════════════════════════════════════════════════
+         PORTUGUÊS BRASILEIRO
+    ═══════════════════════════════════════════════════════════════════ -->
+    <div data-lang="pt">
+
+      <section class="hero">
+        <div class="hero-badge">Costa Rica · Software</div>
+        <h1 class="hero-title">Listo Restaurant Software</h1>
+        <p class="hero-sub">A plataforma tudo-em-um que moderniza a operação do seu restaurante, da cozinha ao salão.</p>
+        <div>
+          <span class="hero-tag">Display de Cozinha</span>
+          <span class="hero-tag">Ponto de Venda</span>
+          <span class="hero-tag">Estoque</span>
+          <span class="hero-tag">Tempo Real</span>
+        </div>
+      </section>
+
+      <hr class="divider" />
+
+      <section class="section">
+        <div class="section-label">Boas-vindas</div>
+        <h2 class="section-title">O que o Listo faz pelo seu restaurante?</h2>
+        <p class="section-body">Listo é uma plataforma de software projetada para otimizar cada etapa do serviço em um restaurante. Ela conecta garçons, cozinha, administração e ponto de venda em um único sistema em tempo real — eliminando erros de comunicação e acelerando cada pedido.</p>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon">&#128066;</div>
+            <div class="feature-name">Display de Cozinha (KDS)</div>
+            <div class="feature-desc">Pedidos enviados instantaneamente à cozinha com alertas sonoros e atualizações ao vivo via WebSocket.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#127869;</div>
+            <div class="feature-name">Módulo Salão</div>
+            <div class="feature-desc">Garçons criam pedidos em tablets ou celulares — sem papel e sem ligações.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#128181;</div>
+            <div class="feature-name">Ponto de Venda</div>
+            <div class="feature-desc">Pagamentos, impostos configuráveis, múltiplas formas de pagamento e relatórios de vendas integrados.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#128230;</div>
+            <div class="feature-name">Estoque</div>
+            <div class="feature-desc">Controle automático de estoque ao despachar pedidos. Histórico de movimentações e alertas de estoque baixo.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#128273;</div>
+            <div class="feature-name">Painel Admin</div>
+            <div class="feature-desc">Gestão de produtos e agentes, relatórios, exportação CSV/Excel/PDF e configurações de áudio.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#9889;</div>
+            <div class="feature-name">Tempo Real</div>
+            <div class="feature-desc">Tecnologia WebSocket para atualizações instantâneas sem recarregar a página.</div>
+          </div>
+        </div>
+      </section>
+
+      <hr class="divider" />
+
+      <section class="section">
+        <div class="section-label">Sobre nós</div>
+        <h2 class="section-title">Sobre a empresa</h2>
+        <div class="about-card">
+          <div class="cr-flag">&#127464;&#127479;</div>
+          <p>Somos uma empresa de desenvolvimento de software sediada na <strong>Costa Rica</strong>, especializada em soluções tecnológicas para a indústria de restaurantes e hospitalidade.</p>
+          <p>Nosso foco é criar ferramentas modernas, confiáveis e fáceis de usar, adaptadas à realidade operacional de restaurantes pequenos e médios em toda a América Latina.</p>
+          <p>Acreditamos que a tecnologia deve simplificar o trabalho, não complicá-lo. Por isso criamos o Listo: uma plataforma pensada por pessoas que entendem o negócio de restaurantes.</p>
+        </div>
+      </section>
+
+      <hr class="divider" />
+
+      <section class="section">
+        <div class="section-label">Liderança</div>
+        <h2 class="section-title">Quem lidera o projeto</h2>
+        <div class="ceo-card">
+          <div class="ceo-avatar">&#128104;&#8205;&#128187;</div>
+          <div>
+            <div class="ceo-name">Rodrigo Gabriel Zuñiga Rosabal</div>
+            <div class="ceo-title-badge">CEO &amp; Desenvolvedor Líder</div>
+            <p class="ceo-desc">Rodrigo lidera atualmente o desenvolvimento do Listo Restaurant Software. Com visão técnica e experiência em sistemas backend, arquiteturas em tempo real e design de software, ele conduz o projeto desde a concepção até a implantação em produção.</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="cta-wrap">
+        <a href="/home" class="cta-btn">
+          Entrar na Plataforma <span class="cta-arrow">&#8594;</span>
+        </a>
+      </div>
+
+    </div><!-- /pt -->
+
+
+    <!-- ══════════════════════════════════════════════════════════════
+         RAPTOR MINI
+    ═══════════════════════════════════════════════════════════════════ -->
+    <div data-lang="rp">
+
+      <section class="hero">
+        <div class="hero-badge">Costa Rica · Softwr</div>
+        <h1 class="hero-title">Listo Rst Softwr</h1>
+        <p class="hero-sub">1 platfrm. Kocina+salon+venta. Todo jnto. Todo rapido. LISTO.</p>
+        <div>
+          <span class="hero-tag">KDS</span>
+          <span class="hero-tag">POS</span>
+          <span class="hero-tag">Stock</span>
+          <span class="hero-tag">RT&#9889;</span>
+        </div>
+      </section>
+
+      <hr class="divider" />
+
+      <section class="section">
+        <div class="section-label">Welcm</div>
+        <h2 class="section-title">Kien usa Listo?</h2>
+        <p class="section-body">Mesnros. Kocina. Admin. Caja. 1 sola app. Ordn llga &rarr; kocina ve &rarr; cliente kome. Sin papel. Sin gritos. Solo LISTO.</p>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon">&#128066;</div>
+            <div class="feature-name">KDS</div>
+            <div class="feature-desc">Ordn aprc. Suena. Kocina hace. Done.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#127869;</div>
+            <div class="feature-name">Salon</div>
+            <div class="feature-desc">Mesnro toca pantalla. Ordn va. Papel 0.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#128181;</div>
+            <div class="feature-name">POS</div>
+            <div class="feature-desc">Cobra. Impuesto. Reprt. Fácil.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#128230;</div>
+            <div class="feature-name">Stock</div>
+            <div class="feature-desc">Se despacha &rarr; stock baja solo. Magia.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#128273;</div>
+            <div class="feature-name">Admin</div>
+            <div class="feature-desc">Todo. Prodcts. Agnt. Rprt. Export.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">&#9889;</div>
+            <div class="feature-name">Webskt</div>
+            <div class="feature-desc">Push. No polng. No reload. Just fast.</div>
+          </div>
+        </div>
+      </section>
+
+      <hr class="divider" />
+
+      <section class="section">
+        <div class="section-label">Qnes Sms</div>
+        <h2 class="section-title">Emprsa CR</h2>
+        <div class="about-card">
+          <div class="cr-flag">&#127464;&#127479;</div>
+          <p>Softwr hecho en <strong>Costa Rica</strong> pa restaurantes de LatAm. Small. Mdm. No giant SAP. Solo lo q necesitas.</p>
+          <p>Tech simple. Ops fcil. Negocio OK.</p>
+        </div>
+      </section>
+
+      <hr class="divider" />
+
+      <section class="section">
+        <div class="section-label">Jefe</div>
+        <h2 class="section-title">El q manda</h2>
+        <div class="ceo-card">
+          <div class="ceo-avatar">&#128104;&#8205;&#128187;</div>
+          <div>
+            <div class="ceo-name">Rodrigo G. Zuñiga R.</div>
+            <div class="ceo-title-badge">CEO &amp; Dev Lead</div>
+            <p class="ceo-desc">Rodrigo. Backend. RT systems. Ships code. Listo es suyo. LISTO es tuyo. win-win.</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="cta-wrap">
+        <a href="/home" class="cta-btn">
+          Plataforma &#8594;
+        </a>
+      </div>
+
+    </div><!-- /rp -->
+
+  </div><!-- /page -->
+
+  <footer>
+    &copy; <span id="yr"></span> Listo Restaurant Software &mdash; Costa Rica
+  </footer>
+
+  <script>
+    document.getElementById("yr").textContent = new Date().getFullYear();
+
+    function setLang(lang) {
+      // Hide all blocks
+      document.querySelectorAll("[data-lang]").forEach(el => el.classList.remove("visible"));
+      // Show selected
+      const target = document.querySelector("[data-lang='" + lang + "']");
+      if (target) target.classList.add("visible");
+      // Update buttons
+      document.querySelectorAll(".lang-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.target === lang);
+      });
+      // Update html lang attribute
+      const langMap = { es: "es", en: "en", fr: "fr", pt: "pt-BR", rp: "es" };
+      document.documentElement.lang = langMap[lang] || "es";
+    }
+  </script>
+
+</body>
+</html>

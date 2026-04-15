@@ -47,7 +47,13 @@ def require_admin(request: Request):
 
 # ─── root ────────────────────────────────────────────────────────────────────
 
+@router.get("/landing")
+def landing(request: Request):
+    return templates.TemplateResponse("landing.html", {"request": request})
+
+
 @router.get("/")
+@router.get("/home")
 def home(request: Request):
     return templates.TemplateResponse("home.html", {"request": request, "page_title": "Listo Restaurant Software"})
 
