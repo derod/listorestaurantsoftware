@@ -1,257 +1,402 @@
 {% extends 'base.html' %}
 {% block content %}
 <style>
+  /* ── Scope reset — fight the global font-size: 24px rule ─────────── */
+  .hub-wrap, .hub-wrap * {
+    font-size: unset;
+    line-height: unset;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  /* ── Shell ──────────────────────────────────────────────────────── */
   .hub-wrap {
-    min-height: calc(100vh - 56px);
+    min-height: calc(100vh - 72px);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: clamp(40px, 6vw, 80px) 24px;
+    padding: clamp(32px, 5vw, 64px) 24px clamp(40px, 6vw, 80px);
+    background: #0b0f18;
   }
 
+  /* ── Header ─────────────────────────────────────────────────────── */
   .hub-header {
     text-align: center;
-    margin-bottom: 52px;
+    margin-bottom: 44px;
   }
 
-  .hub-eyebrow {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.22em;
+  .hub-time {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 14px;
+    color: #4a5568;
+    margin-bottom: 16px;
   }
 
   .hub-title {
-    font-size: clamp(28px, 5vw, 48px);
+    font-size: clamp(22px, 3.5vw, 34px);
     font-weight: 800;
-    letter-spacing: -0.8px;
-    color: var(--text);
-    margin-bottom: 10px;
-    line-height: 1.1;
+    letter-spacing: -0.5px;
+    color: #e8edf8;
+    margin-bottom: 8px;
+    line-height: 1.15;
   }
+
+  .hub-title span { color: #ff8c42; }
 
   .hub-sub {
-    font-size: 15px;
-    color: var(--muted);
+    font-size: 14px;
+    color: #4a5568;
     font-weight: 400;
+    letter-spacing: 0.02em;
   }
 
-  /* ── Grid ── */
-  .hub-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1px;
-    background: var(--border);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    overflow: hidden;
-    width: 100%;
-    max-width: 820px;
-  }
-
-  /* Last card centered when odd count */
-  .hub-grid > a:last-child:nth-child(odd) {
-    grid-column: 1 / -1;
-    max-width: calc(33.333% - 1px);
-    margin: 0 auto;
-    /* fallback: just let it span normally on mobile */
-  }
-
-  .hub-card {
-    background: var(--card);
+  /* ── Layout: two-row structure ──────────────────────────────────── */
+  .hub-layout {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    gap: 20px;
-    padding: 32px 28px;
+    gap: 12px;
+    width: 100%;
+    max-width: 860px;
+  }
+
+  /* Row 1 — primary operational modules */
+  .hub-row-primary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* Row 2 — secondary/management modules */
+  .hub-row-secondary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  /* ── Cards ──────────────────────────────────────────────────────── */
+  .hub-card {
+    background: #12161f;
+    border: 1px solid #1c2538;
+    border-radius: 16px;
     text-decoration: none;
-    color: var(--text);
-    transition: background 0.15s;
+    color: #e8edf8;
+    display: flex;
+    flex-direction: column;
+    padding: 28px 26px 24px;
+    gap: 0;
     position: relative;
     overflow: hidden;
+    transition: border-color 0.18s, background 0.18s, transform 0.15s;
   }
 
-  .hub-card::after {
+  .hub-card:hover {
+    border-color: var(--hue, #1c2538);
+    background: #161d2d;
+    transform: translateY(-2px);
+  }
+
+  /* Left accent bar */
+  .hub-card::before {
     content: "";
     position: absolute;
-    bottom: 0;
     left: 0;
-    right: 0;
-    height: 2px;
-    background: var(--card-accent, transparent);
-    transition: opacity 0.2s;
+    top: 20%;
+    bottom: 20%;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--hue, transparent);
     opacity: 0;
+    transition: opacity 0.18s, top 0.18s, bottom 0.18s;
   }
 
-  .hub-card:hover { background: #161d2d; }
-  .hub-card:hover::after { opacity: 1; }
+  .hub-card:hover::before {
+    opacity: 1;
+    top: 16%;
+    bottom: 16%;
+  }
 
-  .hub-card.salon   { --card-accent: #4ade80; }
-  .hub-card.kitchen { --card-accent: #facc15; }
-  .hub-card.admin   { --card-accent: #f87171; }
-  .hub-card.inv     { --card-accent: #38bdf8; }
-  .hub-card.pos     { --card-accent: #a78bfa; }
+  /* Primary cards are taller */
+  .hub-card-primary {
+    padding: 36px 32px 30px;
+    min-height: 220px;
+  }
 
+  /* Module color hues */
+  .hub-card.salon   { --hue: #4ade80; }
+  .hub-card.kitchen { --hue: #facc15; }
+  .hub-card.admin   { --hue: #f87171; }
+  .hub-card.inv     { --hue: #38bdf8; }
+  .hub-card.pos     { --hue: #a78bfa; }
+
+  /* ── Icon ───────────────────────────────────────────────────────── */
   .hub-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
+    width: 44px;
+    height: 44px;
+    border-radius: 11px;
+    border: 1px solid #1c2538;
+    background: rgba(255,255,255,0.03);
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--border);
+    margin-bottom: 20px;
     flex-shrink: 0;
+    transition: border-color 0.18s, background 0.18s;
+  }
+
+  .hub-card:hover .hub-icon {
+    border-color: var(--hue);
+    background: rgba(255,255,255,0.06);
   }
 
   .hub-icon svg {
     width: 20px;
     height: 20px;
     fill: none;
+    stroke: #4a5568;
     stroke-width: 1.75;
     stroke-linecap: round;
     stroke-linejoin: round;
+    transition: stroke 0.18s;
   }
 
-  .hub-card.salon   .hub-icon svg { stroke: #4ade80; }
-  .hub-card.kitchen .hub-icon svg { stroke: #facc15; }
-  .hub-card.admin   .hub-icon svg { stroke: #f87171; }
-  .hub-card.inv     .hub-icon svg { stroke: #38bdf8; }
-  .hub-card.pos     .hub-icon svg { stroke: #a78bfa; }
+  .hub-card:hover .hub-icon svg { stroke: var(--hue); }
 
+  /* Larger icons for primary cards */
+  .hub-card-primary .hub-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 13px;
+    margin-bottom: 24px;
+  }
+
+  .hub-card-primary .hub-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* ── Text ───────────────────────────────────────────────────────── */
   .hub-label {
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 700;
     letter-spacing: -0.2px;
+    color: #e8edf8;
+    margin-bottom: 6px;
+    line-height: 1.2;
+  }
+
+  .hub-card-primary .hub-label {
+    font-size: 20px;
+    margin-bottom: 8px;
   }
 
   .hub-desc {
-    font-size: 12px;
-    color: var(--muted);
-    font-weight: 400;
+    font-size: 13px;
+    color: #4a5568;
     line-height: 1.5;
-    margin-top: -12px;
+    flex: 1;
   }
 
-  .hub-arrow {
-    margin-top: auto;
-    width: 28px;
-    height: 28px;
+  .hub-card-primary .hub-desc {
+    font-size: 14px;
+    color: #6b7a99;
+  }
+
+  /* ── Footer row inside card ─────────────────────────────────────── */
+  .hub-card-footer {
+    margin-top: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .hub-card-primary .hub-card-footer { margin-top: 32px; }
+
+  .hub-enter {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #4a5568;
+    transition: color 0.18s;
+  }
+
+  .hub-card:hover .hub-enter { color: var(--hue); }
+
+  .hub-chevron {
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
-    border: 1px solid var(--border);
+    border: 1px solid #1c2538;
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0;
-    transform: translateX(-4px);
-    transition: opacity 0.15s, transform 0.15s;
+    transition: border-color 0.18s, background 0.18s, transform 0.18s;
   }
 
-  .hub-arrow svg {
-    width: 12px;
-    height: 12px;
-    stroke: var(--muted);
+  .hub-card:hover .hub-chevron {
+    border-color: var(--hue);
+    background: rgba(255,255,255,0.04);
+    transform: translateX(3px);
+  }
+
+  .hub-chevron svg {
+    width: 13px;
+    height: 13px;
     fill: none;
+    stroke: #4a5568;
     stroke-width: 2.5;
     stroke-linecap: round;
     stroke-linejoin: round;
+    transition: stroke 0.18s;
   }
 
-  .hub-card:hover .hub-arrow {
-    opacity: 1;
-    transform: translateX(0);
+  .hub-card:hover .hub-chevron svg { stroke: var(--hue); }
+
+  /* ── Status bar ─────────────────────────────────────────────────── */
+  .hub-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 36px;
+    padding-top: 20px;
+    border-top: 1px solid #1c2538;
   }
 
-  /* ── Responsive ── */
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #4ade80;
+    box-shadow: 0 0 6px rgba(74, 222, 128, 0.5);
+    flex-shrink: 0;
+  }
+
+  .status-text {
+    font-size: 12px;
+    color: #4a5568;
+    font-weight: 500;
+  }
+
+  /* ── Responsive ─────────────────────────────────────────────────── */
   @media (max-width: 640px) {
-    .hub-grid {
-      grid-template-columns: 1fr 1fr;
-      border-radius: 14px;
-    }
-    .hub-grid > a:last-child:nth-child(odd) {
-      grid-column: 1 / -1;
-      max-width: 100%;
-    }
-    .hub-card { padding: 24px 20px; gap: 14px; }
-    .hub-label { font-size: 15px; }
-    .hub-desc { display: none; }
+    .hub-row-primary  { grid-template-columns: 1fr; }
+    .hub-row-secondary { grid-template-columns: 1fr 1fr; }
+    .hub-card-primary { min-height: auto; padding: 28px 24px 22px; }
+    .hub-card-primary .hub-label { font-size: 18px; }
   }
 
-  @media (max-width: 380px) {
-    .hub-grid { grid-template-columns: 1fr; }
-    .hub-grid > a:last-child:nth-child(odd) { grid-column: auto; }
+  @media (max-width: 420px) {
+    .hub-row-secondary { grid-template-columns: 1fr; }
+    .hub-desc { display: none; }
+    .hub-card-footer { margin-top: 16px; }
   }
 </style>
 
 <div class="hub-wrap">
 
   <div class="hub-header">
-    <div class="hub-eyebrow">Panel de acceso</div>
-    <h1 class="hub-title">Listo Restaurant Software</h1>
+    <div class="hub-time" id="hubClock"></div>
+    <h1 class="hub-title">LISTO <span>Restaurant</span> Software</h1>
     <p class="hub-sub">Selecciona un módulo para continuar</p>
   </div>
 
-  <div class="hub-grid">
+  <div class="hub-layout">
 
-    <a href="/station-a" class="hub-card salon">
-      <div class="hub-icon">
-        <svg viewBox="0 0 24 24"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
-      </div>
-      <div>
+    <!-- Row 1: Primary operational modules -->
+    <div class="hub-row-primary">
+
+      <a href="/station-a" class="hub-card salon hub-card-primary">
+        <div class="hub-icon">
+          <svg viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h12"/><circle cx="19" cy="18" r="2"/></svg>
+        </div>
         <div class="hub-label">Salón</div>
-        <div class="hub-desc">Toma de pedidos en mesa</div>
-      </div>
-      <div class="hub-arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
-    </a>
+        <div class="hub-desc">Toma de pedidos en mesa. Envío directo a cocina sin papel.</div>
+        <div class="hub-card-footer">
+          <span class="hub-enter">Abrir</span>
+          <div class="hub-chevron"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+        </div>
+      </a>
 
-    <a href="/kitchen" class="hub-card kitchen">
-      <div class="hub-icon">
-        <svg viewBox="0 0 24 24"><path d="M12 2a5 5 0 0 1 5 5v3H7V7a5 5 0 0 1 5-5z"/><path d="M7 10v2a5 5 0 0 0 10 0v-2"/><path d="M12 17v4M8 21h8"/></svg>
-      </div>
-      <div>
-        <div class="hub-label">Kitchen</div>
-        <div class="hub-desc">Display de cocina en tiempo real</div>
-      </div>
-      <div class="hub-arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
-    </a>
+      <a href="/kitchen" class="hub-card kitchen hub-card-primary">
+        <div class="hub-icon">
+          <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8h2M11 8h6"/><path d="M7 12h4M15 12h2"/></svg>
+        </div>
+        <div class="hub-label">Kitchen Display</div>
+        <div class="hub-desc">Pantalla de cocina en tiempo real. Alertas de pedidos vía WebSocket.</div>
+        <div class="hub-card-footer">
+          <span class="hub-enter">Abrir</span>
+          <div class="hub-chevron"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+        </div>
+      </a>
 
-    <a href="/admin" class="hub-card admin">
-      <div class="hub-icon">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/></svg>
-      </div>
-      <div>
+    </div>
+
+    <!-- Row 2: Management & support modules -->
+    <div class="hub-row-secondary">
+
+      <a href="/admin" class="hub-card admin">
+        <div class="hub-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/><path d="M3 20a9 9 0 0 1 18 0"/></svg>
+        </div>
         <div class="hub-label">Admin</div>
-        <div class="hub-desc">Configuración y reportes</div>
-      </div>
-      <div class="hub-arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
-    </a>
+        <div class="hub-desc">Configuración, productos y reportes</div>
+        <div class="hub-card-footer">
+          <span class="hub-enter">Abrir</span>
+          <div class="hub-chevron"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+        </div>
+      </a>
 
-    <a href="/inventory" class="hub-card inv">
-      <div class="hub-icon">
-        <svg viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 3H8l-2 4h12z"/></svg>
-      </div>
-      <div>
+      <a href="/inventory" class="hub-card inv">
+        <div class="hub-icon">
+          <svg viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 3H8l-2 4h12z"/></svg>
+        </div>
         <div class="hub-label">Inventario</div>
         <div class="hub-desc">Control de stock y existencias</div>
-      </div>
-      <div class="hub-arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
-    </a>
+        <div class="hub-card-footer">
+          <span class="hub-enter">Abrir</span>
+          <div class="hub-chevron"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+        </div>
+      </a>
 
-    <a href="/pos" class="hub-card pos">
-      <div class="hub-icon">
-        <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-      </div>
-      <div>
+      <a href="/pos" class="hub-card pos">
+        <div class="hub-icon">
+          <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M7 15h2M11 15h4"/></svg>
+        </div>
         <div class="hub-label">Punto de Venta</div>
         <div class="hub-desc">Cobros y facturación</div>
-      </div>
-      <div class="hub-arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
-    </a>
+        <div class="hub-card-footer">
+          <span class="hub-enter">Abrir</span>
+          <div class="hub-chevron"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+        </div>
+      </a>
+
+    </div>
 
   </div>
 
+  <div class="hub-status">
+    <div class="status-dot"></div>
+    <span class="status-text">Sistema operativo &mdash; todos los módulos en línea</span>
+  </div>
+
 </div>
+
+<script>
+  (function() {
+    var el = document.getElementById("hubClock");
+    if (!el) return;
+    function tick() {
+      var now = new Date();
+      var days = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+      var months = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+      var h = String(now.getHours()).padStart(2,"0");
+      var m = String(now.getMinutes()).padStart(2,"0");
+      el.textContent = days[now.getDay()] + " " + now.getDate() + " " + months[now.getMonth()] + " · " + h + ":" + m;
+    }
+    tick();
+    setInterval(tick, 10000);
+  })();
+</script>
 {% endblock %}
