@@ -1,0 +1,131 @@
+from datetime import datetime
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, Float
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from .database import Base
+
+
+class Product(Base):
+    __tablename__ = "products"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(200), unique=True, nullable=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    display_order: Mapped[int] = mapped_column(Integer, default=0)
+    image_path: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    price: Mapped[float] = mapped_column(Float, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class Waiter(Base):
+    __tablename__ = "waiters"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    pin: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class Order(Base):
+    __tablename__ = "orders"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    source_role: Mapped[str] = mapped_column(String(50), nullable=False)  # station_a / kitchen
+    status: Mapped[str] = mapped_column(String(50), default="nuevo")
+    requires_acceptance: Mapped[bool] = mapped_column(Boolean, default=True)
+    waiter_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("waiters.id"), nullable=True)
+    waiter_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    preparing_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    ready_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    dispatched_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    was_edited: Mapped[bool] = mapped_column(Boolean, default=False)
+    was_cancelled: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
+    events = relationship("OrderEvent", back_populates="order", cascade="all, delete-orphan")
+
+
+class OrderItem(Base):
+    __tablename__ = "order_items"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"), nullable=False)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, default=1)
+
+    order = relationship("Order", back_populates="items")
+    product = relationship("Product")
+
+
+class OrderEvent(Base):
+    __tablename__ = "order_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"), nullable=False)
+    event_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    old_value: Mapped[str | None] = mapped_column(Text, nullable=True)
+    new_value: Mapped[str | None] = mapped_column(Text, nullable=True)
+    actor_role: Mapped[str] = mapped_column(String(50), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    order = relationship("Order", back_populates="events")
+
+
+class Inventory(Base):
+    __tablename__ = "inventory"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), unique=True, nullable=False)
+    quantity: Mapped[float] = mapped_column(Float, default=0)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    product = relationship("Product")
+
+
+class InventoryLog(Base):
+    __tablename__ = "inventory_logs"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
+    old_quantity: Mapped[float] = mapped_column(Float, default=0)
+    new_quantity: Mapped[float] = mapped_column(Float, default=0)
+    actor_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    product = relationship("Product")
+
+
+class AudioSettings(Base):
+    __tablename__ = "audio_settings"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    station_order_sound_path: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    kitchen_order_sound_path: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    ready_sound_path: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    cancel_sound_path: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    voice_enabled_for_station_orders: Mapped[bool] = mapped_column(Boolean, default=True)
+    master_volume: Mapped[float] = mapped_column(Float, default=1.0)
+    tax_rate: Mapped[float] = mapped_column(Float, default=0)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class Sale(Base):
+    __tablename__ = "sales"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    subtotal: Mapped[float] = mapped_column(Float, default=0)
+    tax: Mapped[float] = mapped_column(Float, default=0)
+    total: Mapped[float] = mapped_column(Float, default=0)
+    payment_method: Mapped[str] = mapped_column(String(50), default="efectivo")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    items = relationship("SaleItem", back_populates="sale", cascade="all, delete-orphan")
+
+
+class SaleItem(Base):
+    __tablename__ = "sale_items"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    sale_id: Mapped[int] = mapped_column(ForeignKey("sales.id"), nullable=False)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, default=1)
+    unit_price: Mapped[float] = mapped_column(Float, default=0)
+    line_total: Mapped[float] = mapped_column(Float, default=0)
+
+    sale = relationship("Sale", back_populates="items")
+    product = relationship("Product")

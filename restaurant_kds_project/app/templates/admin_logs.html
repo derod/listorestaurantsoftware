@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Logs de usuarios</h1>
+<div class="table-card">
+  <table class="big-table">
+    <thead><tr><th>Fecha</th><th>Producto</th><th>Anterior</th><th>Nueva</th><th>Usuario</th></tr></thead>
+    <tbody>
+      {% for log in logs %}
+      <tr>
+        <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>{{ log.product.name }}</td>
+        <td>{{ log.old_quantity|int if log.old_quantity == log.old_quantity|int else log.old_quantity }}</td>
+        <td>{{ log.new_quantity|int if log.new_quantity == log.new_quantity|int else log.new_quantity }}</td>
+        <td>{{ log.actor_name or '-' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" style="text-align:center;color:#6c757d;">Sin registros.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

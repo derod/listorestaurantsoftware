@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .kitchen-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:16px; }
+  .kitchen-header-left { display:flex; flex-direction:column; gap:4px; }
+  .kitchen-header-actions { display:flex; gap:14px; flex-wrap:wrap; }
+  .kitchen-header-actions a,
+  .kitchen-header-actions button { display:inline-flex; align-items:center; justify-content:center; min-height:64px; padding:0 28px; font-size:26px; font-weight:700; border-radius:18px; border:none; cursor:pointer; text-decoration:none; }
+
+  .orders-full { display:flex; flex-direction:column; gap:20px; }
+  .order-card-big { background:var(--card); border:2px solid var(--border); border-radius:24px; padding:28px; display:flex; flex-direction:column; gap:20px; }
+  .order-card-big.accent-station { border-color: var(--accent); }
+  .order-card-big.accent-kitchen { border-color: var(--blue); }
+
+  .order-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+  .order-header-left { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .order-id-big { font-size:36px; font-weight:800; }
+  .order-badge-big { display:inline-block; padding:10px 18px; border-radius:999px; font-weight:700; font-size:24px; }
+  .order-status-big { font-size:28px; font-weight:700; color:#b7becd; text-transform:uppercase; }
+  .order-waiter-big { font-size:24px; color:#b7becd; }
+  .order-waiter-big strong { color:var(--accent); }
+  .timer-big { font-size:42px; font-weight:900; }
+  .timer-big.warn { color: var(--yellow); }
+  .timer-big.danger { color: var(--red); }
+
+  .order-items-big { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:12px; }
+  .order-line-big { display:flex; justify-content:space-between; align-items:center; background:#10141b; border-radius:16px; padding:16px 22px; font-size:30px; font-weight:700; }
+  .order-line-big .qty { color:var(--accent); min-width:50px; text-align:right; }
+
+  .order-actions-big { display:flex; gap:14px; flex-wrap:wrap; }
+  .order-actions-big button { min-height:68px; padding:0 26px; font-size:24px; font-weight:700; border:none; border-radius:18px; background:var(--muted); color:var(--text); cursor:pointer; }
+  .order-actions-big button:active { transform:scale(0.96); }
+  .order-actions-big .btn-aceptado { background:rgba(77,163,255,0.2); color:var(--blue); }
+  .order-actions-big .btn-preparando { background:rgba(255,210,77,0.2); color:var(--yellow); }
+  .order-actions-big .btn-listo { background:rgba(76,175,80,0.2); color:var(--green); }
+  .order-actions-big .btn-despachado { background:rgba(76,175,80,0.35); color:var(--green); }
+  .order-actions-big .btn-cancelado { background:rgba(228,91,91,0.2); color:var(--red); }
+
+  .empty-kitchen { text-align:center; padding:60px 20px; font-size:32px; color:#6c757d; }
+
+  /* Modal overlay for crear pedido */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal-box { background:var(--bg); border:1px solid var(--border); border-radius:28px; padding:36px; width:95%; max-width:900px; max-height:90vh; overflow-y:auto; }
+  .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; }
+  .modal-close { min-height:56px; padding:0 24px; font-size:26px; font-weight:700; border:none; border-radius:16px; background:rgba(228,91,91,0.18); color:var(--red); cursor:pointer; }
+</style>
+
+<div class="kitchen-header">
+  <div class="kitchen-header-left">
+    <div style="font-size:42px;font-weight:800;color:var(--blue);">KITCHEN</div>
+    <div style="font-size:28px;color:#b7becd;">AGENTE: <strong style="color:var(--blue);">{{ waiter_name }}</strong></div>
+  </div>
+  <div class="kitchen-header-actions">
+    <button class="action primary" id="openCreateBtn" style="background:var(--accent);color:#111;">Crear pedido salon</button>
+    <a href="/kitchen/logout" style="background:rgba(228,91,91,0.18);color:var(--red);">CAMBIAR AGENTE</a>
+  </div>
+</div>
+
+<div id="ordersContainer" class="orders-full">
+  <div class="empty-kitchen">Cargando pedidos...</div>
+</div>
+
+<!-- Modal: Crear pedido salon -->
+<div class="modal-overlay" id="createModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 style="margin:0;">Crear pedido salon</h2>
+      <button class="modal-close" id="closeCreateBtn">CERRAR</button>
+    </div>
+    <div style="margin-bottom:16px;">
+      <button class="action" id="kitchenNewProductBtn" style="background:rgba(77,163,255,0.18);color:var(--blue);min-height:56px;font-size:22px;">+ Nuevo producto</button>
+    </div>
+    <div class="kitchen-create-grid" id="kitchenProductsGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:24px;">
+      {% for product in products %}
+      <button class="product-btn" data-product-id="{{ product.id }}" data-product-name="{{ product.name }}">
+        {% if product.image_path %}<img src="{{ product.image_path }}" alt="" style="width:100%;height:110px;object-fit:cover;border-radius:12px;margin-bottom:8px;">{% endif %}
+        <span>{{ product.name }}</span>
+      </button>
+      {% endfor %}
+    </div>
+    <div id="kitchenOrderSummary" class="summary-list empty-state" style="margin-bottom:18px;">No hay productos.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <button class="action primary" id="kitchenSendBtn" style="min-height:80px;font-size:30px;">Enviar</button>
+      <button class="action" id="kitchenClearBtn" style="min-height:80px;font-size:30px;">Borrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="kitchenNewProductModal">
+  <div class="modal-box" style="max-width:520px;">
+    <div class="modal-header">
+      <h2 style="margin:0;">Nuevo producto</h2>
+      <button class="modal-close" id="kitchenNewProductCancelBtn">CERRAR</button>
+    </div>
+    <input id="kitchenNewProductName" type="text" placeholder="Nombre del producto" autocomplete="off" style="width:100%;padding:18px;font-size:24px;border-radius:14px;border:1px solid var(--border);background:#10141b;color:#fff;margin-bottom:20px;" />
+    <button class="action primary" id="kitchenNewProductSaveBtn" style="width:100%;min-height:64px;font-size:24px;">Crear</button>
+  </div>
+</div>
+<script>
+window.KITCHEN_AUDIO = {
+  stationSound: {{ settings.station_order_sound_path|tojson if settings else 'null' }},
+  kitchenSound: {{ settings.kitchen_order_sound_path|tojson if settings else 'null' }},
+  readySound: {{ settings.ready_sound_path|tojson if settings else 'null' }},
+  cancelSound: {{ settings.cancel_sound_path|tojson if settings else 'null' }},
+  voiceEnabled: {{ 'true' if settings and settings.voice_enabled_for_station_orders else 'false' }},
+  volume: {{ settings.master_volume if settings else 1.0 }}
+};
+window.INITIAL_ORDERS = {{ orders_json|safe }};
+</script>
+<script src="/static/js/kitchen.js"></script>
+{% endblock %}

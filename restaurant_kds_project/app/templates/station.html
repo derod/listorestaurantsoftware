@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+  <div>
+    <div style="font-size:38px;font-weight:800;">SALON</div>
+    <div style="font-size:28px;color:#b7becd;margin-top:4px;">AGENTE: <strong style="color:var(--accent);">{{ waiter_name }}</strong></div>
+  </div>
+  <a href="/station-a/logout" style="display:inline-flex;align-items:center;justify-content:center;min-height:60px;padding:0 28px;font-size:24px;font-weight:700;border-radius:16px;background:rgba(228,91,91,0.18);color:var(--red);text-decoration:none;">CAMBIAR AGENTE</a>
+</div>
+<div class="screen two-panel">
+  <section class="panel products-panel">
+    <h1 style="display:none;">{{ page_title }}</h1>
+    <div style="margin-bottom:14px;">
+      <button class="action" id="newProductBtn" style="background:rgba(77,163,255,0.18);color:var(--blue);min-height:56px;font-size:22px;">+ Nuevo producto</button>
+    </div>
+    <div class="products-grid" id="productsGrid">
+      {% for product in products %}
+      <button class="product-btn" data-product-id="{{ product.id }}" data-product-name="{{ product.name }}">
+        {% if product.image_path %}<img src="{{ product.image_path }}" alt="" style="width:100%;height:110px;object-fit:cover;border-radius:12px;margin-bottom:8px;">{% endif %}
+        <span>{{ product.name }}</span>
+      </button>
+      {% endfor %}
+    </div>
+  </section>
+  <aside class="panel summary-panel">
+    <h2>Pedido actual</h2>
+    <div id="orderSummary" class="summary-list empty-state">No hay productos.</div>
+    <div class="summary-total">Total productos: <span id="totalItems">0</span></div>
+    <div class="big-actions">
+      <button class="action primary" id="sendBtn">Enviar</button>
+      <button class="action" id="clearBtn">Borrar</button>
+      <button class="action" id="undoBtn">Quitar último</button>
+    </div>
+  </aside>
+</div>
+
+<section style="margin-top:32px;">
+  <h2 style="font-size:32px;margin-bottom:16px;">Pedidos de salón</h2>
+  <div id="kitchenInternalOrders" style="display:flex;flex-direction:column;gap:16px;">
+    <div style="text-align:center;padding:30px;font-size:24px;color:#6c757d;">No hay pedidos de salón.</div>
+  </div>
+</section>
+<div class="modal-overlay" id="newProductModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:var(--bg);border:1px solid var(--border);border-radius:24px;padding:32px;width:90%;max-width:520px;">
+    <h2 style="margin:0 0 20px;">Nuevo producto</h2>
+    <input id="newProductName" type="text" placeholder="Nombre del producto" autocomplete="off" style="width:100%;padding:18px;font-size:24px;border-radius:14px;border:1px solid var(--border);background:#10141b;color:#fff;margin-bottom:20px;" />
+    <div style="display:flex;gap:14px;">
+      <button class="action primary" id="newProductSaveBtn" style="flex:1;min-height:64px;font-size:24px;">Crear</button>
+      <button class="action" id="newProductCancelBtn" style="flex:1;min-height:64px;font-size:24px;background:rgba(228,91,91,0.18);color:var(--red);">Cancelar</button>
+    </div>
+  </div>
+</div>
+<script>
+window.KDS_CONFIG = { sourceRole: "{{ source_role }}", waiterId: {{ waiter_id }}, waiterName: "{{ waiter_name }}" };
+window.STATION_AUDIO = {
+  kitchenSound: {{ settings.kitchen_order_sound_path|tojson if settings else 'null' }},
+  readySound: {{ settings.ready_sound_path|tojson if settings else 'null' }},
+  cancelSound: {{ settings.cancel_sound_path|tojson if settings else 'null' }},
+  voiceEnabled: {{ 'true' if settings and settings.voice_enabled_for_station_orders else 'false' }},
+  volume: {{ settings.master_volume if settings else 1.0 }}
+};
+</script>
+<script src="/static/js/station.js"></script>
+{% endblock %}

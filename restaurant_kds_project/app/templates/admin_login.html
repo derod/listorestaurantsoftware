@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+  <style>
+    .login-wrap { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+    .login-box { background:var(--card); border:1px solid var(--border); border-radius:28px; padding:48px 52px; width:100%; max-width:520px; display:flex; flex-direction:column; gap:28px; }
+    .login-box h1 { text-align:center; margin:0; font-size:38px; }
+    .field { display:flex; flex-direction:column; gap:10px; }
+    .field label { font-size:26px; color:#b7becd; }
+    .field input { font-size:28px; min-height:68px; border-radius:16px; border:1px solid var(--border); background:#10141b; color:var(--text); padding:14px 18px; }
+    .login-btn { min-height:72px; font-size:30px; font-weight:700; border:none; border-radius:20px; background:var(--accent); color:#111; cursor:pointer; }
+    .error-msg { background:rgba(228,91,91,0.15); border:1px solid var(--red); border-radius:14px; padding:18px; font-size:26px; color:var(--red); text-align:center; }
+  </style>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-box">
+      <h1>Admin</h1>
+      {% if error %}<div class="error-msg">{{ error }}</div>{% endif %}
+      <form method="post" action="/admin/login">
+        <div style="display:flex;flex-direction:column;gap:20px;">
+          <div class="field">
+            <label>Email</label>
+            <input type="email" name="email" autocomplete="email" required />
+          </div>
+          <div class="field">
+            <label>Contraseña</label>
+            <input type="password" name="passcode" autocomplete="current-password" required />
+          </div>
+          <button type="submit" class="login-btn">Entrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

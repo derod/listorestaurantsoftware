@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Admin Audio</h1>
+<div class="panel form-panel">
+  <form method="post" action="/admin/audio" enctype="multipart/form-data" class="audio-form">
+    <label>Sonido Salon <input type="file" name="station_sound" accept=".mp3,.wav,.m4a"></label>
+    <label>Sonido Kitchen <input type="file" name="kitchen_sound" accept=".mp3,.wav,.m4a"></label>
+    <label>Sonido Listo <input type="file" name="ready_sound" accept=".mp3,.wav,.m4a"></label>
+    <label>Sonido Cancelado <input type="file" name="cancel_sound" accept=".mp3,.wav,.m4a"></label>
+    <label>Volumen <input type="range" min="0" max="1" step="0.1" name="master_volume" value="{{ settings.master_volume if settings else 1.0 }}"></label>
+    <label class="checkbox-row"><input type="checkbox" name="voice_enabled_for_station_orders" {% if settings and settings.voice_enabled_for_station_orders %}checked{% endif %}> Voz femenina para Salon</label>
+    <button class="action primary" type="submit">Guardar audio</button>
+  </form>
+</div>
+<div class="table-card">
+  <h2>Rutas actuales</h2>
+  <p>Salon: {{ settings.station_order_sound_path if settings else '-' }}</p>
+  <p>Kitchen: {{ settings.kitchen_order_sound_path if settings else '-' }}</p>
+  <p>Listo: {{ settings.ready_sound_path if settings else '-' }}</p>
+  <p>Cancelado: {{ settings.cancel_sound_path if settings else '-' }}</p>
+</div>
+{% endblock %}

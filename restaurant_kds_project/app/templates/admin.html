@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Admin Dashboard</h1>
+
+<style>
+  .admin-actions { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-bottom:24px; }
+  .admin-action { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:22px; border-radius:18px; background:var(--card); border:1px solid var(--border); color:inherit; text-decoration:none; font-size:18px; font-weight:700; transition:border-color 0.15s, transform 0.15s; }
+  .admin-action:hover { border-color:var(--accent); transform:translateY(-2px); }
+  .admin-action .ico { font-size:32px; line-height:1; }
+</style>
+
+<div class="admin-actions">
+  <a href="/admin/products" class="admin-action"><div class="ico">&#128230;</div>Productos</a>
+  <a href="/admin/inventory" class="admin-action"><div class="ico">&#128202;</div>Inventario</a>
+  <a href="/admin/logs" class="admin-action"><div class="ico">&#128196;</div>Logs</a>
+  <a href="/admin/reports" class="admin-action"><div class="ico">&#128200;</div>Reportes</a>
+  <a href="/admin/pos-settings" class="admin-action"><div class="ico">&#128181;</div>POS</a>
+  <a href="/admin/audio" class="admin-action"><div class="ico">&#128266;</div>Audio</a>
+  <a href="/admin/waiters" class="admin-action"><div class="ico">&#128101;</div>Agentes</a>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card"><div class="stat-label">Órdenes hoy</div><div class="stat-value">{{ stats.orders_today }}</div></div>
+  <div class="stat-card"><div class="stat-label">Órdenes ayer</div><div class="stat-value">{{ stats.orders_yesterday }}</div></div>
+  <div class="stat-card"><div class="stat-label">Promedio hoy</div><div class="stat-value">{{ stats.avg_today }} min</div></div>
+  <div class="stat-card"><div class="stat-label">Promedio ayer</div><div class="stat-value">{{ stats.avg_yesterday }} min</div></div>
+  <div class="stat-card"><div class="stat-label">Canceladas hoy</div><div class="stat-value">{{ stats.cancelled_today }}</div></div>
+  <div class="stat-card"><div class="stat-label">Activas ahora</div><div class="stat-value">{{ stats.active_now }}</div></div>
+</div>
+
+<div class="table-card">
+  <h2>Órdenes recientes</h2>
+  <table class="big-table">
+    <thead>
+      <tr>
+        <th>ID</th><th>Origen</th><th>Agente</th><th>Estado</th><th>Hora</th><th>Duración</th><th>Items</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in orders %}
+      <tr>
+        <td>#{{ order.id }}</td>
+        <td>{{ order.source_role }}</td>
+        <td>{{ order.waiter_name or '-' }}</td>
+        <td>{{ order.status }}</td>
+        <td>{{ order.created_at.strftime('%H:%M') }}</td>
+        <td>{% set secs = duration_seconds(order) %}{% if secs %}{{ (secs // 60) }} min{% else %}-{% endif %}</td>
+        <td>{% for item in order.items %}{{ item.quantity }} {{ item.product.name }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

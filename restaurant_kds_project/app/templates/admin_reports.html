@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .rep-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(360px, 1fr)); gap:22px; }
+  .rep-card { background:var(--card); border:1px solid var(--border); border-radius:20px; padding:22px; }
+  .rep-card h2 { margin:0 0 6px; font-size:24px; }
+  .rep-sub { color:#6c757d; font-size:14px; margin-bottom:16px; }
+  .rep-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); font-size:20px; }
+  .rep-row:last-child { border-bottom:none; }
+  .rep-row strong { color:var(--accent); font-size:22px; }
+  .rep-empty { text-align:center; color:#6c757d; padding:20px; }
+</style>
+
+<h1>Reportes</h1>
+
+<div class="rep-grid">
+  <div class="rep-card">
+    <h2>Consumo diario</h2>
+    <div class="rep-sub">{{ today_label }}</div>
+    {% for row in daily %}
+    <div class="rep-row"><span>{{ row.name }}</span><strong>{{ row.total }}</strong></div>
+    {% else %}
+    <div class="rep-empty">Sin pedidos despachados hoy.</div>
+    {% endfor %}
+  </div>
+
+  <div class="rep-card">
+    <h2>Consumo semanal</h2>
+    <div class="rep-sub">{{ week_label }} (últimos 7 días)</div>
+    {% for row in weekly %}
+    <div class="rep-row"><span>{{ row.name }}</span><strong>{{ row.total }}</strong></div>
+    {% else %}
+    <div class="rep-empty">Sin pedidos despachados.</div>
+    {% endfor %}
+  </div>
+
+  <div class="rep-card">
+    <h2>Stock actual</h2>
+    <div class="rep-sub">Inventario al momento</div>
+    {% for row in stock %}
+    <div class="rep-row"><span>{{ row.name }}</span><strong>{{ row.quantity|int if row.quantity == row.quantity|int else row.quantity }}</strong></div>
+    {% else %}
+    <div class="rep-empty">Sin productos.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="section-header-row">
+  <h1>Editar Agente</h1>
+  <a href="/admin/waiters" style="font-size:24px;color:var(--blue);text-decoration:none;">← Volver</a>
+</div>
+
+{% if error %}
+<div style="background:rgba(228,91,91,0.15);border:1px solid var(--red);border-radius:14px;padding:18px;font-size:26px;color:var(--red);margin-bottom:20px;">{{ error }}</div>
+{% endif %}
+
+<div class="table-card" style="max-width:560px;">
+  <form method="post" action="/admin/waiters/{{ waiter.id }}/edit" style="display:flex;flex-direction:column;gap:24px;">
+    <div>
+      <label style="display:block;font-size:22px;color:#b7becd;margin-bottom:8px;">Nombre</label>
+      <input type="text" name="name" value="{{ waiter.name }}" required style="width:100%;min-height:64px;border-radius:14px;border:1px solid var(--border);background:#10141b;color:var(--text);padding:12px 16px;font-size:26px;" />
+    </div>
+    <div>
+      <label style="display:block;font-size:22px;color:#b7becd;margin-bottom:8px;">PIN (solo números)</label>
+      <input type="text" name="pin" value="{{ waiter.pin }}" pattern="[0-9]+" inputmode="numeric" required style="width:100%;min-height:64px;border-radius:14px;border:1px solid var(--border);background:#10141b;color:var(--text);padding:12px 16px;font-size:26px;" />
+    </div>
+    <button type="submit" style="min-height:68px;font-size:28px;font-weight:700;border:none;border-radius:16px;background:var(--accent);color:#111;cursor:pointer;">Guardar cambios</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,90 @@
+from datetime import datetime
+from sqlalchemy.orm import Session, joinedload
+from .models import Order, OrderItem, OrderEvent, Inventory, InventoryLog
+
+ALLOWED_STATUSES = ["nuevo", "aceptado", "preparando", "listo", "despachado", "cancelado"]
+
+
+def create_order(db: Session, source_role: str, items: list[dict], waiter_id: int | None = None, waiter_name: str | None = None):
+    requires_acceptance = source_role == "station_a"
+    order = Order(source_role=source_role, requires_acceptance=requires_acceptance, waiter_id=waiter_id, waiter_name=waiter_name)
+    db.add(order)
+    db.flush()
+    for item in items:
+        db.add(OrderItem(order_id=order.id, product_id=item["product_id"], quantity=item["quantity"]))
+    db.add(OrderEvent(order_id=order.id, event_type="created", actor_role=source_role, new_value=source_role))
+    db.commit()
+    return get_order(db, order.id)
+
+
+def get_order(db: Session, order_id: int):
+    return db.query(Order).options(joinedload(Order.items).joinedload(OrderItem.product), joinedload(Order.events)).filter(Order.id == order_id).first()
+
+
+def list_active_orders(db: Session):
+    return (
+        db.query(Order)
+        .options(joinedload(Order.items).joinedload(OrderItem.product))
+        .filter(Order.status.in_(["nuevo", "aceptado", "preparando", "listo"]))
+        .order_by(Order.created_at.asc())
+        .all()
+    )
+
+
+def update_order_items(db: Session, order: Order, items: list[dict], actor_role: str):
+    order.items.clear()
+    db.flush()
+    for item in items:
+        db.add(OrderItem(order_id=order.id, product_id=item["product_id"], quantity=item["quantity"]))
+    order.was_edited = True
+    db.add(OrderEvent(order_id=order.id, event_type="items_updated", actor_role=actor_role))
+    db.commit()
+    return get_order(db, order.id)
+
+
+def change_order_status(db: Session, order: Order, status: str, actor_role: str):
+    if status not in ALLOWED_STATUSES:
+        raise ValueError("Invalid status")
+    old = order.status
+    order.status = status
+    now = datetime.utcnow()
+    if status == "aceptado":
+        order.accepted_at = now
+    elif status == "preparando":
+        order.preparing_at = now
+    elif status == "listo":
+        order.ready_at = now
+    elif status == "despachado":
+        order.dispatched_at = now
+        if old != "despachado":
+            _decrement_inventory_for_order(db, order, actor_role)
+    elif status == "cancelado":
+        order.cancelled_at = now
+        order.was_cancelled = True
+    db.add(OrderEvent(order_id=order.id, event_type="status_changed", actor_role=actor_role, old_value=old, new_value=status))
+    db.commit()
+    return get_order(db, order.id)
+
+
+def _decrement_inventory_for_order(db: Session, order: Order, actor_role: str):
+    for item in order.items:
+        inv = db.query(Inventory).filter(Inventory.product_id == item.product_id).first()
+        old_qty = inv.quantity if inv else 0
+        new_qty = max(0, old_qty - item.quantity)
+        if inv:
+            inv.quantity = new_qty
+        else:
+            db.add(Inventory(product_id=item.product_id, quantity=new_qty))
+        db.add(InventoryLog(
+            product_id=item.product_id,
+            old_quantity=old_qty,
+            new_quantity=new_qty,
+            actor_name=f"auto:{actor_role}:order#{order.id}",
+        ))
+
+
+def duration_seconds(order: Order):
+    end = order.dispatched_at or order.cancelled_at
+    if not end:
+        return None
+    return int((end - order.created_at).total_seconds())

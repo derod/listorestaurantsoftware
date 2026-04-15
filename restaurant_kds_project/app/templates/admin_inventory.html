@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .inv-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:18px; margin-bottom:32px; }
+  .inv-card { background:var(--card); border:1px solid var(--border); border-radius:20px; padding:22px; display:flex; flex-direction:column; gap:12px; }
+  .inv-name { font-size:24px; font-weight:800; }
+  .inv-qty { font-size:44px; font-weight:800; color:var(--accent); }
+  .inv-updated { font-size:14px; color:#6c757d; }
+  .inv-edit-btn { background:rgba(77,163,255,0.18); color:var(--blue); border:none; border-radius:14px; min-height:52px; font-size:20px; font-weight:700; cursor:pointer; }
+
+  .kp-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; align-items:center; justify-content:center; }
+  .kp-overlay.open { display:flex; }
+  .kp-box { background:var(--bg); border:1px solid var(--border); border-radius:24px; padding:32px; width:95%; max-width:520px; display:flex; flex-direction:column; align-items:center; gap:22px; }
+  .kp-title { font-size:30px; font-weight:800; text-align:center; }
+  .kp-display { background:#10141b; border:2px solid var(--border); border-radius:18px; width:100%; min-height:84px; display:flex; align-items:center; justify-content:center; font-size:46px; font-weight:700; color:var(--accent); letter-spacing:6px; }
+  .kp-keypad { display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; width:100%; }
+  .kp-btn { height:84px; font-size:36px; font-weight:800; border:none; border-radius:18px; background:var(--muted); color:var(--text); cursor:pointer; }
+  .kp-btn:active { transform:scale(0.96); }
+  .kp-btn.borrar { background:#3a2020; color:var(--red); font-size:22px; }
+  .kp-btn.entrar { background:var(--accent); color:#111; font-size:22px; grid-column:span 2; }
+  .kp-cancel { background:rgba(228,91,91,0.18); color:var(--red); border:none; border-radius:14px; min-height:52px; font-size:20px; font-weight:700; width:100%; cursor:pointer; }
+</style>
+
+<h1>Inventario</h1>
+
+<div class="inv-grid">
+  {% for it in items %}
+  <div class="inv-card">
+    <div class="inv-name">{{ it.name }}</div>
+    <div><span style="font-size:18px;color:#b7becd;">Cantidad:</span> <span class="inv-qty">{{ it.quantity|int if it.quantity == it.quantity|int else it.quantity }}</span></div>
+    {% if it.updated_at %}<div class="inv-updated">Actualizado: {{ it.updated_at.strftime('%Y-%m-%d %H:%M') }}</div>{% endif %}
+    <button class="inv-edit-btn" onclick="openKeypad({{ it.product_id }}, '{{ it.name|e }}', {{ it.quantity }})">Actualizar</button>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="kp-overlay" id="kpOverlay">
+  <div class="kp-box">
+    <div class="kp-title" id="kpTitle">Producto</div>
+    <div class="kp-display" id="kpDisplay">0</div>
+    <form method="post" id="kpForm" style="width:100%;">
+      <input type="hidden" name="quantity" id="kpQuantity" />
+      <div class="kp-keypad">
+        {% for d in ['1','2','3','4','5','6','7','8','9'] %}
+        <button type="button" class="kp-btn" onclick="kpAppend('{{ d }}')">{{ d }}</button>
+        {% endfor %}
+        <button type="button" class="kp-btn borrar" onclick="kpClear()">BORRAR</button>
+        <button type="button" class="kp-btn" onclick="kpAppend('0')">0</button>
+        <button type="button" class="kp-btn entrar" onclick="kpSubmit()">ACTUALIZAR</button>
+      </div>
+    </form>
+    <button class="kp-cancel" onclick="kpClose()">Cancelar</button>
+  </div>
+</div>
+
+<script>
+  var kpValue = '';
+  function kpRender() {
+    document.getElementById('kpDisplay').textContent = kpValue || '0';
+  }
+  function kpAppend(d) {
+    if (kpValue.length >= 6) return;
+    if (kpValue === '0') kpValue = '';
+    kpValue += d;
+    kpRender();
+  }
+  function kpClear() { kpValue = ''; kpRender(); }
+  function kpClose() { document.getElementById('kpOverlay').classList.remove('open'); }
+  function openKeypad(productId, name, current) {
+    kpValue = String(current || 0);
+    if (kpValue === '0') kpValue = '';
+    document.getElementById('kpTitle').textContent = name;
+    document.getElementById('kpForm').action = '/admin/inventory/' + productId;
+    kpRender();
+    document.getElementById('kpOverlay').classList.add('open');
+  }
+  function kpSubmit() {
+    var v = kpValue === '' ? '0' : kpValue;
+    document.getElementById('kpQuantity').value = v;
+    document.getElementById('kpForm').submit();
+  }
+  document.addEventListener('keydown', function(e) {
+    if (!document.getElementById('kpOverlay').classList.contains('open')) return;
+    if (e.key >= '0' && e.key <= '9') kpAppend(e.key);
+    else if (e.key === 'Backspace') { kpValue = kpValue.slice(0, -1); kpRender(); }
+    else if (e.key === 'Enter') kpSubmit();
+    else if (e.key === 'Escape') kpClose();
+  });
+</script>
+{% endblock %}
