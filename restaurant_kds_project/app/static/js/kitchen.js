@@ -56,8 +56,27 @@ async function submitKitchenOrder() {
 /* ─── Safari autoplay guard ─────────────────────────────────────────── */
 
 if (typeof window.userInteracted === "undefined") window.userInteracted = false;
-document.addEventListener("click", () => { window.userInteracted = true; }, { once: true, capture: true });
-document.addEventListener("touchstart", () => { window.userInteracted = true; }, { once: true, capture: true });
+
+// Shared AudioContext — created once on first gesture so Safari doesn't suspend it.
+let _audioCtx = null;
+function _getAudioCtx() {
+  if (!_audioCtx) {
+    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  // Safari suspends the context when the page loses focus; resume before use.
+  if (_audioCtx.state === "suspended") {
+    _audioCtx.resume().catch(() => {});
+  }
+  return _audioCtx;
+}
+
+function _initAudioCtxOnGesture() {
+  window.userInteracted = true;
+  // Warm up the context inside the gesture so Safari unlocks it permanently.
+  try { _getAudioCtx(); } catch (e) {}
+}
+document.addEventListener("click",      _initAudioCtxOnGesture, { once: true, capture: true });
+document.addEventListener("touchstart", _initAudioCtxOnGesture, { once: true, capture: true });
 
 /* ─── Audio ─────────────────────────────────────────────────────────── */
 
@@ -109,7 +128,7 @@ function playSound(src) {
 function beep(freq, durMs) {
   if (!window.userInteracted) return;
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = _getAudioCtx();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = "sine"; osc.frequency.value = freq;
@@ -124,10 +143,10 @@ function beep(freq, durMs) {
 function playAlertRing() {
   if (!window.userInteracted) return;
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = _getAudioCtx();
     const vol = window.KITCHEN_AUDIO.volume ?? 1;
 
-    function beep(freq, start, dur) {
+    function ring(freq, start, dur) {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = "sine";
@@ -140,9 +159,9 @@ function playAlertRing() {
       osc.stop(ctx.currentTime + start + dur);
     }
 
-    beep(880, 0, 0.25);
-    beep(1100, 0.3, 0.25);
-    beep(880, 0.6, 0.25);
+    ring(880, 0, 0.25);
+    ring(1100, 0.3, 0.25);
+    ring(880, 0.6, 0.25);
   } catch (e) {}
 }
 
