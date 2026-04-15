@@ -51,4 +51,157 @@
     </tbody>
   </table>
 </div>
+<div class="danger-zone">
+  <div class="danger-header">
+    <span class="danger-icon">&#9888;</span>
+    <div>
+      <div class="danger-title">Zona de peligro – Reset del sistema</div>
+      <div class="danger-sub">Esta acción no se puede deshacer. Se requiere confirmación.</div>
+    </div>
+  </div>
+  <div class="reset-grid">
+    <div class="reset-card">
+      <div class="reset-label">Productos</div>
+      <div class="reset-desc">Elimina todos los productos e inventario</div>
+      <button class="btn-reset" data-endpoint="/admin/reset/products">Reset Products</button>
+    </div>
+    <div class="reset-card">
+      <div class="reset-label">Órdenes</div>
+      <div class="reset-desc">Elimina todas las órdenes, items y eventos</div>
+      <button class="btn-reset" data-endpoint="/admin/reset/orders">Reset Orders</button>
+    </div>
+    <div class="reset-card">
+      <div class="reset-label">Logs</div>
+      <div class="reset-desc">Elimina todos los logs de inventario</div>
+      <button class="btn-reset" data-endpoint="/admin/reset/logs">Reset Logs</button>
+    </div>
+    <div class="reset-card">
+      <div class="reset-label">Inventario</div>
+      <div class="reset-desc">Pone todas las cantidades a 0</div>
+      <button class="btn-reset" data-endpoint="/admin/reset/inventory">Reset Inventory</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirmation modal -->
+<div class="reset-overlay" id="resetOverlay">
+  <div class="reset-modal">
+    <div class="reset-modal-title">&#9888; Confirmar reset</div>
+    <div class="reset-modal-body" id="resetModalBody"></div>
+    <div class="reset-modal-warn">Esta acción no se puede deshacer.</div>
+    <label class="reset-confirm-label">
+      Escribe <strong>RESET</strong> para confirmar:
+      <input type="text" id="resetConfirmInput" placeholder="RESET" autocomplete="off" />
+    </label>
+    <div id="resetResult" class="reset-result"></div>
+    <div class="reset-modal-actions">
+      <button class="btn-cancel-reset" id="btnCancelReset">Cancelar</button>
+      <button class="btn-confirm-reset" id="btnConfirmReset" disabled>Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .danger-zone { background:#1a0f0f; border:1.5px solid rgba(228,91,91,0.4); border-radius:20px; padding:24px; margin-top:32px; }
+  .danger-header { display:flex; align-items:flex-start; gap:16px; margin-bottom:20px; }
+  .danger-icon { font-size:36px; line-height:1; flex-shrink:0; }
+  .danger-title { font-size:20px; font-weight:800; color:var(--red); }
+  .danger-sub { color:#b7becd; font-size:14px; margin-top:4px; }
+  .reset-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:14px; }
+  .reset-card { background:rgba(228,91,91,0.07); border:1px solid rgba(228,91,91,0.2); border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:10px; }
+  .reset-label { font-weight:800; font-size:17px; color:var(--red); }
+  .reset-desc { font-size:13px; color:#b7becd; flex:1; }
+  .btn-reset { background:rgba(228,91,91,0.2); color:var(--red); border:1.5px solid rgba(228,91,91,0.5); border-radius:10px; padding:10px 14px; font-weight:700; cursor:pointer; transition:background 0.15s; }
+  .btn-reset:hover { background:rgba(228,91,91,0.35); }
+  .btn-reset:disabled { opacity:0.5; cursor:not-allowed; }
+
+  .reset-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; align-items:center; justify-content:center; padding:20px; }
+  .reset-overlay.open { display:flex; }
+  .reset-modal { background:var(--bg); border:1.5px solid rgba(228,91,91,0.5); border-radius:20px; padding:32px; width:100%; max-width:480px; display:flex; flex-direction:column; gap:16px; }
+  .reset-modal-title { font-size:22px; font-weight:800; color:var(--red); }
+  .reset-modal-body { font-size:17px; font-weight:700; }
+  .reset-modal-warn { color:var(--red); font-size:14px; font-weight:600; }
+  .reset-confirm-label { display:flex; flex-direction:column; gap:8px; font-size:15px; }
+  .reset-confirm-label input { background:#10141b; border:2px solid var(--border); border-radius:10px; padding:12px 16px; font-size:18px; font-weight:700; color:var(--text); letter-spacing:3px; }
+  .reset-confirm-label input.valid { border-color:var(--red); }
+  .reset-result { font-size:15px; font-weight:700; min-height:22px; }
+  .reset-result.ok { color:var(--green); }
+  .reset-result.err { color:var(--red); }
+  .reset-modal-actions { display:flex; gap:12px; justify-content:flex-end; }
+  .btn-cancel-reset { background:var(--muted); color:var(--text); border:none; border-radius:10px; padding:12px 20px; font-weight:700; cursor:pointer; }
+  .btn-confirm-reset { background:var(--red); color:#fff; border:none; border-radius:10px; padding:12px 20px; font-weight:800; cursor:pointer; opacity:0.4; transition:opacity 0.15s; }
+  .btn-confirm-reset:not(:disabled) { opacity:1; }
+  .btn-confirm-reset:disabled { cursor:not-allowed; }
+</style>
+
+<script>
+  let _resetEndpoint = "";
+
+  document.querySelectorAll(".btn-reset").forEach(btn => {
+    btn.addEventListener("click", () => {
+      _resetEndpoint = btn.dataset.endpoint;
+      const label = btn.closest(".reset-card").querySelector(".reset-label").textContent;
+      document.getElementById("resetModalBody").textContent = "Vas a resetear: " + label;
+      document.getElementById("resetConfirmInput").value = "";
+      document.getElementById("resetResult").textContent = "";
+      document.getElementById("resetResult").className = "reset-result";
+      document.getElementById("btnConfirmReset").disabled = true;
+      document.getElementById("resetOverlay").classList.add("open");
+      setTimeout(() => document.getElementById("resetConfirmInput").focus(), 50);
+    });
+  });
+
+  document.getElementById("resetConfirmInput").addEventListener("input", function() {
+    const valid = this.value === "RESET";
+    this.classList.toggle("valid", valid);
+    document.getElementById("btnConfirmReset").disabled = !valid;
+  });
+
+  document.getElementById("btnCancelReset").addEventListener("click", () => {
+    document.getElementById("resetOverlay").classList.remove("open");
+  });
+
+  document.getElementById("btnConfirmReset").addEventListener("click", async () => {
+    const input = document.getElementById("resetConfirmInput");
+    if (input.value !== "RESET") return;
+    const btn = document.getElementById("btnConfirmReset");
+    const cancelBtn = document.getElementById("btnCancelReset");
+    const resultEl = document.getElementById("resetResult");
+    btn.disabled = true;
+    btn.textContent = "Procesando…";
+    cancelBtn.disabled = true;
+    resultEl.textContent = "";
+    resultEl.className = "reset-result";
+    try {
+      const res = await fetch(_resetEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "confirm=RESET"
+      });
+      const data = await res.json();
+      if (res.ok) {
+        resultEl.textContent = "Reset completado. (" + (data.deleted ?? 0) + " registros)";
+        resultEl.className = "reset-result ok";
+        setTimeout(() => document.getElementById("resetOverlay").classList.remove("open"), 1800);
+      } else {
+        resultEl.textContent = data.detail || "Error al resetear";
+        resultEl.className = "reset-result err";
+      }
+    } catch (e) {
+      resultEl.textContent = "Error de red";
+      resultEl.className = "reset-result err";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Confirmar";
+      cancelBtn.disabled = false;
+    }
+  });
+
+  document.getElementById("resetConfirmInput").addEventListener("keydown", e => {
+    if (e.key === "Enter" && !document.getElementById("btnConfirmReset").disabled)
+      document.getElementById("btnConfirmReset").click();
+    if (e.key === "Escape")
+      document.getElementById("resetOverlay").classList.remove("open");
+  });
+</script>
 {% endblock %}
