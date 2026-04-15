@@ -1,7 +1,7 @@
 import os
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, Request, Form, UploadFile, File
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Depends, HTTPException, Request, Form, UploadFile, File
+from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload
 from pathlib import Path
@@ -738,4 +738,76 @@ def pos_dashboard(request: Request, db: Session = Depends(get_db)):
         "pos.html",
         {"request": request, "products": products, "user_name": uname, "tax_rate": tax_rate, "page_title": "Punto de Venta"},
     )
+
+
+# ─── admin reset endpoints ────────────────────────────────────────────────────
+
+
+@router.post("/admin/reset/products")
+def reset_products(request: Request, confirm: str = Form(...), db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return JSONResponse(status_code=403, content={"detail": "No autorizado"})
+    if confirm != "RESET":
+        return JSONResponse(status_code=400, content={"detail": "Confirmación inválida"})
+    try:
+        inv_count = db.query(Inventory).count()
+        db.query(Inventory).delete()
+        prod_count = db.query(Product).count()
+        db.query(Product).delete()
+        db.commit()
+        return {"status": "ok", "deleted": prod_count + inv_count}
+    except Exception:
+        db.rollback()
+        raise
+
+
+@router.post("/admin/reset/orders")
+def reset_orders(request: Request, confirm: str = Form(...), db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return JSONResponse(status_code=403, content={"detail": "No autorizado"})
+    if confirm != "RESET":
+        return JSONResponse(status_code=400, content={"detail": "Confirmación inválida"})
+    try:
+        db.query(OrderItem).delete()
+        from ..models import OrderEvent
+        db.query(OrderEvent).delete()
+        count = db.query(Order).count()
+        db.query(Order).delete()
+        db.commit()
+        return {"status": "ok", "deleted": count}
+    except Exception:
+        db.rollback()
+        raise
+
+
+@router.post("/admin/reset/logs")
+def reset_logs(request: Request, confirm: str = Form(...), db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return JSONResponse(status_code=403, content={"detail": "No autorizado"})
+    if confirm != "RESET":
+        return JSONResponse(status_code=400, content={"detail": "Confirmación inválida"})
+    try:
+        count = db.query(InventoryLog).count()
+        db.query(InventoryLog).delete()
+        db.commit()
+        return {"status": "ok", "deleted": count}
+    except Exception:
+        db.rollback()
+        raise
+
+
+@router.post("/admin/reset/inventory")
+def reset_inventory(request: Request, confirm: str = Form(...), db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return JSONResponse(status_code=403, content={"detail": "No autorizado"})
+    if confirm != "RESET":
+        return JSONResponse(status_code=400, content={"detail": "Confirmación inválida"})
+    try:
+        count = db.query(Inventory).filter(Inventory.quantity != 0).count()
+        db.query(Inventory).update({"quantity": 0})
+        db.commit()
+        return {"status": "ok", "deleted": count}
+    except Exception:
+        db.rollback()
+        raise
 
