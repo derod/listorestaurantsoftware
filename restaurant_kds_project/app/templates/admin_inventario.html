@@ -1,0 +1,572 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .inv2-wrap { display:flex; flex-direction:column; gap:24px; }
+  .inv2-head { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+  .inv2-title { font-size:34px; font-weight:800; margin:0; }
+  .inv2-sub { color:#b7becd; font-size:18px; margin-top:4px; }
+
+  .inv2-actions { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:14px; }
+  .inv2-btn { min-height:80px; border:none; border-radius:18px; background:var(--muted); color:var(--text); font-size:20px; font-weight:800; padding:18px 22px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; transition:transform 0.1s, background 0.15s; }
+  .inv2-btn:hover { transform:translateY(-2px); }
+  .inv2-btn.primary { background:var(--accent); color:#111; }
+  .inv2-btn.blue { background:var(--blue); color:#0b1220; }
+  .inv2-btn.yellow { background:var(--yellow); color:#111; }
+  .inv2-btn.red { background:rgba(228,91,91,0.18); color:var(--red); border:1.5px solid rgba(228,91,91,0.5); }
+  .inv2-btn.ghost { background:transparent; border:1.5px solid var(--border); }
+  .inv2-btn.sm { min-height:54px; font-size:18px; padding:12px 16px; }
+
+  .inv2-alert { background:rgba(255,210,77,0.10); border:1.5px solid rgba(255,210,77,0.45); border-radius:18px; padding:18px 22px; display:flex; gap:14px; align-items:flex-start; }
+  .inv2-alert .ico { font-size:28px; }
+  .inv2-alert-title { font-weight:800; font-size:20px; color:var(--yellow); }
+  .inv2-alert-body { font-size:18px; margin-top:4px; color:#e6e9f0; }
+
+  .inv2-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:18px; }
+  .inv2-card { background:var(--card); border:1.5px solid var(--border); border-radius:20px; padding:22px; display:flex; flex-direction:column; gap:14px; position:relative; }
+  .inv2-card.ok { border-color:rgba(76,175,80,0.55); }
+  .inv2-card.low { border-color:rgba(255,210,77,0.60); }
+  .inv2-card.crit { border-color:rgba(228,91,91,0.65); background:rgba(228,91,91,0.06); }
+  .inv2-card-name { font-size:24px; font-weight:800; }
+  .inv2-card-stock { font-size:32px; font-weight:800; }
+  .inv2-card-unit { color:#b7becd; font-size:18px; font-weight:600; }
+  .inv2-badge { display:inline-flex; align-items:center; gap:8px; padding:6px 14px; border-radius:999px; font-weight:800; font-size:16px; width:fit-content; }
+  .inv2-badge.ok { background:rgba(76,175,80,0.15); color:var(--green); }
+  .inv2-badge.low { background:rgba(255,210,77,0.18); color:var(--yellow); }
+  .inv2-badge.crit { background:rgba(228,91,91,0.20); color:var(--red); }
+  .inv2-card-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:auto; }
+  .inv2-card-actions .inv2-btn.sm { grid-column:span 1; }
+  .inv2-card-actions .inv2-btn.wide { grid-column:span 2; }
+
+  .inv2-empty { text-align:center; padding:60px 20px; color:#b7becd; background:var(--card); border:1px dashed var(--border); border-radius:20px; font-size:22px; }
+
+  .inv2-toast { position:fixed; bottom:24px; right:24px; background:var(--card); border:1.5px solid var(--green); border-radius:14px; padding:16px 22px; font-weight:800; font-size:18px; z-index:3000; box-shadow:0 8px 28px rgba(0,0,0,0.5); opacity:0; transform:translateY(20px); transition:all 0.25s; pointer-events:none; }
+  .inv2-toast.show { opacity:1; transform:translateY(0); }
+  .inv2-toast.err { border-color:var(--red); color:var(--red); }
+
+  /* Modales */
+  .inv2-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.78); z-index:2000; align-items:center; justify-content:center; padding:20px; }
+  .inv2-overlay.open { display:flex; }
+  .inv2-modal { background:var(--bg); border:1.5px solid var(--border); border-radius:22px; padding:28px; width:100%; max-width:540px; display:flex; flex-direction:column; gap:18px; max-height:90vh; overflow:auto; }
+  .inv2-modal.wide { max-width:760px; }
+  .inv2-modal-title { font-size:26px; font-weight:800; margin:0; }
+  .inv2-field { display:flex; flex-direction:column; gap:8px; }
+  .inv2-field label { font-size:18px; font-weight:700; color:#cfd5e1; }
+  .inv2-field input, .inv2-field select, .inv2-field textarea {
+    min-height:58px; border-radius:14px; border:1.5px solid var(--border);
+    background:#10141b; color:var(--text); padding:12px 16px; font-size:20px; font-weight:600;
+  }
+  .inv2-field textarea { min-height:90px; resize:vertical; font-family:inherit; }
+  .inv2-modal-actions { display:flex; gap:12px; justify-content:flex-end; flex-wrap:wrap; }
+  .inv2-result { font-size:16px; font-weight:700; min-height:20px; }
+  .inv2-result.ok { color:var(--green); }
+  .inv2-result.err { color:var(--red); }
+
+  /* Historial table */
+  .inv2-hist { width:100%; border-collapse:collapse; }
+  .inv2-hist th, .inv2-hist td { text-align:left; padding:14px 10px; border-bottom:1px solid rgba(255,255,255,0.08); font-size:17px; }
+  .inv2-hist th { color:#b7becd; font-weight:700; }
+  .inv2-tag { padding:4px 10px; border-radius:999px; font-weight:800; font-size:14px; display:inline-block; }
+  .inv2-tag.in { background:rgba(76,175,80,0.18); color:var(--green); }
+  .inv2-tag.out { background:rgba(228,91,91,0.18); color:var(--red); }
+  .inv2-tag.adjustment { background:rgba(77,163,255,0.18); color:var(--blue); }
+  .inv2-tag.waste { background:rgba(255,210,77,0.18); color:var(--yellow); }
+
+  /* Recipe builder rows */
+  .inv2-recipe-rows { display:flex; flex-direction:column; gap:10px; }
+  .inv2-recipe-row { display:grid; grid-template-columns:2fr 1fr auto; gap:10px; align-items:center; }
+  .inv2-recipe-row select, .inv2-recipe-row input {
+    min-height:52px; border-radius:12px; border:1.5px solid var(--border);
+    background:#10141b; color:var(--text); padding:8px 12px; font-size:18px;
+  }
+  .inv2-row-del { background:rgba(228,91,91,0.20); color:var(--red); border:none; border-radius:12px; padding:10px 14px; font-size:18px; font-weight:800; cursor:pointer; }
+
+  .inv2-advanced { margin-top:12px; }
+  .inv2-advanced summary { cursor:pointer; font-size:18px; font-weight:700; color:#b7becd; padding:10px 0; }
+  .inv2-advanced[open] summary { color:var(--text); }
+
+  @media (max-width: 900px) {
+    .inv2-actions { grid-template-columns:1fr 1fr; }
+    .inv2-card-actions { grid-template-columns:1fr; }
+  }
+</style>
+
+<div class="inv2-wrap">
+  <div class="inv2-head">
+    <div>
+      <h1 class="inv2-title">Inventario (Insumos)</h1>
+      <div class="inv2-sub">Gestión sencilla de materia prima</div>
+    </div>
+  </div>
+
+  <!-- Botones principales -->
+  <div class="inv2-actions">
+    <button class="inv2-btn primary" data-open="mAddIng">➕ Agregar insumo</button>
+    <button class="inv2-btn blue" data-open="mAddStock">📦 Agregar stock</button>
+    <button class="inv2-btn yellow" data-open="mAdjust">✏️ Ajustar inventario</button>
+    <button class="inv2-btn red" data-open="mWaste">🗑️ Registrar merma</button>
+  </div>
+
+  <!-- Alerta de stock bajo -->
+  <div class="inv2-alert" id="lowStockAlert" style="display:none;">
+    <div class="ico">⚠️</div>
+    <div>
+      <div class="inv2-alert-title">Stock bajo</div>
+      <div class="inv2-alert-body" id="lowStockBody"></div>
+    </div>
+  </div>
+
+  <!-- Tarjetas de insumos -->
+  <div id="ingGrid" class="inv2-grid"></div>
+  <div id="ingEmpty" class="inv2-empty" style="display:none;">No hay insumos aún. Usa el botón "Agregar insumo" para comenzar.</div>
+
+  <!-- Modo avanzado: recetas -->
+  <details class="inv2-advanced">
+    <summary>Modo avanzado: Recetas (asociar insumos a productos)</summary>
+    <div style="margin-top:16px;">
+      <button class="inv2-btn ghost" data-open="mRecipe">🧾 Crear / editar receta</button>
+    </div>
+  </details>
+</div>
+
+<!-- ─── Modal: Agregar insumo ─────────────────────────────────────────── -->
+<div class="inv2-overlay" id="mAddIng">
+  <form class="inv2-modal" id="fAddIng" autocomplete="off">
+    <h2 class="inv2-modal-title">Agregar insumo</h2>
+    <div class="inv2-field">
+      <label>Nombre</label>
+      <input name="name" required maxlength="200" placeholder="Ej: Tomate">
+    </div>
+    <div class="inv2-field">
+      <label>Unidad de medida</label>
+      <select name="unit" required>
+        <option value="g">Gramos (g)</option>
+        <option value="kg">Kilogramos (kg)</option>
+        <option value="ml">Mililitros (ml)</option>
+        <option value="l">Litros (l)</option>
+        <option value="unit" selected>Unidad</option>
+      </select>
+    </div>
+    <div class="inv2-field">
+      <label>Costo por unidad (opcional)</label>
+      <input name="cost_per_unit" type="number" step="0.01" min="0" value="0">
+    </div>
+    <div class="inv2-field">
+      <label>Stock inicial</label>
+      <input name="stock" type="number" step="0.01" min="0" value="0">
+    </div>
+    <div class="inv2-result" data-result></div>
+    <div class="inv2-modal-actions">
+      <button type="button" class="inv2-btn ghost sm" data-close>Cancelar</button>
+      <button type="submit" class="inv2-btn primary sm">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<!-- ─── Modal: Agregar stock (entrada) ─────────────────────────────────── -->
+<div class="inv2-overlay" id="mAddStock">
+  <form class="inv2-modal" id="fAddStock" autocomplete="off">
+    <h2 class="inv2-modal-title">Agregar stock (entrada)</h2>
+    <div class="inv2-field">
+      <label>Insumo</label>
+      <select name="ingredient_id" required data-ing-select></select>
+    </div>
+    <div class="inv2-field">
+      <label>Cantidad a ingresar</label>
+      <input name="quantity" type="number" step="0.01" min="0.01" required>
+    </div>
+    <div class="inv2-field">
+      <label>Referencia (opcional)</label>
+      <input name="reference" maxlength="100" placeholder="Ej: Compra proveedor">
+    </div>
+    <div class="inv2-result" data-result></div>
+    <div class="inv2-modal-actions">
+      <button type="button" class="inv2-btn ghost sm" data-close>Cancelar</button>
+      <button type="submit" class="inv2-btn blue sm">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<!-- ─── Modal: Ajustar inventario ──────────────────────────────────────── -->
+<div class="inv2-overlay" id="mAdjust">
+  <form class="inv2-modal" id="fAdjust" autocomplete="off">
+    <h2 class="inv2-modal-title">Ajustar inventario</h2>
+    <div class="inv2-sub" style="font-size:16px; color:#b7becd;">Usa números positivos para sumar, negativos para restar.</div>
+    <div class="inv2-field">
+      <label>Insumo</label>
+      <select name="ingredient_id" required data-ing-select></select>
+    </div>
+    <div class="inv2-field">
+      <label>Cantidad (+ o −)</label>
+      <input name="quantity" type="number" step="0.01" required placeholder="Ej: -3">
+    </div>
+    <div class="inv2-field">
+      <label>Razón</label>
+      <input name="reference" maxlength="100" required placeholder="Ej: Conteo físico">
+    </div>
+    <div class="inv2-result" data-result></div>
+    <div class="inv2-modal-actions">
+      <button type="button" class="inv2-btn ghost sm" data-close>Cancelar</button>
+      <button type="submit" class="inv2-btn yellow sm">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<!-- ─── Modal: Merma ───────────────────────────────────────────────────── -->
+<div class="inv2-overlay" id="mWaste">
+  <form class="inv2-modal" id="fWaste" autocomplete="off">
+    <h2 class="inv2-modal-title">Registrar merma / pérdida</h2>
+    <div class="inv2-field">
+      <label>Insumo</label>
+      <select name="ingredient_id" required data-ing-select></select>
+    </div>
+    <div class="inv2-field">
+      <label>Cantidad perdida</label>
+      <input name="quantity" type="number" step="0.01" min="0.01" required>
+    </div>
+    <div class="inv2-field">
+      <label>Razón</label>
+      <input name="reference" maxlength="100" required placeholder="Ej: Producto vencido">
+    </div>
+    <div class="inv2-result" data-result></div>
+    <div class="inv2-modal-actions">
+      <button type="button" class="inv2-btn ghost sm" data-close>Cancelar</button>
+      <button type="submit" class="inv2-btn red sm">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<!-- ─── Modal: Historial (kardex) ──────────────────────────────────────── -->
+<div class="inv2-overlay" id="mHistory">
+  <div class="inv2-modal wide">
+    <h2 class="inv2-modal-title" id="histTitle">Historial</h2>
+    <div id="histBody">Cargando…</div>
+    <div class="inv2-modal-actions">
+      <button type="button" class="inv2-btn ghost sm" data-close>Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Modal: Receta ──────────────────────────────────────────────────── -->
+<div class="inv2-overlay" id="mRecipe">
+  <form class="inv2-modal wide" id="fRecipe" autocomplete="off">
+    <h2 class="inv2-modal-title">Crear / editar receta</h2>
+    <div class="inv2-field">
+      <label>Producto</label>
+      <select name="product_id" required>
+        <option value="">— Selecciona un producto —</option>
+        {% for p in products %}
+        <option value="{{ p.id }}">{{ p.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label style="font-size:18px; font-weight:700; color:#cfd5e1; display:block; margin-bottom:8px;">Insumos</label>
+      <div class="inv2-recipe-rows" id="recipeRows"></div>
+      <button type="button" class="inv2-btn ghost sm" id="addRecipeRow" style="margin-top:10px;">➕ Agregar fila</button>
+    </div>
+    <div class="inv2-result" data-result></div>
+    <div class="inv2-modal-actions">
+      <button type="button" class="inv2-btn ghost sm" data-close>Cancelar</button>
+      <button type="submit" class="inv2-btn primary sm">Guardar receta</button>
+    </div>
+  </form>
+</div>
+
+<div class="inv2-toast" id="inv2Toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  const LOW_THRESHOLD = 10;   // <= considered low
+  const CRIT_THRESHOLD = 3;   // <= considered critical
+
+  let ingredients = [];
+
+  // ─── helpers ──────────────────────────────────────────────────────────
+  const $ = (sel, root) => (root || document).querySelector(sel);
+  const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
+
+  function openModal(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add("open");
+  }
+  function closeModal(el) {
+    const overlay = el.closest(".inv2-overlay") || el;
+    overlay.classList.remove("open");
+    const form = overlay.querySelector("form");
+    if (form) {
+      form.reset();
+      const r = form.querySelector("[data-result]");
+      if (r) { r.textContent = ""; r.className = "inv2-result"; }
+    }
+  }
+
+  function toast(msg, ok = true) {
+    const t = $("#inv2Toast");
+    t.textContent = msg;
+    t.classList.toggle("err", !ok);
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 2400);
+  }
+
+  function showResult(form, msg, ok) {
+    const r = form.querySelector("[data-result]");
+    if (!r) return;
+    r.textContent = msg;
+    r.className = "inv2-result " + (ok ? "ok" : "err");
+  }
+
+  function statusClass(stock) {
+    if (stock <= CRIT_THRESHOLD) return "crit";
+    if (stock <= LOW_THRESHOLD) return "low";
+    return "ok";
+  }
+  function statusLabel(cls) {
+    return cls === "crit" ? "🔴 Crítico" : cls === "low" ? "🟡 Bajo" : "🟢 Saludable";
+  }
+
+  // ─── API ──────────────────────────────────────────────────────────────
+  async function api(path, opts = {}) {
+    const headers = { "Content-Type": "application/json" };
+    const res = await fetch(path, { headers, ...opts });
+    let data = null;
+    try { data = await res.json(); } catch (e) { /* ignore */ }
+    if (!res.ok) {
+      const msg = (data && (data.detail || data.message)) || ("Error " + res.status);
+      throw new Error(msg);
+    }
+    return data;
+  }
+
+  async function loadIngredients() {
+    try {
+      ingredients = await api("/admin/inventory/ingredients");
+    } catch (e) {
+      ingredients = [];
+      toast("No se pudo cargar inventario: " + e.message, false);
+    }
+    renderCards();
+    populateIngredientSelects();
+  }
+
+  // ─── render cards ─────────────────────────────────────────────────────
+  function renderCards() {
+    const grid = $("#ingGrid");
+    const empty = $("#ingEmpty");
+    grid.innerHTML = "";
+    if (!ingredients.length) {
+      empty.style.display = "block";
+      $("#lowStockAlert").style.display = "none";
+      return;
+    }
+    empty.style.display = "none";
+
+    const low = [];
+    ingredients.forEach(ing => {
+      const cls = statusClass(ing.stock);
+      if (cls !== "ok") low.push(ing);
+      const card = document.createElement("div");
+      card.className = "inv2-card " + cls;
+      card.innerHTML = `
+        <div class="inv2-card-name">${escapeHtml(ing.name)}</div>
+        <div>
+          <span class="inv2-card-stock">${formatNum(ing.stock)}</span>
+          <span class="inv2-card-unit">${escapeHtml(ing.unit || "")}</span>
+        </div>
+        <span class="inv2-badge ${cls}">${statusLabel(cls)}</span>
+        <div class="inv2-card-actions">
+          <button class="inv2-btn blue sm" data-act="add" data-id="${ing.id}">➕ Agregar</button>
+          <button class="inv2-btn yellow sm" data-act="adjust" data-id="${ing.id}">✏️ Ajustar</button>
+          <button class="inv2-btn ghost sm wide" data-act="history" data-id="${ing.id}" data-name="${escapeAttr(ing.name)}">📜 Historial</button>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+
+    if (low.length) {
+      $("#lowStockAlert").style.display = "flex";
+      $("#lowStockBody").textContent = low.map(i => `${i.name} (${formatNum(i.stock)} ${i.unit || ""})`).join(" · ");
+    } else {
+      $("#lowStockAlert").style.display = "none";
+    }
+  }
+
+  function populateIngredientSelects() {
+    $$("[data-ing-select]").forEach(sel => {
+      const keep = sel.value;
+      sel.innerHTML = '<option value="">— Selecciona un insumo —</option>';
+      ingredients.forEach(i => {
+        const opt = document.createElement("option");
+        opt.value = i.id;
+        opt.textContent = `${i.name} (${formatNum(i.stock)} ${i.unit || ""})`;
+        sel.appendChild(opt);
+      });
+      if (keep) sel.value = keep;
+    });
+  }
+
+  function formatNum(n) {
+    if (n == null) return "0";
+    const x = Number(n);
+    return Number.isInteger(x) ? String(x) : x.toFixed(2);
+  }
+  function escapeHtml(s) { return String(s || "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c])); }
+  function escapeAttr(s) { return escapeHtml(s).replace(/"/g, "&quot;"); }
+
+  // ─── card actions ─────────────────────────────────────────────────────
+  document.addEventListener("click", e => {
+    const t = e.target.closest("[data-act]");
+    if (t) {
+      const id = t.dataset.id;
+      const act = t.dataset.act;
+      if (act === "add") {
+        openModal("mAddStock");
+        $("#fAddStock [name=ingredient_id]").value = id;
+      } else if (act === "adjust") {
+        openModal("mAdjust");
+        $("#fAdjust [name=ingredient_id]").value = id;
+      } else if (act === "history") {
+        openHistory(id, t.dataset.name);
+      }
+      return;
+    }
+    const openBtn = e.target.closest("[data-open]");
+    if (openBtn) openModal(openBtn.dataset.open);
+    const closeBtn = e.target.closest("[data-close]");
+    if (closeBtn) closeModal(closeBtn);
+  });
+
+  // Close on backdrop click
+  $$(".inv2-overlay").forEach(o => {
+    o.addEventListener("click", e => { if (e.target === o) closeModal(o); });
+  });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") $$(".inv2-overlay.open").forEach(closeModal);
+  });
+
+  // ─── form submits ─────────────────────────────────────────────────────
+  $("#fAddIng").addEventListener("submit", async e => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const data = {
+      name: form.name.value.trim(),
+      unit: form.unit.value,
+      cost_per_unit: parseFloat(form.cost_per_unit.value || "0"),
+      stock: parseFloat(form.stock.value || "0"),
+    };
+    try {
+      await api("/admin/inventory/ingredients", { method: "POST", body: JSON.stringify(data) });
+      closeModal(form);
+      toast("Insumo creado");
+      await loadIngredients();
+    } catch (err) { showResult(form, err.message, false); }
+  });
+
+  async function submitMovement(form, type, allowNegative = false) {
+    const qtyRaw = form.quantity.value;
+    const qty = parseFloat(qtyRaw);
+    if (!qtyRaw || isNaN(qty) || (!allowNegative && qty <= 0)) {
+      showResult(form, "Cantidad inválida", false);
+      return;
+    }
+    const data = {
+      ingredient_id: parseInt(form.ingredient_id.value, 10),
+      type: type,
+      quantity: qty,
+      reference: (form.reference && form.reference.value.trim()) || null,
+    };
+    try {
+      await api("/admin/inventory/movements", { method: "POST", body: JSON.stringify(data) });
+      closeModal(form);
+      toast("Movimiento registrado");
+      await loadIngredients();
+    } catch (err) { showResult(form, err.message, false); }
+  }
+  $("#fAddStock").addEventListener("submit", e => { e.preventDefault(); submitMovement(e.currentTarget, "in"); });
+  $("#fAdjust").addEventListener("submit", e => { e.preventDefault(); submitMovement(e.currentTarget, "adjustment", true); });
+  $("#fWaste").addEventListener("submit", e => { e.preventDefault(); submitMovement(e.currentTarget, "waste"); });
+
+  // ─── history modal ────────────────────────────────────────────────────
+  async function openHistory(ingredientId, name) {
+    openModal("mHistory");
+    $("#histTitle").textContent = "Historial — " + name;
+    const body = $("#histBody");
+    body.innerHTML = "Cargando…";
+    try {
+      const rows = await api(`/admin/inventory/movements?ingredient_id=${ingredientId}&limit=200`);
+      if (!rows.length) { body.innerHTML = '<div class="inv2-empty">Sin movimientos aún.</div>'; return; }
+      const typeLabel = { in: "Entrada", out: "Salida", adjustment: "Ajuste", waste: "Merma" };
+      body.innerHTML = `
+        <table class="inv2-hist">
+          <thead><tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Referencia</th></tr></thead>
+          <tbody>${rows.map(r => `
+            <tr>
+              <td>${formatDate(r.created_at)}</td>
+              <td><span class="inv2-tag ${r.type}">${typeLabel[r.type] || r.type}</span></td>
+              <td>${formatNum(r.quantity)}</td>
+              <td>${escapeHtml(r.reference || "-")}</td>
+            </tr>`).join("")}</tbody>
+        </table>
+      `;
+    } catch (err) {
+      body.innerHTML = `<div class="inv2-result err">Error: ${escapeHtml(err.message)}</div>`;
+    }
+  }
+  function formatDate(iso) {
+    if (!iso) return "-";
+    try { const d = new Date(iso); return d.toLocaleString("es", { dateStyle: "short", timeStyle: "short" }); }
+    catch (e) { return iso; }
+  }
+
+  // ─── recipe builder ───────────────────────────────────────────────────
+  function addRecipeRow() {
+    const row = document.createElement("div");
+    row.className = "inv2-recipe-row";
+    row.innerHTML = `
+      <select name="ingredient_id"><option value="">— Insumo —</option></select>
+      <input type="number" step="0.01" min="0.01" placeholder="Cantidad" name="quantity">
+      <button type="button" class="inv2-row-del">✕</button>
+    `;
+    const sel = row.querySelector("select");
+    ingredients.forEach(i => {
+      const opt = document.createElement("option");
+      opt.value = i.id;
+      opt.textContent = `${i.name} (${i.unit || ""})`;
+      sel.appendChild(opt);
+    });
+    row.querySelector(".inv2-row-del").addEventListener("click", () => row.remove());
+    $("#recipeRows").appendChild(row);
+  }
+  $("#addRecipeRow").addEventListener("click", addRecipeRow);
+
+  document.querySelector("[data-open='mRecipe']").addEventListener("click", () => {
+    $("#recipeRows").innerHTML = "";
+    addRecipeRow();
+  });
+
+  $("#fRecipe").addEventListener("submit", async e => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const pid = parseInt(form.product_id.value, 10);
+    if (!pid) { showResult(form, "Selecciona un producto", false); return; }
+    const items = [];
+    $$(".inv2-recipe-row", form).forEach(row => {
+      const ing = parseInt(row.querySelector("[name=ingredient_id]").value, 10);
+      const qty = parseFloat(row.querySelector("[name=quantity]").value);
+      if (ing && qty > 0) items.push({ ingredient_id: ing, quantity: qty });
+    });
+    if (!items.length) { showResult(form, "Agrega al menos un insumo", false); return; }
+    try {
+      await api("/admin/inventory/recipes", { method: "POST", body: JSON.stringify({ product_id: pid, items }) });
+      closeModal(form);
+      toast("Receta guardada");
+    } catch (err) { showResult(form, err.message, false); }
+  });
+
+  // ─── boot ─────────────────────────────────────────────────────────────
+  loadIngredients();
+})();
+</script>
+{% endblock %}

@@ -967,3 +967,20 @@ def orders_export_pdf(request: Request, db: Session = Depends(get_db)):
         headers={"Content-Disposition": "attachment; filename=ordenes.pdf"},
     )
 
+
+# ─── admin inventario (ingredient-level UI, senior-friendly) ─────────────────
+
+@router.get("/admin/inventario")
+def admin_inventario_page(request: Request, db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    products = db.query(Product).filter(Product.active == True).order_by(Product.name.asc()).all()
+    return templates.TemplateResponse(
+        "admin_inventario.html",
+        {
+            "request": request,
+            "page_title": "Inventario (Insumos)",
+            "products": products,
+        },
+    )
+
