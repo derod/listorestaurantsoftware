@@ -16,7 +16,7 @@ from ..database import get_db
 from ..models import Ingredient, Recipe, RecipeItem, InventoryMovement, Product
 from ..inventory_service import create_inventory_movement, VALID_TYPES
 
-router = APIRouter(prefix="/admin/inventory", tags=["admin-inventory"])
+router = APIRouter(prefix="/admin/inv", tags=["admin-inventory"])
 
 
 def _require_admin(request: Request):
