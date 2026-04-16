@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from .database import Base, engine, SessionLocal, DATA_DIR
 from .seed import seed_initial_data
-from .routes import web, api
+from .routes import web, api, admin_inventory
 from .websockets import manager
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -56,6 +56,7 @@ with SessionLocal() as db:
 
 app.include_router(web.router)
 app.include_router(api.router, prefix="/api")
+app.include_router(admin_inventory.router)
 
 
 @app.websocket("/ws/kitchen")

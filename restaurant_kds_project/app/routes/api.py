@@ -169,6 +169,17 @@ def pos_create_sale(payload: PosSaleCreate, request: Request, db: Session = Depe
             new_quantity=new_qty,
             actor_name=f"pos:{uname}:sale#{sale.id}",
         ))
+
+    # Ingredient-level consumption (additive, non-breaking, idempotent).
+    # Only runs when a Recipe exists for the product; errors never break sales.
+    try:
+        from ..inventory_service import consume_recipe
+        for p, qty, _unit, _line in line_rows:
+            consume_recipe(db, product_id=p.id, quantity=qty, reference=f"sale:{sale.id}")
+    except Exception:
+        import logging
+        logging.getLogger("inventory").exception("POS recipe consumption failed for sale#%s", sale.id)
+
     db.commit()
     db.refresh(sale)
     return {

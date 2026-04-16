@@ -134,3 +134,48 @@ class SaleItem(Base):
 
     sale = relationship("Sale", back_populates="items")
     product = relationship("Product")
+
+
+# ─── Ingredient-level inventory (additive, optional) ─────────────────────────
+
+class Ingredient(Base):
+    __tablename__ = "ingredients"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(200), unique=True, nullable=False)
+    unit: Mapped[str] = mapped_column(String(20), default="unit")
+    cost_per_unit: Mapped[float] = mapped_column(Float, default=0)
+    stock: Mapped[float] = mapped_column(Float, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
+
+
+class Recipe(Base):
+    __tablename__ = "recipes"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), unique=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
+
+    product = relationship("Product")
+    items = relationship("RecipeItem", back_populates="recipe", cascade="all, delete-orphan")
+
+
+class RecipeItem(Base):
+    __tablename__ = "recipe_items"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    recipe_id: Mapped[int] = mapped_column(ForeignKey("recipes.id"), nullable=False)
+    ingredient_id: Mapped[int] = mapped_column(ForeignKey("ingredients.id"), nullable=False)
+    quantity: Mapped[float] = mapped_column(Float, default=0)
+
+    recipe = relationship("Recipe", back_populates="items")
+    ingredient = relationship("Ingredient")
+
+
+class InventoryMovement(Base):
+    __tablename__ = "inventory_movements"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ingredient_id: Mapped[int] = mapped_column(ForeignKey("ingredients.id"), nullable=False, index=True)
+    type: Mapped[str] = mapped_column(String(20), nullable=False)  # in|out|adjustment|waste
+    quantity: Mapped[float] = mapped_column(Float, default=0)
+    reference: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
+
+    ingredient = relationship("Ingredient")
