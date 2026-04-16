@@ -415,7 +415,7 @@
     }
 
     .cta-section .section-title { margin: 0 auto 12px; max-width: 560px; }
-    .cta-section .body-text { margin: 0 auto 40px; }
+    .cta-section .body-text { margin: 0 auto 40px; text-align: center; }
 
     .cta-btn {
       display: inline-flex;
@@ -430,7 +430,6 @@
       text-decoration: none;
       letter-spacing: 0.01em;
       transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
-      box-shadow: 0 0 0 0 rgba(56,189,248,0);
     }
 
     .cta-btn:hover {
@@ -440,6 +439,11 @@
     }
 
     .cta-btn:active { transform: translateY(0); }
+
+    .cta-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 4px;
+    }
 
     .cta-btn svg {
       width: 16px;
@@ -685,7 +689,7 @@
         <p class="body-text">Ingresa a la plataforma y gestiona tu restaurante en tiempo real desde cualquier dispositivo.</p>
         <a href="/home" class="cta-btn">
           Ingresar a la Plataforma
-          <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
       </div>
     </section>
@@ -846,7 +850,7 @@
         <p class="body-text">Enter the platform and manage your restaurant in real time from any device.</p>
         <a href="/home" class="cta-btn">
           Enter the Platform
-          <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
       </div>
     </section>
@@ -992,7 +996,7 @@
         <p class="body-text">Accédez à la plateforme et gérez votre restaurant en temps réel depuis n'importe quel appareil.</p>
         <a href="/home" class="cta-btn">
           Accéder à la Plateforme
-          <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
       </div>
     </section>
@@ -1138,7 +1142,7 @@
         <p class="body-text">Acesse a plataforma e gerencie seu restaurante em tempo real de qualquer dispositivo.</p>
         <a href="/home" class="cta-btn">
           Entrar na Plataforma
-          <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
       </div>
     </section>
@@ -1283,7 +1287,7 @@
         <p class="body-text">Platfrm live. Click. Done.</p>
         <a href="/home" class="cta-btn">
           Plataforma
-          <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
       </div>
     </section>
