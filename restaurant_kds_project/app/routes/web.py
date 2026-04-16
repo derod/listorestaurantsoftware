@@ -384,6 +384,12 @@ def delete_product(product_id: int, request: Request, confirm: str = Form(...), 
         return RedirectResponse(url="/admin/products", status_code=303)
     product = db.query(Product).filter(Product.id == product_id).first()
     if product:
+        # Delete all child rows that reference this product to avoid FK integrity errors
+        db.query(InventoryLog).filter(InventoryLog.product_id == product_id).delete()
+        db.query(Inventory).filter(Inventory.product_id == product_id).delete()
+        db.query(OrderItem).filter(OrderItem.product_id == product_id).delete()
+        db.query(SaleItem).filter(SaleItem.product_id == product_id).delete()
+        db.flush()
         db.delete(product)
         db.commit()
     return RedirectResponse(url="/admin/products", status_code=303)
