@@ -6,7 +6,7 @@ from .database import Base
 # Costa Rica timezone (UTC-6)
 def cr_now():
     """Return current UTC time adjusted to Costa Rica timezone (UTC-6)."""
-    return cr_now() - timedelta(hours=6)
+    return datetime.utcnow() - timedelta(hours=6)
 
 
 class Product(Base):
