@@ -9,7 +9,7 @@ from pathlib import Path
 import shutil
 
 from ..database import get_db, DATA_DIR
-from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem
+from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, cr_now
 from ..utils import duration_seconds
 from ..order_history import (
     OrderHistoryFilters, get_order_history, get_all_for_export,
@@ -242,7 +242,7 @@ def kitchen(request: Request, db: Session = Depends(get_db)):
 def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     if not require_admin(request):
         return RedirectResponse(url="/admin/login")
-    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    today_start = cr_now().replace(hour=0, minute=0, second=0, microsecond=0)
     yesterday_start = today_start - timedelta(days=1)
     orders_today = db.query(Order).filter(Order.created_at >= today_start).all()
     orders_yesterday = db.query(Order).filter(Order.created_at >= yesterday_start, Order.created_at < today_start).all()
@@ -518,7 +518,7 @@ def toggle_waiter(waiter_id: int, request: Request, db: Session = Depends(get_db
 def admin_reports(request: Request, db: Session = Depends(get_db)):
     if not require_admin(request):
         return RedirectResponse(url="/admin/login")
-    now = datetime.utcnow()
+    now = cr_now()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = today_start - timedelta(days=6)
 

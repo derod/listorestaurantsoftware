@@ -11,7 +11,7 @@ from typing import Optional
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_
 
-from .models import Order, OrderItem, Product, Sale, AudioSettings
+from .models import Order, OrderItem, Product, Sale, AudioSettings, cr_now
 
 
 # ─── filter dataclass ────────────────────────────────────────────────────────
@@ -270,7 +270,7 @@ def export_pdf(orders, filters: OrderHistoryFilters, tax_rate: float) -> bytes:
 
     story = [
         Paragraph("Reporte de Órdenes", title_style),
-        Paragraph(f"Período: {date_range}   |   Generado: {datetime.utcnow().strftime('%Y-%m-%d %H:%M')} UTC", sub_style),
+        Paragraph(f"Período: {date_range}   |   Generado: {cr_now().strftime('%Y-%m-%d %H:%M')} (Costa Rica)", sub_style),
         Spacer(1, 6 * mm),
     ]
 

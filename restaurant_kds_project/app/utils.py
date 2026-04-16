@@ -1,7 +1,7 @@
 import asyncio
 from datetime import datetime
 from sqlalchemy.orm import Session, joinedload
-from .models import Order, OrderItem, OrderEvent, Inventory, InventoryLog
+from .models import Order, OrderItem, OrderEvent, Inventory, InventoryLog, cr_now
 
 ALLOWED_STATUSES = ["nuevo", "aceptado", "preparando", "listo", "despachado", "cancelado"]
 
@@ -58,7 +58,7 @@ def change_order_status(db: Session, order: Order, status: str, actor_role: str)
         raise ValueError("Invalid status")
     old = order.status
     order.status = status
-    now = datetime.utcnow()
+    now = cr_now()
     if status == "aceptado":
         order.accepted_at = now
     elif status == "preparando":
