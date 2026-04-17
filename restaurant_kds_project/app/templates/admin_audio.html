@@ -1,6 +1,11 @@
 {% extends 'base.html' %}
 {% block content %}
 <h1>Admin Audio</h1>
+{% if error_msg %}
+<div style="background:rgba(228,91,91,0.15); border:1.5px solid rgba(228,91,91,0.5); border-radius:14px; padding:16px 20px; margin-bottom:18px; color:var(--red); font-weight:700; font-size:18px;">
+  {{ error_msg }}
+</div>
+{% endif %}
 <div class="panel form-panel">
   <form method="post" action="/admin/audio" enctype="multipart/form-data" class="audio-form">
     <label>Sonido Salon <input type="file" name="station_sound" accept=".mp3,.wav,.m4a"></label>

@@ -404,14 +404,8 @@ def admin_audio(request: Request, db: Session = Depends(get_db)):
 
 
 @router.post("/admin/audio")
-def update_audio(
+async def update_audio(
     request: Request,
-    station_sound: UploadFile | None = File(None),
-    kitchen_sound: UploadFile | None = File(None),
-    ready_sound: UploadFile | None = File(None),
-    cancel_sound: UploadFile | None = File(None),
-    master_volume: float = Form(1.0),
-    voice_enabled_for_station_orders: str | None = Form(None),
     db: Session = Depends(get_db),
 ):
     if not require_admin(request):
@@ -422,25 +416,41 @@ def update_audio(
         db.add(settings)
         db.flush()
 
-    def save_upload(upload: UploadFile | None, current_value: str | None):
-        if not upload or not upload.filename:
-            return current_value
-        safe_name = Path(upload.filename).name
-        ext = Path(safe_name).suffix.lower()
-        if ext not in {".mp3", ".wav", ".m4a"}:
-            return current_value
-        dest = UPLOAD_DIR / safe_name
-        with dest.open("wb") as f:
-            shutil.copyfileobj(upload.file, f)
-        return f"/uploads/audio/{safe_name}"
+    try:
+        form = await request.form()
 
-    settings.station_order_sound_path = save_upload(station_sound, settings.station_order_sound_path)
-    settings.kitchen_order_sound_path = save_upload(kitchen_sound, settings.kitchen_order_sound_path)
-    settings.ready_sound_path = save_upload(ready_sound, settings.ready_sound_path)
-    settings.cancel_sound_path = save_upload(cancel_sound, settings.cancel_sound_path)
-    settings.master_volume = max(0, min(master_volume, 1))
-    settings.voice_enabled_for_station_orders = voice_enabled_for_station_orders == "on"
-    db.commit()
+        def save_upload(field_name: str, current_value):
+            upload = form.get(field_name)
+            if not upload or not hasattr(upload, "filename") or not upload.filename:
+                return current_value
+            safe_name = Path(upload.filename).name
+            ext = Path(safe_name).suffix.lower()
+            if ext not in {".mp3", ".wav", ".m4a"}:
+                return current_value
+            dest = UPLOAD_DIR / safe_name
+            with dest.open("wb") as f:
+                shutil.copyfileobj(upload.file, f)
+            return f"/uploads/audio/{safe_name}"
+
+        settings.station_order_sound_path = save_upload("station_sound", settings.station_order_sound_path)
+        settings.kitchen_order_sound_path = save_upload("kitchen_sound", settings.kitchen_order_sound_path)
+        settings.ready_sound_path = save_upload("ready_sound", settings.ready_sound_path)
+        settings.cancel_sound_path = save_upload("cancel_sound", settings.cancel_sound_path)
+
+        vol = form.get("master_volume", "1.0")
+        settings.master_volume = max(0.0, min(float(vol), 1.0))
+        settings.voice_enabled_for_station_orders = form.get("voice_enabled_for_station_orders") == "on"
+        db.commit()
+    except Exception as exc:
+        import logging
+        logging.getLogger("audio").exception("Audio settings update failed")
+        db.rollback()
+        return templates.TemplateResponse(
+            "admin_audio.html",
+            {"request": request, "settings": settings, "page_title": "Admin Audio",
+             "error_msg": f"Error al guardar: {exc}"},
+        )
+
     return RedirectResponse(url="/admin/audio", status_code=303)
 
 
