@@ -120,8 +120,28 @@ function normalizeAudioSrc(src) {
   try { return encodeURI(src); } catch (e) { return src; }
 }
 
+function showAudioLockedHint() {
+  let hint = document.getElementById("audioLockedHint");
+  if (hint) return;
+  hint = document.createElement("button");
+  hint.id = "audioLockedHint";
+  hint.textContent = "🔔 Toca aquí para activar alertas";
+  hint.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9999;padding:18px 28px;font-size:22px;font-weight:800;border:none;border-radius:16px;background:var(--yellow,#ffd24d);color:#111;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,0.4);animation:pulse 1.2s infinite;";
+  hint.onclick = () => {
+    if (typeof window.unlockAudio === "function") window.unlockAudio();
+    window.userInteracted = true;
+    hint.remove();
+  };
+  document.body.appendChild(hint);
+  if (!document.getElementById("audioLockedHintKeyframes")) {
+    const style = document.createElement("style");
+    style.id = "audioLockedHintKeyframes";
+    style.textContent = "@keyframes pulse{0%,100%{transform:translateX(-50%) scale(1);}50%{transform:translateX(-50%) scale(1.06);}}";
+    document.head.appendChild(style);
+  }
+}
+
 function playSound(src) {
-  if (!window.userInteracted) return false;
   if (!src) return false;
   try {
     const audio = new Audio(normalizeAudioSrc(src));
@@ -132,19 +152,37 @@ function playSound(src) {
     audio.addEventListener("ended", cleanup, { once: true });
     audio.addEventListener("error", () => {
       cleanup();
-      beep(660, 400);
       console.warn("[KDS] Audio file failed to load:", src);
     }, { once: true });
     const playPromise = audio.play();
     if (playPromise && typeof playPromise.catch === "function") {
       playPromise.catch((err) => {
         cleanup();
-        beep(660, 400);
-        console.warn("[KDS] Audio playback failed:", src, err);
+        console.warn("[KDS] Audio playback blocked/failed:", src, err);
+        if (err && (err.name === "NotAllowedError" || err.name === "AbortError")) {
+          showAudioLockedHint();
+        }
       });
     }
     return true;
   } catch (e) { return false; }
+}
+
+let _titleFlashTimer = null;
+let _originalTitle = null;
+function flashPageTitle(text) {
+  if (_originalTitle === null) _originalTitle = document.title;
+  if (_titleFlashTimer) clearInterval(_titleFlashTimer);
+  let toggle = false;
+  _titleFlashTimer = setInterval(() => {
+    document.title = toggle ? _originalTitle : text;
+    toggle = !toggle;
+  }, 900);
+  setTimeout(() => {
+    clearInterval(_titleFlashTimer);
+    _titleFlashTimer = null;
+    document.title = _originalTitle;
+  }, 12000);
 }
 
 function beep(freq, durMs) {
@@ -322,6 +360,7 @@ async function pollOrders() {
   const newOrders = orders.filter(o => !knownOrderIds.has(o.id));
   newOrders.forEach(order => {
     knownOrderIds.add(order.id);
+    flashPageTitle("🔔 NUEVO PEDIDO");
     if (order.source_role === "station_a") {
       if (!playSound(window.KITCHEN_AUDIO.stationSound)) beep(880, 400);
       speakSpanish(`Nuevo pedido. ${formatSpeech(order.items)}.`);
@@ -433,7 +472,8 @@ setInterval(() => renderOrders(visibleOrders()), 1000);
         if (knownOrderIds.has(order.id)) return;
         knownOrderIds.add(order.id);
 
-        // Immediate audio alert
+        // Immediate audio alert — also flash the page title so the cook sees it
+        flashPageTitle("🔔 NUEVO PEDIDO");
         if (order.source_role === "station_a") {
           if (!playSound(window.KITCHEN_AUDIO.stationSound)) beep(880, 400);
           speakSpanish(`Nuevo pedido. ${formatSpeech(order.items)}.`);

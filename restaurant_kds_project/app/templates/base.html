@@ -52,6 +52,7 @@
         } catch (e) {}
       } catch (e) {}
       window.__audioUnlocked = true;
+      window.userInteracted = true;
       var btn = document.getElementById("audioUnlockBtn");
       if (btn) {
         btn.textContent = "🔔 Alertas activadas";
