@@ -415,7 +415,24 @@ def admin_audio(request: Request, db: Session = Depends(get_db)):
     if not require_admin(request):
         return RedirectResponse(url="/admin/login")
     settings = db.query(AudioSettings).first()
-    return templates.TemplateResponse("admin_audio.html", {"request": request, "settings": settings, "page_title": "Admin Audio"})
+
+    def _file_exists(url_path):
+        if not url_path or not url_path.startswith("/uploads/audio/"):
+            return False
+        fname = url_path.replace("/uploads/audio/", "", 1)
+        return (UPLOAD_DIR / fname).exists()
+
+    file_status = {
+        "station": _file_exists(settings.station_order_sound_path) if settings else False,
+        "kitchen": _file_exists(settings.kitchen_order_sound_path) if settings else False,
+        "ready": _file_exists(settings.ready_sound_path) if settings else False,
+        "cancel": _file_exists(settings.cancel_sound_path) if settings else False,
+    }
+    return templates.TemplateResponse(
+        "admin_audio.html",
+        {"request": request, "settings": settings, "file_status": file_status,
+         "upload_dir": str(UPLOAD_DIR), "page_title": "Admin Audio"},
+    )
 
 
 @router.post("/admin/audio")

@@ -19,9 +19,30 @@
 </div>
 <div class="table-card">
   <h2>Rutas actuales</h2>
-  <p>Salon: {{ settings.station_order_sound_path if settings else '-' }}</p>
-  <p>Kitchen: {{ settings.kitchen_order_sound_path if settings else '-' }}</p>
-  <p>Listo: {{ settings.ready_sound_path if settings else '-' }}</p>
-  <p>Cancelado: {{ settings.cancel_sound_path if settings else '-' }}</p>
+  {% macro row(label, path, exists) %}
+    <div style="display:flex; gap:14px; align-items:center; padding:10px 0; flex-wrap:wrap; border-bottom:1px solid rgba(255,255,255,0.08);">
+      <strong style="min-width:120px;">{{ label }}:</strong>
+      {% if path %}
+        <span style="padding:4px 10px; border-radius:999px; font-size:14px; font-weight:800;
+                     {% if exists %}background:rgba(76,175,80,0.15); color:var(--green);
+                     {% else %}background:rgba(228,91,91,0.18); color:var(--red);{% endif %}">
+          {% if exists %}✓ OK{% else %}✗ Archivo no existe{% endif %}
+        </span>
+        <code style="font-size:14px; color:#b7becd;">{{ path }}</code>
+        {% if exists %}
+          <audio controls preload="none" src="{{ path }}" style="height:32px;"></audio>
+        {% endif %}
+      {% else %}
+        <span style="color:#b7becd;">— sin archivo —</span>
+      {% endif %}
+    </div>
+  {% endmacro %}
+  {{ row("Salon", settings.station_order_sound_path if settings else None, file_status.station) }}
+  {{ row("Kitchen", settings.kitchen_order_sound_path if settings else None, file_status.kitchen) }}
+  {{ row("Listo", settings.ready_sound_path if settings else None, file_status.ready) }}
+  {{ row("Cancelado", settings.cancel_sound_path if settings else None, file_status.cancel) }}
+  <p style="margin-top:16px; font-size:13px; color:#6c757d;">
+    Directorio en disco: <code>{{ upload_dir }}</code>
+  </p>
 </div>
 {% endblock %}
