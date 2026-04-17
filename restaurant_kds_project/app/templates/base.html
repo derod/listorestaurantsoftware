@@ -26,5 +26,47 @@
     </nav>
   </header>
   <main class="page">{% block content %}{% endblock %}</main>
+  <script>
+  (function () {
+    window.__audioUnlocked = false;
+    window.unlockAudio = function () {
+      if (window.__audioUnlocked) return true;
+      try {
+        document.querySelectorAll("audio").forEach(function (a) {
+          try {
+            var p = a.play();
+            if (p && p.then) p.then(function () { a.pause(); a.currentTime = 0; }).catch(function () {});
+          } catch (e) {}
+        });
+        try {
+          var AC = window.AudioContext || window.webkitAudioContext;
+          if (AC) {
+            var ctx = window.__audioCtx || (window.__audioCtx = new AC());
+            if (ctx.state === "suspended") ctx.resume();
+            var buf = ctx.createBuffer(1, 1, 22050);
+            var src = ctx.createBufferSource();
+            src.buffer = buf;
+            src.connect(ctx.destination);
+            src.start(0);
+          }
+        } catch (e) {}
+      } catch (e) {}
+      window.__audioUnlocked = true;
+      var btn = document.getElementById("audioUnlockBtn");
+      if (btn) {
+        btn.textContent = "🔔 Alertas activadas";
+        btn.disabled = true;
+        btn.style.opacity = "0.6";
+      }
+      return true;
+    };
+    ["click", "touchstart", "keydown"].forEach(function (ev) {
+      document.addEventListener(ev, function once() {
+        window.unlockAudio();
+        document.removeEventListener(ev, once);
+      }, { once: true });
+    });
+  })();
+  </script>
 </body>
 </html>

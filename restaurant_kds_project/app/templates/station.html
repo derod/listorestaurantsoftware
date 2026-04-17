@@ -5,7 +5,10 @@
     <div style="font-size:38px;font-weight:800;">SALON</div>
     <div style="font-size:28px;color:#b7becd;margin-top:4px;">AGENTE: <strong style="color:var(--accent);">{{ waiter_name }}</strong></div>
   </div>
-  <a href="/station-a/logout" style="display:inline-flex;align-items:center;justify-content:center;min-height:60px;padding:0 28px;font-size:24px;font-weight:700;border-radius:16px;background:rgba(228,91,91,0.18);color:var(--red);text-decoration:none;">CAMBIAR AGENTE</a>
+  <div style="display:flex;gap:12px;">
+    <button type="button" id="audioUnlockBtn" onclick="window.unlockAudio()" style="display:inline-flex;align-items:center;justify-content:center;min-height:60px;padding:0 28px;font-size:24px;font-weight:700;border-radius:16px;background:rgba(255,210,77,0.2);color:var(--yellow);border:none;cursor:pointer;">🔔 Activar alertas</button>
+    <a href="/station-a/logout" style="display:inline-flex;align-items:center;justify-content:center;min-height:60px;padding:0 28px;font-size:24px;font-weight:700;border-radius:16px;background:rgba(228,91,91,0.18);color:var(--red);text-decoration:none;">CAMBIAR AGENTE</a>
+  </div>
 </div>
 <div class="screen two-panel">
   <section class="panel products-panel">

@@ -161,20 +161,41 @@ function renderKitchenInternal(orders) {
 if (typeof window.userInteracted === "undefined") window.userInteracted = false;
 document.addEventListener("click", () => { window.userInteracted = true; }, { once: true, capture: true });
 document.addEventListener("touchstart", () => { window.userInteracted = true; }, { once: true, capture: true });
+document.addEventListener("keydown", () => { window.userInteracted = true; }, { once: true, capture: true });
 
 /* ─── Audio helpers ─────────────────────────────────────────────────── */
 
 const AUDIO = window.STATION_AUDIO || {};
+const activeAudioPlayers = new Set();
+
+function normalizeAudioSrc(src) {
+  if (!src) return src;
+  try { return encodeURI(src); } catch (e) { return src; }
+}
 
 function playSoundFile(src) {
   if (!window.userInteracted) return false;
   if (!src) return false;
   try {
-    const audio = new Audio(src);
+    const audio = new Audio(normalizeAudioSrc(src));
     audio.preload = "auto";
-    audio.load();
     audio.volume = AUDIO.volume ?? 1;
-    audio.play().catch(() => {});
+    activeAudioPlayers.add(audio);
+    const cleanup = () => activeAudioPlayers.delete(audio);
+    audio.addEventListener("ended", cleanup, { once: true });
+    audio.addEventListener("error", () => {
+      cleanup();
+      beep(880, 400);
+      console.warn("[KDS] Audio file failed to load:", src);
+    }, { once: true });
+    const playPromise = audio.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch((err) => {
+        cleanup();
+        beep(880, 400);
+        console.warn("[KDS] Audio playback failed:", src, err);
+      });
+    }
     return true;
   } catch (e) { return false; }
 }
