@@ -242,22 +242,37 @@ def kitchen(request: Request, db: Session = Depends(get_db)):
 def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     if not require_admin(request):
         return RedirectResponse(url="/admin/login")
+    from sqlalchemy import func
+
     today_start = cr_now().replace(hour=0, minute=0, second=0, microsecond=0)
     yesterday_start = today_start - timedelta(days=1)
-    orders_today = db.query(Order).filter(Order.created_at >= today_start).all()
-    orders_yesterday = db.query(Order).filter(Order.created_at >= yesterday_start, Order.created_at < today_start).all()
 
-    def avg_duration(orders):
-        values = [duration_seconds(o) for o in orders if duration_seconds(o) is not None]
+    # Single-pass stats via SQL COUNT — no longer loads all orders into memory
+    orders_today_count = db.query(func.count(Order.id)).filter(Order.created_at >= today_start).scalar() or 0
+    orders_yesterday_count = db.query(func.count(Order.id)).filter(Order.created_at >= yesterday_start, Order.created_at < today_start).scalar() or 0
+    cancelled_today = db.query(func.count(Order.id)).filter(Order.created_at >= today_start, Order.was_cancelled == True).scalar() or 0
+    active_now = db.query(func.count(Order.id)).filter(
+        Order.created_at >= today_start,
+        Order.status.in_(["nuevo", "aceptado", "preparando", "listo"]),
+    ).scalar() or 0
+
+    # Averages — only load dispatched/cancelled orders (those with a duration)
+    def avg_for_range(start, end=None):
+        q = db.query(Order).filter(Order.created_at >= start)
+        if end:
+            q = q.filter(Order.created_at < end)
+        q = q.filter((Order.dispatched_at != None) | (Order.cancelled_at != None))
+        rows = q.all()
+        values = [duration_seconds(o) for o in rows if duration_seconds(o) is not None]
         return round(sum(values) / len(values) / 60, 1) if values else 0
 
     stats = {
-        "orders_today": len(orders_today),
-        "orders_yesterday": len(orders_yesterday),
-        "avg_today": avg_duration(orders_today),
-        "avg_yesterday": avg_duration(orders_yesterday),
-        "cancelled_today": len([o for o in orders_today if o.was_cancelled]),
-        "active_now": len([o for o in orders_today if o.status in ["nuevo", "aceptado", "preparando", "listo"]]),
+        "orders_today": orders_today_count,
+        "orders_yesterday": orders_yesterday_count,
+        "avg_today": avg_for_range(today_start),
+        "avg_yesterday": avg_for_range(yesterday_start, today_start),
+        "cancelled_today": cancelled_today,
+        "active_now": active_now,
     }
     recent_orders = (
         db.query(Order)

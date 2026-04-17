@@ -3,6 +3,7 @@ from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 from .database import Base, engine, SessionLocal, DATA_DIR
 from .seed import seed_initial_data
 from .routes import web, api, admin_inventory
@@ -16,6 +17,7 @@ SESSION_SECRET = os.getenv("SESSION_SECRET", "kds-dev-secret-change-me")
 SECURE_COOKIES = os.getenv("SECURE_COOKIES", "0") == "1"
 
 app = FastAPI(title="LISTO Restaurant Software")
+app.add_middleware(GZipMiddleware, minimum_size=500)
 app.add_middleware(
     SessionMiddleware,
     secret_key=SESSION_SECRET,
@@ -25,6 +27,17 @@ app.add_middleware(
 )
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "app" / "static")), name="static")
 app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
+
+
+@app.middleware("http")
+async def add_cache_headers(request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+    if path.startswith("/static/"):
+        response.headers["Cache-Control"] = "public, max-age=3600"
+    elif path.startswith("/uploads/"):
+        response.headers["Cache-Control"] = "public, max-age=86400"
+    return response
 
 
 @app.get("/health")
@@ -48,6 +61,13 @@ def _ensure_schema():
         if "tax_rate" not in audio_cols:
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE audio_settings ADD COLUMN tax_rate FLOAT DEFAULT 0"))
+    # Performance indexes for orders table
+    existing_indexes = {idx["name"] for idx in insp.get_indexes("orders")} if "orders" in insp.get_table_names() else set()
+    with engine.begin() as conn:
+        if "ix_orders_created_at" not in existing_indexes:
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_orders_created_at ON orders (created_at)"))
+        if "ix_orders_status" not in existing_indexes:
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_orders_status ON orders (status)"))
 
 _ensure_schema()
 

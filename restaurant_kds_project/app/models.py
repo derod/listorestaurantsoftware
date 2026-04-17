@@ -33,11 +33,11 @@ class Order(Base):
     __tablename__ = "orders"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     source_role: Mapped[str] = mapped_column(String(50), nullable=False)  # station_a / kitchen
-    status: Mapped[str] = mapped_column(String(50), default="nuevo")
+    status: Mapped[str] = mapped_column(String(50), default="nuevo", index=True)
     requires_acceptance: Mapped[bool] = mapped_column(Boolean, default=True)
     waiter_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("waiters.id"), nullable=True)
     waiter_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now, index=True)
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     preparing_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     ready_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
