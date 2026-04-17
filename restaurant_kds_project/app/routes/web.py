@@ -455,10 +455,15 @@ async def update_audio(
             upload = form.get(field_name)
             if not upload or not hasattr(upload, "filename") or not upload.filename:
                 return current_value
-            safe_name = Path(upload.filename).name
-            ext = Path(safe_name).suffix.lower()
+            raw_name = Path(upload.filename).name
+            ext = Path(raw_name).suffix.lower()
             if ext not in {".mp3", ".wav", ".m4a"}:
                 return current_value
+            # Sanitize: replace spaces/unsafe chars with underscore, keep extension
+            import re
+            stem = Path(raw_name).stem
+            safe_stem = re.sub(r"[^A-Za-z0-9._-]+", "_", stem).strip("._-") or "audio"
+            safe_name = f"{safe_stem}{ext}"
             dest = UPLOAD_DIR / safe_name
             with dest.open("wb") as f:
                 shutil.copyfileobj(upload.file, f)
