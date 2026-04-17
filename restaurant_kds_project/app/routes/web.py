@@ -417,6 +417,10 @@ def update_audio(
     if not require_admin(request):
         return RedirectResponse(url="/admin/login")
     settings = db.query(AudioSettings).first()
+    if not settings:
+        settings = AudioSettings()
+        db.add(settings)
+        db.flush()
 
     def save_upload(upload: UploadFile | None, current_value: str | None):
         if not upload or not upload.filename:
