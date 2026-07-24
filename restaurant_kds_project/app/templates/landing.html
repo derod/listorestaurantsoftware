@@ -554,6 +554,99 @@
         linear-gradient(90deg, rgba(8, 9, 14, 0.94) 0%, rgba(8, 9, 14, 0.55) 60%, rgba(8, 9, 14, 0.30) 100%),
         linear-gradient(180deg, rgba(8, 9, 14, 0.55), rgba(8, 9, 14, 0.75));
     }
+
+    /* ── Contact / Lead section ─────────────────────────────────────── */
+    .contact {
+      padding: clamp(56px, 8vw, 96px) 0;
+      border-top: 1px solid var(--border);
+      background:
+        radial-gradient(1200px 400px at 50% -10%, rgba(56,189,248,0.10), transparent 70%),
+        var(--surface);
+    }
+    .contact-head { text-align: center; max-width: 680px; margin: 0 auto 36px; }
+    .contact-head .section-title { margin-bottom: 14px; }
+    .contact-head .body-text { margin: 0 auto; }
+
+    .benefit-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      max-width: 900px;
+      margin: 0 auto 40px;
+    }
+    .benefit {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 18px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .benefit .b-ico { font-size: 24px; line-height: 1; flex-shrink: 0; }
+    .benefit .b-txt { font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.3; }
+
+    .contact-form {
+      max-width: 720px;
+      margin: 0 auto;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: clamp(24px, 4vw, 40px);
+    }
+    .cf-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .cf-field { display: flex; flex-direction: column; gap: 6px; }
+    .cf-field.full { grid-column: 1 / -1; }
+    .cf-field label { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: 0.04em; }
+    .cf-field label .req { color: var(--accent); }
+    .cf-field input,
+    .cf-field select,
+    .cf-field textarea {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 15px;
+      color: var(--text);
+      font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    .cf-field textarea { resize: vertical; min-height: 96px; }
+    .cf-field input:focus,
+    .cf-field select:focus,
+    .cf-field textarea:focus { outline: none; border-color: var(--accent); }
+    .cf-honey { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+    .cf-submit {
+      grid-column: 1 / -1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 15px 32px;
+      background: var(--accent);
+      color: #08090e;
+      font-size: 16px;
+      font-weight: 800;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+    }
+    .cf-submit:hover { background: #7dd3fc; transform: translateY(-2px); box-shadow: 0 8px 32px rgba(56,189,248,0.25); }
+    .cf-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .cf-result { grid-column: 1 / -1; font-size: 15px; font-weight: 700; min-height: 20px; text-align: center; }
+    .cf-result.ok { color: var(--accent); }
+    .cf-result.err { color: #f87171; }
+
+    @media (max-width: 560px) {
+      .cf-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -1332,6 +1425,76 @@
   </div><!-- /rp -->
 
 
+  <!-- ── Contact / Lead form (shared, translated by JS) ──────────────── -->
+  <section class="contact" id="contact">
+    <div class="container">
+      <div class="contact-head">
+        <div class="eyebrow" data-i18n="c_eyebrow">Contáctanos</div>
+        <h2 class="section-title" data-i18n="c_title">Ahorra dinero. Sin equipo. Sin cuotas ocultas.</h2>
+        <p class="body-text" data-i18n="c_sub">Úsalo en tu celular o tablet. Déjanos tus datos y te mostramos cómo Listo moderniza tu restaurante sin comprar hardware.</p>
+      </div>
+
+      <div class="benefit-row">
+        <div class="benefit"><span class="b-ico">💰</span><span class="b-txt" data-i18n="c_b1">Ahorra dinero</span></div>
+        <div class="benefit"><span class="b-ico">📱</span><span class="b-txt" data-i18n="c_b2">Sin equipo — celular o tablet</span></div>
+        <div class="benefit"><span class="b-ico">🚫</span><span class="b-txt" data-i18n="c_b3">Sin cuotas ocultas</span></div>
+        <div class="benefit"><span class="b-ico">⚡</span><span class="b-txt" data-i18n="c_b4">Listo en minutos</span></div>
+      </div>
+
+      <form class="contact-form" id="contactForm" autocomplete="on">
+        <div class="cf-grid">
+          <div class="cf-field">
+            <label for="cf-name" data-i18n="c_f_name">Nombre <span class="req">*</span></label>
+            <input id="cf-name" name="name" required maxlength="200" />
+          </div>
+          <div class="cf-field">
+            <label for="cf-restaurant" data-i18n="c_f_restaurant">Restaurante</label>
+            <input id="cf-restaurant" name="restaurant" maxlength="200" />
+          </div>
+          <div class="cf-field">
+            <label for="cf-email" data-i18n="c_f_email">Email <span class="req">*</span></label>
+            <input id="cf-email" name="email" type="email" required maxlength="200" />
+          </div>
+          <div class="cf-field">
+            <label for="cf-phone" data-i18n="c_f_phone">Teléfono / WhatsApp</label>
+            <input id="cf-phone" name="phone" maxlength="60" />
+          </div>
+          <div class="cf-field">
+            <label for="cf-locations" data-i18n="c_f_locations">Sucursales</label>
+            <select id="cf-locations" name="locations">
+              <option value="" data-i18n="c_opt_choose">— Selecciona —</option>
+              <option value="1">1</option>
+              <option value="2-5">2–5</option>
+              <option value="5+">5+</option>
+            </select>
+          </div>
+          <div class="cf-field">
+            <label for="cf-system" data-i18n="c_f_system">¿Qué usas hoy?</label>
+            <select id="cf-system" name="current_system">
+              <option value="" data-i18n="c_opt_choose">— Selecciona —</option>
+              <option value="papel" data-i18n="c_sys_paper">Papel</option>
+              <option value="otro-pos" data-i18n="c_sys_pos">Otro POS</option>
+              <option value="nada" data-i18n="c_sys_none">Nada</option>
+            </select>
+          </div>
+          <div class="cf-field full">
+            <label for="cf-message" data-i18n="c_f_message">Mensaje</label>
+            <textarea id="cf-message" name="message" maxlength="4000"></textarea>
+          </div>
+
+          <!-- honeypot: hidden from humans -->
+          <div class="cf-honey" aria-hidden="true">
+            <label>No llenar<input type="text" name="company" tabindex="-1" autocomplete="off" /></label>
+          </div>
+
+          <button type="submit" class="cf-submit" id="cfSubmit" data-i18n="c_submit">Solicitar demo</button>
+          <div class="cf-result" id="cfResult" role="status"></div>
+        </div>
+      </form>
+    </div>
+  </section>
+
+
   <!-- ── Footer ──────────────────────────────────────────────────────── -->
   <footer>
     <div class="footer-inner">
@@ -1358,7 +1521,115 @@
       var langMap = { es: "es", en: "en", fr: "fr", pt: "pt-BR", rp: "es" };
       document.documentElement.lang = langMap[lang] || "es";
       mountBands();
+      applyContactLang(lang);
     }
+
+    /* ── Contact form: translations + submit ────────────────────────── */
+    var CONTACT_I18N = {
+      es: {
+        c_eyebrow: "Contáctanos", c_title: "Ahorra dinero. Sin equipo. Sin cuotas ocultas.",
+        c_sub: "Úsalo en tu celular o tablet. Déjanos tus datos y te mostramos cómo Listo moderniza tu restaurante sin comprar hardware.",
+        c_b1: "Ahorra dinero", c_b2: "Sin equipo — celular o tablet", c_b3: "Sin cuotas ocultas", c_b4: "Listo en minutos",
+        c_f_name: "Nombre *", c_f_restaurant: "Restaurante", c_f_email: "Email *", c_f_phone: "Teléfono / WhatsApp",
+        c_f_locations: "Sucursales", c_f_system: "¿Qué usas hoy?", c_f_message: "Mensaje",
+        c_opt_choose: "— Selecciona —", c_sys_paper: "Papel", c_sys_pos: "Otro POS", c_sys_none: "Nada",
+        c_submit: "Solicitar demo", c_sending: "Enviando…",
+        c_ok: "¡Gracias! Te contactamos pronto.", c_err: "No se pudo enviar. Revisa los datos e intenta de nuevo."
+      },
+      en: {
+        c_eyebrow: "Contact Us", c_title: "Save money. No equipment. No hidden fees.",
+        c_sub: "Use it on your phone or tablet. Leave your details and we'll show you how Listo modernizes your restaurant with no hardware to buy.",
+        c_b1: "Save money", c_b2: "No equipment — phone or tablet", c_b3: "No hidden fees", c_b4: "Ready in minutes",
+        c_f_name: "Name *", c_f_restaurant: "Restaurant", c_f_email: "Email *", c_f_phone: "Phone / WhatsApp",
+        c_f_locations: "Locations", c_f_system: "What do you use today?", c_f_message: "Message",
+        c_opt_choose: "— Select —", c_sys_paper: "Paper", c_sys_pos: "Another POS", c_sys_none: "Nothing",
+        c_submit: "Request a demo", c_sending: "Sending…",
+        c_ok: "Thanks! We'll be in touch soon.", c_err: "Couldn't send. Check your details and try again."
+      },
+      fr: {
+        c_eyebrow: "Contactez-nous", c_title: "Économisez. Aucun équipement. Aucuns frais cachés.",
+        c_sub: "Utilisez-le sur votre téléphone ou tablette. Laissez vos coordonnées et découvrez comment Listo modernise votre restaurant sans matériel à acheter.",
+        c_b1: "Économisez", c_b2: "Aucun équipement — mobile ou tablette", c_b3: "Aucuns frais cachés", c_b4: "Prêt en minutes",
+        c_f_name: "Nom *", c_f_restaurant: "Restaurant", c_f_email: "E-mail *", c_f_phone: "Téléphone / WhatsApp",
+        c_f_locations: "Établissements", c_f_system: "Que utilisez-vous aujourd'hui ?", c_f_message: "Message",
+        c_opt_choose: "— Choisir —", c_sys_paper: "Papier", c_sys_pos: "Autre caisse", c_sys_none: "Rien",
+        c_submit: "Demander une démo", c_sending: "Envoi…",
+        c_ok: "Merci ! Nous vous contacterons bientôt.", c_err: "Échec de l'envoi. Vérifiez vos données et réessayez."
+      },
+      pt: {
+        c_eyebrow: "Fale conosco", c_title: "Economize. Sem equipamento. Sem taxas ocultas.",
+        c_sub: "Use no seu celular ou tablet. Deixe seus dados e mostramos como o Listo moderniza seu restaurante sem comprar hardware.",
+        c_b1: "Economize", c_b2: "Sem equipamento — celular ou tablet", c_b3: "Sem taxas ocultas", c_b4: "Pronto em minutos",
+        c_f_name: "Nome *", c_f_restaurant: "Restaurante", c_f_email: "Email *", c_f_phone: "Telefone / WhatsApp",
+        c_f_locations: "Unidades", c_f_system: "O que você usa hoje?", c_f_message: "Mensagem",
+        c_opt_choose: "— Selecione —", c_sys_paper: "Papel", c_sys_pos: "Outro PDV", c_sys_none: "Nada",
+        c_submit: "Solicitar demo", c_sending: "Enviando…",
+        c_ok: "Obrigado! Entraremos em contato em breve.", c_err: "Não foi possível enviar. Verifique os dados e tente novamente."
+      },
+      rp: {
+        c_eyebrow: "Escríbenos", c_title: "Ahorra $. 0 equipo. 0 cuotas raras.",
+        c_sub: "Corre en tu cel o tablet. Deja tus datos y te mostramos Listo. Sin comprar nada.",
+        c_b1: "Ahorra $", c_b2: "0 equipo — cel/tablet", c_b3: "0 cuotas raras", c_b4: "Listo ya",
+        c_f_name: "Nombre *", c_f_restaurant: "Restaurante", c_f_email: "Email *", c_f_phone: "Tel / WA",
+        c_f_locations: "Sucursls", c_f_system: "Q usas hoy?", c_f_message: "Msj",
+        c_opt_choose: "— Elige —", c_sys_paper: "Papel", c_sys_pos: "Otro POS", c_sys_none: "Nada",
+        c_submit: "Quiero demo", c_sending: "Enviando…",
+        c_ok: "Gracias! Te escribimos pronto.", c_err: "No jaló. Revisa y reintenta."
+      }
+    };
+    var _contactLang = "es";
+
+    function applyContactLang(lang) {
+      var dict = CONTACT_I18N[lang] || CONTACT_I18N.es;
+      _contactLang = lang;
+      document.querySelectorAll("#contact [data-i18n]").forEach(function (el) {
+        var key = el.getAttribute("data-i18n");
+        if (dict[key] != null) el.textContent = dict[key];
+      });
+    }
+
+    (function wireContactForm() {
+      var form = document.getElementById("contactForm");
+      if (!form) return;
+      form.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        var dict = CONTACT_I18N[_contactLang] || CONTACT_I18N.es;
+        var btn = document.getElementById("cfSubmit");
+        var result = document.getElementById("cfResult");
+        var data = {
+          name: form.name.value.trim(),
+          restaurant: form.restaurant.value.trim(),
+          email: form.email.value.trim(),
+          phone: form.phone.value.trim(),
+          locations: form.locations.value,
+          current_system: form.current_system.value,
+          message: form.message.value.trim(),
+          company: form.company.value  // honeypot
+        };
+        result.textContent = "";
+        result.className = "cf-result";
+        btn.disabled = true;
+        var original = btn.textContent;
+        btn.textContent = dict.c_sending;
+        try {
+          var res = await fetch("/api/contact", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-lang": _contactLang },
+            body: JSON.stringify(data)
+          });
+          if (!res.ok) throw new Error("bad status");
+          result.textContent = dict.c_ok;
+          result.className = "cf-result ok";
+          form.reset();
+        } catch (err) {
+          result.textContent = dict.c_err;
+          result.className = "cf-result err";
+        } finally {
+          btn.disabled = false;
+          btn.textContent = original;
+        }
+      });
+    })();
 
     /* ── Video band backgrounds ─────────────────────────────────────────
        Injected only into the currently visible language block, so the 4

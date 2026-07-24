@@ -9,7 +9,7 @@ from pathlib import Path
 import shutil
 
 from ..database import get_db, DATA_DIR
-from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, cr_now
+from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, ContactMessage, cr_now
 from ..utils import duration_seconds
 from ..order_history import (
     OrderHistoryFilters, get_order_history, get_all_for_export,
@@ -281,9 +281,11 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         .limit(25)
         .all()
     )
+    leads_unread = db.query(func.count(ContactMessage.id)).filter(ContactMessage.status == "nuevo").scalar() or 0
     return templates.TemplateResponse(
         "admin.html",
-        {"request": request, "stats": stats, "orders": recent_orders, "duration_seconds": duration_seconds, "page_title": "Admin"},
+        {"request": request, "stats": stats, "orders": recent_orders, "duration_seconds": duration_seconds,
+         "leads_unread": leads_unread, "page_title": "Admin"},
     )
 
 
@@ -607,6 +609,92 @@ def admin_reports(request: Request, db: Session = Depends(get_db)):
             "week_label": f"{week_start.strftime('%Y-%m-%d')} → {today_start.strftime('%Y-%m-%d')}",
             "page_title": "Reportes",
         },
+    )
+
+
+# ─── admin leads / contact inbox ──────────────────────────────────────────────
+
+_LEAD_STATUSES = ["nuevo", "leido", "contactado", "archivado"]
+
+
+@router.get("/admin/leads")
+def admin_leads(request: Request, status: str = "", db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    from sqlalchemy import func
+
+    q = db.query(ContactMessage)
+    if status in _LEAD_STATUSES:
+        q = q.filter(ContactMessage.status == status)
+    leads = q.order_by(ContactMessage.created_at.desc()).limit(500).all()
+
+    counts = dict(
+        db.query(ContactMessage.status, func.count(ContactMessage.id))
+        .group_by(ContactMessage.status)
+        .all()
+    )
+    counts["all"] = sum(counts.get(s, 0) for s in _LEAD_STATUSES)
+    return templates.TemplateResponse(
+        "admin_leads.html",
+        {
+            "request": request,
+            "leads": leads,
+            "counts": counts,
+            "active_status": status if status in _LEAD_STATUSES else "",
+            "statuses": _LEAD_STATUSES,
+            "page_title": "Contactos",
+        },
+    )
+
+
+@router.post("/admin/leads/{lead_id}/status")
+def admin_lead_status(lead_id: int, request: Request, status: str = Form(...), db: Session = Depends(get_db)):
+    if not require_admin(request):
+        raise HTTPException(401, "Admin session required")
+    if status not in _LEAD_STATUSES:
+        raise HTTPException(400, "Estado inválido")
+    lead = db.query(ContactMessage).filter(ContactMessage.id == lead_id).first()
+    if not lead:
+        raise HTTPException(404, "Lead no encontrado")
+    lead.status = status
+    db.commit()
+    return {"ok": True, "id": lead_id, "status": status}
+
+
+@router.post("/admin/leads/{lead_id}/delete")
+def admin_lead_delete(lead_id: int, request: Request, db: Session = Depends(get_db)):
+    if not require_admin(request):
+        raise HTTPException(401, "Admin session required")
+    lead = db.query(ContactMessage).filter(ContactMessage.id == lead_id).first()
+    if lead:
+        db.delete(lead)
+        db.commit()
+    return {"ok": True, "id": lead_id}
+
+
+@router.get("/admin/leads/export.csv")
+def admin_leads_export(request: Request, db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    import csv
+    leads = db.query(ContactMessage).order_by(ContactMessage.created_at.desc()).all()
+    buf = _io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["id", "fecha", "nombre", "restaurante", "email", "telefono",
+                "sucursales", "usa_hoy", "estado", "idioma", "mensaje"])
+    for l in leads:
+        w.writerow([
+            l.id,
+            l.created_at.strftime("%Y-%m-%d %H:%M") if l.created_at else "",
+            l.name, l.restaurant or "", l.email, l.phone or "",
+            l.locations or "", l.current_system or "", l.status, l.lang or "",
+            (l.message or "").replace("\n", " "),
+        ])
+    buf.seek(0)
+    return StreamingResponse(
+        _io.BytesIO(buf.getvalue().encode("utf-8-sig")),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=contactos.csv"},
     )
 
 

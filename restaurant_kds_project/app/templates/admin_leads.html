@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .leads-head { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
+  .leads-head h1 { margin:0; }
+  .leads-tools { display:flex; gap:10px; flex-wrap:wrap; }
+  .leads-btn { display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:12px; background:var(--card); border:1px solid var(--border); color:var(--text); text-decoration:none; font-weight:700; font-size:14px; cursor:pointer; }
+  .leads-btn:hover { border-color:var(--accent); }
+
+  .lead-filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:22px; }
+  .lead-filter { padding:8px 14px; border-radius:999px; background:var(--card); border:1px solid var(--border); color:var(--text); text-decoration:none; font-size:14px; font-weight:700; }
+  .lead-filter.active { background:var(--accent); border-color:var(--accent); color:#111; }
+  .lead-filter .cnt { opacity:0.7; font-weight:600; }
+
+  .lead-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:16px; }
+  .lead-card { background:var(--card); border:1px solid var(--border); border-radius:18px; padding:20px; display:flex; flex-direction:column; gap:12px; }
+  .lead-card.st-nuevo { border-color:rgba(56,163,255,0.55); }
+  .lead-top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+  .lead-name { font-size:18px; font-weight:800; }
+  .lead-rest { font-size:13px; color:#b7becd; margin-top:2px; }
+  .lead-date { font-size:12px; color:var(--muted); white-space:nowrap; }
+
+  .lead-badge { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:800; }
+  .badge-nuevo { background:rgba(56,163,255,0.18); color:var(--blue); }
+  .badge-leido { background:rgba(255,210,77,0.18); color:var(--yellow); }
+  .badge-contactado { background:rgba(76,175,80,0.18); color:var(--green); }
+  .badge-archivado { background:rgba(120,130,150,0.18); color:#9aa6bd; }
+
+  .lead-info { display:flex; flex-direction:column; gap:6px; font-size:14px; }
+  .lead-info a { color:var(--accent); text-decoration:none; }
+  .lead-chips { display:flex; gap:6px; flex-wrap:wrap; }
+  .lead-chip { padding:3px 10px; border-radius:8px; background:var(--bg); border:1px solid var(--border); font-size:12px; font-weight:600; color:#b7becd; }
+  .lead-msg { font-size:14px; color:var(--text); background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:12px; white-space:pre-wrap; word-break:break-word; }
+
+  .lead-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:auto; }
+  .lead-status-sel { background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:8px 10px; color:var(--text); font-weight:700; font-size:13px; }
+  .lead-reply { padding:8px 14px; border-radius:10px; background:var(--accent); color:#111; text-decoration:none; font-weight:800; font-size:13px; }
+  .lead-del { padding:8px 12px; border-radius:10px; background:rgba(228,91,91,0.15); color:var(--red); border:1px solid rgba(228,91,91,0.45); font-weight:700; font-size:13px; cursor:pointer; }
+  .lead-del:hover { background:rgba(228,91,91,0.3); }
+
+  .leads-empty { text-align:center; color:var(--muted); padding:60px 20px; font-size:16px; }
+</style>
+
+<div class="leads-head">
+  <h1>Contactos {% if counts.nuevo %}<span class="lead-badge badge-nuevo">{{ counts.nuevo }} nuevos</span>{% endif %}</h1>
+  <div class="leads-tools">
+    <a class="leads-btn" href="/admin/leads/export.csv">&#11015; Exportar CSV</a>
+    <a class="leads-btn" href="/admin">&#8592; Dashboard</a>
+  </div>
+</div>
+
+<div class="lead-filters">
+  <a class="lead-filter {% if not active_status %}active{% endif %}" href="/admin/leads">Todos <span class="cnt">{{ counts.all or 0 }}</span></a>
+  {% for s in statuses %}
+  <a class="lead-filter {% if active_status == s %}active{% endif %}" href="/admin/leads?status={{ s }}">{{ s|capitalize }} <span class="cnt">{{ counts.get(s, 0) }}</span></a>
+  {% endfor %}
+</div>
+
+{% if not leads %}
+  <div class="leads-empty">No hay contactos {% if active_status %}en "{{ active_status }}"{% else %}aún{% endif %}.</div>
+{% else %}
+<div class="lead-grid">
+  {% for l in leads %}
+  <div class="lead-card st-{{ l.status }}" id="lead-{{ l.id }}" data-id="{{ l.id }}">
+    <div class="lead-top">
+      <div>
+        <div class="lead-name">{{ l.name }}</div>
+        {% if l.restaurant %}<div class="lead-rest">{{ l.restaurant }}</div>{% endif %}
+      </div>
+      <div style="text-align:right;">
+        <span class="lead-badge badge-{{ l.status }}" data-badge>{{ l.status|capitalize }}</span>
+        <div class="lead-date">{{ l.created_at.strftime('%d/%m/%Y %H:%M') if l.created_at else '' }}</div>
+      </div>
+    </div>
+
+    <div class="lead-info">
+      <div>&#9993; <a href="mailto:{{ l.email }}">{{ l.email }}</a></div>
+      {% if l.phone %}<div>&#128222; <a href="tel:{{ l.phone }}">{{ l.phone }}</a></div>{% endif %}
+    </div>
+
+    {% if l.locations or l.current_system or l.lang %}
+    <div class="lead-chips">
+      {% if l.locations %}<span class="lead-chip">Sucursales: {{ l.locations }}</span>{% endif %}
+      {% if l.current_system %}<span class="lead-chip">Usa: {{ l.current_system }}</span>{% endif %}
+      {% if l.lang %}<span class="lead-chip">{{ l.lang }}</span>{% endif %}
+    </div>
+    {% endif %}
+
+    {% if l.message %}<div class="lead-msg">{{ l.message }}</div>{% endif %}
+
+    <div class="lead-actions">
+      <select class="lead-status-sel" data-status onchange="setLeadStatus({{ l.id }}, this.value)">
+        {% for s in statuses %}
+        <option value="{{ s }}" {% if l.status == s %}selected{% endif %}>{{ s|capitalize }}</option>
+        {% endfor %}
+      </select>
+      <a class="lead-reply" href="mailto:{{ l.email }}?subject=Listo Restaurant Software">Responder</a>
+      <button class="lead-del" onclick="deleteLead({{ l.id }})">Eliminar</button>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<script>
+  async function setLeadStatus(id, status) {
+    try {
+      const res = await fetch(`/admin/leads/${id}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "status=" + encodeURIComponent(status),
+        credentials: "same-origin"
+      });
+      if (!res.ok) throw new Error();
+      const card = document.getElementById("lead-" + id);
+      const badge = card.querySelector("[data-badge]");
+      badge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+      badge.className = "lead-badge badge-" + status;
+      card.className = "lead-card st-" + status;
+    } catch (e) {
+      alert("No se pudo actualizar el estado.");
+    }
+  }
+
+  async function deleteLead(id) {
+    if (!confirm("¿Eliminar este contacto? No se puede deshacer.")) return;
+    try {
+      const res = await fetch(`/admin/leads/${id}/delete`, { method: "POST", credentials: "same-origin" });
+      if (!res.ok) throw new Error();
+      const card = document.getElementById("lead-" + id);
+      if (card) card.remove();
+    } catch (e) {
+      alert("No se pudo eliminar.");
+    }
+  }
+</script>
+{% endblock %}

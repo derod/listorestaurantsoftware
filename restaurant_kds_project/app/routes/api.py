@@ -1,12 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+import logging
+import re
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy.orm import Session, joinedload
 from ..database import get_db
 from ..schemas import OrderCreate, OrderUpdate, StatusUpdate, ProductCreate
-from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem
+from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, ContactMessage
 from ..utils import create_order, get_order, update_order_items, change_order_status, duration_seconds
-from pydantic import BaseModel
+from ..notifications import send_lead_notification
+from pydantic import BaseModel, Field
+from typing import Optional
 
 router = APIRouter()
+logger = logging.getLogger("leads")
 
 
 def serialize_order(order: Order):
@@ -203,3 +208,59 @@ def audio_settings(db: Session = Depends(get_db)):
         "voice_enabled_for_station_orders": settings.voice_enabled_for_station_orders,
         "master_volume": settings.master_volume,
     }
+
+
+# ─── public contact / lead form ──────────────────────────────────────────────
+
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+_VALID_LOCATIONS = {"1", "2-5", "5+"}
+_VALID_SYSTEMS = {"papel", "otro-pos", "nada"}
+
+
+class ContactIn(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    email: str = Field(min_length=3, max_length=200)
+    restaurant: Optional[str] = Field(default=None, max_length=200)
+    phone: Optional[str] = Field(default=None, max_length=60)
+    locations: Optional[str] = None
+    current_system: Optional[str] = None
+    message: Optional[str] = Field(default=None, max_length=4000)
+    company: Optional[str] = None  # honeypot — must stay empty
+
+
+@router.post("/contact")
+def submit_contact(
+    payload: ContactIn,
+    request: Request,
+    background: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    # Honeypot: real users never fill a hidden field. Pretend success for bots.
+    if payload.company:
+        logger.info("Contact honeypot triggered; dropping submission")
+        return {"ok": True}
+
+    name = payload.name.strip()
+    email = payload.email.strip()
+    if not name or not _EMAIL_RE.match(email):
+        raise HTTPException(400, "Nombre o email inválido")
+
+    lead = ContactMessage(
+        name=name[:200],
+        email=email[:200],
+        restaurant=(payload.restaurant or "").strip()[:200] or None,
+        phone=(payload.phone or "").strip()[:60] or None,
+        locations=payload.locations if payload.locations in _VALID_LOCATIONS else None,
+        current_system=payload.current_system if payload.current_system in _VALID_SYSTEMS else None,
+        message=(payload.message or "").strip()[:4000] or None,
+        lang=(request.headers.get("x-lang") or "")[:5] or None,
+        source_ip=(request.client.host if request.client else None),
+        status="nuevo",
+    )
+    db.add(lead)
+    db.commit()
+    db.refresh(lead)
+
+    # Fire the email alert after responding (never blocks or breaks the form).
+    background.add_task(send_lead_notification, lead)
+    return {"ok": True}

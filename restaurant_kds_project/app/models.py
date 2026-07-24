@@ -179,3 +179,20 @@ class InventoryMovement(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
 
     ingredient = relationship("Ingredient")
+
+
+class ContactMessage(Base):
+    """A lead submitted from the public landing 'Contact Us' form."""
+    __tablename__ = "contact_messages"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    restaurant: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    email: Mapped[str] = mapped_column(String(200), nullable=False)
+    phone: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    locations: Mapped[str | None] = mapped_column(String(20), nullable=True)   # 1 | 2-5 | 5+
+    current_system: Mapped[str | None] = mapped_column(String(40), nullable=True)  # papel | otro-pos | nada
+    message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="nuevo", index=True)  # nuevo|leido|contactado|archivado
+    lang: Mapped[str | None] = mapped_column(String(5), nullable=True)
+    source_ip: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now, index=True)
