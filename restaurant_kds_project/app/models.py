@@ -196,3 +196,14 @@ class ContactMessage(Base):
     lang: Mapped[str | None] = mapped_column(String(5), nullable=True)
     source_ip: Mapped[str | None] = mapped_column(String(60), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now, index=True)
+
+
+class AccessLog(Base):
+    """Records each successful login/entry to any module."""
+    __tablename__ = "access_logs"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    role: Mapped[str] = mapped_column(String(20), nullable=False, index=True)  # admin|station|kitchen|inventory|pos
+    actor_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    waiter_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    ip: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now, index=True)

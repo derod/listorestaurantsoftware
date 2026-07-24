@@ -9,7 +9,7 @@ from pathlib import Path
 import shutil
 
 from ..database import get_db, DATA_DIR
-from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, ContactMessage, cr_now
+from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, ContactMessage, AccessLog, cr_now
 from ..utils import duration_seconds
 from ..order_history import (
     OrderHistoryFilters, get_order_history, get_all_for_export,
@@ -45,6 +45,20 @@ def require_admin(request: Request):
     return request.session.get("admin_logged_in") is True
 
 
+def record_access(db: Session, request: Request, role: str, actor_name=None, waiter_id=None):
+    """Log a successful login/entry. Best-effort — never breaks the login."""
+    try:
+        db.add(AccessLog(
+            role=role,
+            actor_name=actor_name,
+            waiter_id=waiter_id,
+            ip=(request.client.host if request.client else None),
+        ))
+        db.commit()
+    except Exception:
+        db.rollback()
+
+
 # ─── root ────────────────────────────────────────────────────────────────────
 
 @router.get("/")
@@ -67,9 +81,10 @@ def admin_login_page(request: Request):
 
 
 @router.post("/admin/login")
-def admin_login_submit(request: Request, email: str = Form(...), passcode: str = Form(...)):
+def admin_login_submit(request: Request, email: str = Form(...), passcode: str = Form(...), db: Session = Depends(get_db)):
     if email.strip() == ADMIN_EMAIL and passcode == ADMIN_PASSCODE:
         request.session["admin_logged_in"] = True
+        record_access(db, request, "admin", "Admin")
         return RedirectResponse(url="/admin", status_code=303)
     return templates.TemplateResponse(
         "admin_login.html",
@@ -105,6 +120,7 @@ def station_login_submit(request: Request, pin: str = Form(...), db: Session = D
         )
     request.session["waiter_id"] = waiter.id
     request.session["waiter_name"] = waiter.name
+    record_access(db, request, "station", waiter.name, waiter.id)
     return RedirectResponse(url="/station-a/dashboard", status_code=303)
 
 
@@ -168,6 +184,7 @@ def kitchen_login_submit(request: Request, pin: str = Form(...), db: Session = D
         )
     request.session["waiter_id"] = waiter.id
     request.session["waiter_name"] = waiter.name
+    record_access(db, request, "kitchen", waiter.name, waiter.id)
     return RedirectResponse(url="/kitchen/dashboard", status_code=303)
 
 
@@ -698,6 +715,69 @@ def admin_leads_export(request: Request, db: Session = Depends(get_db)):
     )
 
 
+# ─── admin access log ─────────────────────────────────────────────────────────
+
+_ACCESS_ROLES = ["admin", "station", "kitchen", "inventory", "pos"]
+_ACCESS_ROLE_LABELS = {
+    "admin": "Admin", "station": "Salón", "kitchen": "Cocina",
+    "inventory": "Inventario", "pos": "Punto de Venta",
+}
+
+
+@router.get("/admin/access-log")
+def admin_access_log(request: Request, role: str = "", db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    from sqlalchemy import func
+
+    q = db.query(AccessLog)
+    if role in _ACCESS_ROLES:
+        q = q.filter(AccessLog.role == role)
+    rows = q.order_by(AccessLog.created_at.desc()).limit(500).all()
+
+    counts = dict(
+        db.query(AccessLog.role, func.count(AccessLog.id)).group_by(AccessLog.role).all()
+    )
+    counts["all"] = sum(counts.get(r, 0) for r in _ACCESS_ROLES)
+    return templates.TemplateResponse(
+        "admin_access_log.html",
+        {
+            "request": request,
+            "rows": rows,
+            "counts": counts,
+            "active_role": role if role in _ACCESS_ROLES else "",
+            "roles": _ACCESS_ROLES,
+            "role_labels": _ACCESS_ROLE_LABELS,
+            "page_title": "Accesos",
+        },
+    )
+
+
+@router.get("/admin/access-log/export.csv")
+def admin_access_log_export(request: Request, db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    import csv
+    rows = db.query(AccessLog).order_by(AccessLog.created_at.desc()).all()
+    buf = _io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["id", "fecha", "modulo", "usuario", "ip"])
+    for r in rows:
+        w.writerow([
+            r.id,
+            r.created_at.strftime("%Y-%m-%d %H:%M:%S") if r.created_at else "",
+            _ACCESS_ROLE_LABELS.get(r.role, r.role),
+            r.actor_name or "",
+            r.ip or "",
+        ])
+    buf.seek(0)
+    return StreamingResponse(
+        _io.BytesIO(buf.getvalue().encode("utf-8-sig")),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=accesos.csv"},
+    )
+
+
 # ─── admin inventory ──────────────────────────────────────────────────────────
 
 @router.get("/admin/inventory")
@@ -780,6 +860,7 @@ def inventory_login_submit(request: Request, pin: str = Form(...), db: Session =
         )
     request.session["inv_user_id"] = waiter.id
     request.session["inv_user_name"] = waiter.name
+    record_access(db, request, "inventory", waiter.name, waiter.id)
     return RedirectResponse(url="/inventory", status_code=303)
 
 
@@ -896,6 +977,7 @@ def pos_login_submit(request: Request, pin: str = Form(...), db: Session = Depen
         )
     request.session["pos_user_id"] = waiter.id
     request.session["pos_user_name"] = waiter.name
+    record_access(db, request, "pos", waiter.name, waiter.id)
     return RedirectResponse(url="/pos", status_code=303)
 
 

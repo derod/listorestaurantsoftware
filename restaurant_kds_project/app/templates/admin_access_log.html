@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .acc-head { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
+  .acc-head h1 { margin:0; }
+  .acc-tools { display:flex; gap:10px; flex-wrap:wrap; }
+  .acc-btn { display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:12px; background:var(--card); border:1px solid var(--border); color:var(--text); text-decoration:none; font-weight:700; font-size:14px; }
+  .acc-btn:hover { border-color:var(--accent); }
+
+  .acc-filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:22px; }
+  .acc-filter { padding:8px 14px; border-radius:999px; background:var(--card); border:1px solid var(--border); color:var(--text); text-decoration:none; font-size:14px; font-weight:700; }
+  .acc-filter.active { background:var(--accent); border-color:var(--accent); color:#111; }
+  .acc-filter .cnt { opacity:0.7; font-weight:600; }
+
+  .acc-table-wrap { overflow-x:auto; border:1px solid var(--border); border-radius:16px; }
+  table.acc-table { width:100%; border-collapse:collapse; font-size:15px; }
+  .acc-table th, .acc-table td { text-align:left; padding:14px 16px; border-bottom:1px solid var(--border); white-space:nowrap; }
+  .acc-table th { font-size:12px; letter-spacing:0.04em; text-transform:uppercase; color:var(--muted); font-weight:700; }
+  .acc-table tr:last-child td { border-bottom:none; }
+  .acc-table tbody tr:hover { background:rgba(255,255,255,0.03); }
+
+  .acc-tag { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:800; }
+  .tag-admin { background:rgba(255,140,66,0.18); color:var(--accent); }
+  .tag-station { background:rgba(56,163,255,0.18); color:var(--blue); }
+  .tag-kitchen { background:rgba(255,210,77,0.18); color:var(--yellow); }
+  .tag-inventory { background:rgba(76,175,80,0.18); color:var(--green); }
+  .tag-pos { background:rgba(180,140,255,0.20); color:#c4b5fd; }
+
+  .acc-empty { text-align:center; color:var(--muted); padding:60px 20px; font-size:16px; }
+</style>
+
+<div class="acc-head">
+  <h1>Accesos</h1>
+  <div class="acc-tools">
+    <a class="acc-btn" href="/admin/access-log/export.csv">&#11015; Exportar CSV</a>
+    <a class="acc-btn" href="/admin">&#8592; Dashboard</a>
+  </div>
+</div>
+
+<div class="acc-filters">
+  <a class="acc-filter {% if not active_role %}active{% endif %}" href="/admin/access-log">Todos <span class="cnt">{{ counts.all or 0 }}</span></a>
+  {% for r in roles %}
+  <a class="acc-filter {% if active_role == r %}active{% endif %}" href="/admin/access-log?role={{ r }}">{{ role_labels[r] }} <span class="cnt">{{ counts.get(r, 0) }}</span></a>
+  {% endfor %}
+</div>
+
+{% if not rows %}
+  <div class="acc-empty">No hay accesos registrados {% if active_role %}en "{{ role_labels[active_role] }}"{% endif %} todavía.</div>
+{% else %}
+<div class="acc-table-wrap">
+  <table class="acc-table">
+    <thead>
+      <tr><th>Fecha y hora</th><th>Módulo</th><th>Usuario</th><th>IP</th></tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.created_at.strftime('%d/%m/%Y %H:%M:%S') if r.created_at else '-' }}</td>
+        <td><span class="acc-tag tag-{{ r.role }}">{{ role_labels.get(r.role, r.role) }}</span></td>
+        <td>{{ r.actor_name or '-' }}</td>
+        <td>{{ r.ip or '-' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}
