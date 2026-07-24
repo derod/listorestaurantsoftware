@@ -388,3 +388,42 @@ async function pollKitchenInternal() {
 
 pollKitchenInternal();
 setInterval(pollKitchenInternal, 4000);
+
+/* ─── On-screen audio diagnostic ────────────────────────────────────── */
+function _injectAudioTest() {
+  if (document.getElementById("audioTestBtn")) return;
+  const btn = document.createElement("button");
+  btn.id = "audioTestBtn";
+  btn.textContent = "🔊 Probar audio";
+  btn.style.cssText = "position:fixed;bottom:16px;right:16px;z-index:99999;padding:14px 20px;font-size:18px;font-weight:800;border:none;border-radius:14px;background:#ffd24d;color:#111;box-shadow:0 6px 20px rgba(0,0,0,.4);cursor:pointer;";
+  const status = document.createElement("div");
+  status.id = "audioTestStatus";
+  status.style.cssText = "position:fixed;bottom:74px;right:16px;z-index:99999;max-width:340px;padding:12px 14px;font-size:13px;line-height:1.45;border-radius:12px;background:rgba(0,0,0,.88);color:#fff;white-space:pre-wrap;display:none;";
+  btn.addEventListener("click", async () => {
+    status.style.display = "block";
+    window.userInteracted = true;
+    _unlockAudio();
+    const ctx = _getAudioCtx();
+    let out = "AudioContext: " + (ctx ? ctx.state : "NO DISPONIBLE") + "\n";
+    out += "sampleRate: " + (ctx ? ctx.sampleRate : "-") + "\n";
+    try { beep(880, 300); out += "Beep: enviado — ¿lo oíste?\n"; }
+    catch (e) { out += "Beep: ERROR " + (e && e.message) + "\n"; }
+    const src = Object.keys(AUDIO).map((k) => AUDIO[k]).find((v) => typeof v === "string" && /\.(mp3|wav|ogg|m4a|aac)$/i.test(v));
+    if (!src) { out += "MP3: NO hay sonido configurado (Admin › Audio)\n"; status.textContent = out; return; }
+    out += "MP3 src: " + src + "\n";
+    status.textContent = out + "MP3: cargando…";
+    try {
+      const buf = await _loadBuffer(src);
+      const ok = _playBuffer(buf);
+      out += "MP3: decodificado OK, reproducido=" + ok + " — ¿lo oíste?\n";
+    } catch (e) {
+      out += "MP3: FALLO -> " + (e && e.message ? e.message : e) + "\n";
+      try { _playSoundFileElement(src); out += "Fallback <audio>: intentado\n"; } catch (e2) {}
+    }
+    status.textContent = out;
+  });
+  document.body.appendChild(btn);
+  document.body.appendChild(status);
+}
+if (document.readyState !== "loading") _injectAudioTest();
+else document.addEventListener("DOMContentLoaded", _injectAudioTest);
