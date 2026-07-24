@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .clk-head { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:18px; }
+  .clk-head h1 { margin:0; }
+  .clk-tools { display:flex; gap:10px; flex-wrap:wrap; }
+  .clk-btn { display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:12px; background:var(--card); border:1px solid var(--border); color:var(--text); text-decoration:none; font-weight:700; font-size:14px; }
+  .clk-btn:hover { border-color:var(--accent); }
+
+  .clk-sub { color:var(--muted); font-size:14px; margin-bottom:18px; }
+  .clk-sub .live { color:var(--green); font-weight:800; }
+
+  .clk-filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px; }
+  .clk-filter { padding:8px 16px; border-radius:999px; background:var(--card); border:1px solid var(--border); color:var(--text); text-decoration:none; font-size:14px; font-weight:700; }
+  .clk-filter.active { background:var(--accent); border-color:var(--accent); color:#111; }
+
+  .clk-user { background:var(--card); border:1px solid var(--border); border-radius:18px; padding:20px; margin-bottom:16px; }
+  .clk-user-top { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+  .clk-name { font-size:20px; font-weight:800; display:flex; align-items:center; gap:10px; }
+  .clk-live-dot { width:10px; height:10px; border-radius:50%; background:var(--green); box-shadow:0 0 0 4px rgba(76,175,80,0.18); }
+  .clk-total { font-size:16px; font-weight:800; color:var(--accent); }
+  .clk-total small { color:var(--muted); font-weight:600; font-size:13px; }
+
+  .clk-table-wrap { overflow-x:auto; }
+  table.clk-table { width:100%; border-collapse:collapse; font-size:15px; }
+  .clk-table th, .clk-table td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--border); white-space:nowrap; }
+  .clk-table th { font-size:11px; letter-spacing:0.04em; text-transform:uppercase; color:var(--muted); font-weight:700; }
+  .clk-table tr:last-child td { border-bottom:none; }
+
+  .clk-tag { display:inline-block; padding:2px 9px; border-radius:999px; font-size:12px; font-weight:800; }
+  .tag-station { background:rgba(56,163,255,0.18); color:var(--blue); }
+  .tag-kitchen { background:rgba(255,210,77,0.18); color:var(--yellow); }
+  .tag-inventory { background:rgba(76,175,80,0.18); color:var(--green); }
+  .tag-pos { background:rgba(180,140,255,0.20); color:#c4b5fd; }
+
+  .clk-open { color:var(--green); font-weight:800; }
+  .clk-auto { color:var(--muted); font-size:12px; }
+  .clk-empty { text-align:center; color:var(--muted); padding:60px 20px; font-size:16px; }
+</style>
+
+<div class="clk-head">
+  <h1>Reloj — Marcaciones</h1>
+  <div class="clk-tools">
+    <a class="clk-btn" href="/admin/clock/export.csv?range={{ active_range }}">&#11015; Exportar CSV</a>
+    <a class="clk-btn" href="/admin">&#8592; Dashboard</a>
+  </div>
+</div>
+
+<div class="clk-sub">
+  {% if working_now %}<span class="live">&#9679; {{ working_now }} trabajando ahora</span>{% else %}Nadie con turno abierto ahora.{% endif %}
+  &nbsp;·&nbsp; Clock in = ingreso · Clock out = "Cambiar agente" / Salir · los turnos sin salida se cierran solos a medianoche.
+</div>
+
+<div class="clk-filters">
+  <a class="clk-filter {% if active_range == 'today' %}active{% endif %}" href="/admin/clock?range=today">Hoy</a>
+  <a class="clk-filter {% if active_range == 'week' %}active{% endif %}" href="/admin/clock?range=week">Esta semana</a>
+  <a class="clk-filter {% if active_range == 'all' %}active{% endif %}" href="/admin/clock?range=all">Todo</a>
+</div>
+
+{% if not users %}
+  <div class="clk-empty">No hay marcaciones en este período.</div>
+{% else %}
+  {% for u in users %}
+  <div class="clk-user">
+    <div class="clk-user-top">
+      <div class="clk-name">
+        {% if u.working %}<span class="clk-live-dot" title="Trabajando ahora"></span>{% endif %}
+        {{ u.name }}
+      </div>
+      <div class="clk-total">{{ u.total }} <small>total</small></div>
+    </div>
+    <div class="clk-table-wrap">
+      <table class="clk-table">
+        <thead>
+          <tr><th>Fecha</th><th>Módulo</th><th>Entrada</th><th>Salida</th><th>Horas</th></tr>
+        </thead>
+        <tbody>
+          {% for r in u.rows %}
+          <tr>
+            <td>{{ r.date }}</td>
+            <td><span class="clk-tag tag-{{ r.role }}">{{ r.role_label }}</span></td>
+            <td>{{ r.in }}</td>
+            <td>
+              {% if r.open %}<span class="clk-open">En turno</span>
+              {% else %}{{ r.out }}{% if r.auto %} <span class="clk-auto">(auto)</span>{% endif %}{% endif %}
+            </td>
+            <td>{{ r.hours }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endfor %}
+{% endif %}
+{% endblock %}

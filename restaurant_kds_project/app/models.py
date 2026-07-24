@@ -207,3 +207,15 @@ class AccessLog(Base):
     waiter_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     ip: Mapped[str | None] = mapped_column(String(60), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now, index=True)
+
+
+class WorkSession(Base):
+    """A clock-in / clock-out shift for a staff member on a given module."""
+    __tablename__ = "work_sessions"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    waiter_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    actor_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    role: Mapped[str] = mapped_column(String(20), nullable=False, index=True)  # station|kitchen|inventory|pos
+    clock_in: Mapped[datetime] = mapped_column(DateTime, default=cr_now, index=True)
+    clock_out: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    auto_closed: Mapped[bool] = mapped_column(Boolean, default=False)

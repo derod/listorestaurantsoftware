@@ -9,7 +9,7 @@ from pathlib import Path
 import shutil
 
 from ..database import get_db, DATA_DIR
-from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, ContactMessage, AccessLog, cr_now
+from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, ContactMessage, AccessLog, WorkSession, cr_now
 from ..utils import duration_seconds
 from ..order_history import (
     OrderHistoryFilters, get_order_history, get_all_for_export,
@@ -55,6 +55,68 @@ def record_access(db: Session, request: Request, role: str, actor_name=None, wai
             ip=(request.client.host if request.client else None),
         ))
         db.commit()
+    except Exception:
+        db.rollback()
+
+
+# ─── time clock (clock in / clock out) ────────────────────────────────────────
+
+CLOCK_ROLES = ["station", "kitchen", "inventory", "pos"]
+CLOCK_ROLE_LABELS = {
+    "station": "Salón", "kitchen": "Cocina", "inventory": "Inventario", "pos": "Punto de Venta",
+}
+
+
+def auto_close_stale_sessions(db: Session):
+    """Auto clock-out shifts left open from previous days (midnight close)."""
+    try:
+        today = cr_now().replace(hour=0, minute=0, second=0, microsecond=0)
+        stale = db.query(WorkSession).filter(
+            WorkSession.clock_out == None,  # noqa: E711
+            WorkSession.clock_in < today,
+        ).all()
+        for s in stale:
+            s.clock_out = s.clock_in.replace(hour=23, minute=59, second=59, microsecond=0)
+            s.auto_closed = True
+        if stale:
+            db.commit()
+    except Exception:
+        db.rollback()
+
+
+def clock_in(db: Session, role: str, actor_name, waiter_id):
+    """Open a shift. Idempotent per (waiter, module): reuses an open one."""
+    try:
+        auto_close_stale_sessions(db)
+        existing = db.query(WorkSession).filter(
+            WorkSession.clock_out == None,  # noqa: E711
+            WorkSession.role == role,
+            WorkSession.waiter_id == waiter_id,
+        ).first()
+        if existing:
+            return
+        db.add(WorkSession(role=role, actor_name=actor_name, waiter_id=waiter_id))
+        db.commit()
+    except Exception:
+        db.rollback()
+
+
+def clock_out(db: Session, role: str, waiter_id):
+    """Close the open shift for this (waiter, module), if any."""
+    try:
+        s = (
+            db.query(WorkSession)
+            .filter(
+                WorkSession.clock_out == None,  # noqa: E711
+                WorkSession.role == role,
+                WorkSession.waiter_id == waiter_id,
+            )
+            .order_by(WorkSession.clock_in.desc())
+            .first()
+        )
+        if s:
+            s.clock_out = cr_now()
+            db.commit()
     except Exception:
         db.rollback()
 
@@ -121,11 +183,15 @@ def station_login_submit(request: Request, pin: str = Form(...), db: Session = D
     request.session["waiter_id"] = waiter.id
     request.session["waiter_name"] = waiter.name
     record_access(db, request, "station", waiter.name, waiter.id)
+    clock_in(db, "station", waiter.name, waiter.id)
     return RedirectResponse(url="/station-a/dashboard", status_code=303)
 
 
 @router.get("/station-a/logout")
-def station_logout(request: Request):
+def station_logout(request: Request, db: Session = Depends(get_db)):
+    wid = request.session.get("waiter_id")
+    if wid:
+        clock_out(db, "station", wid)
     request.session.pop("waiter_id", None)
     request.session.pop("waiter_name", None)
     return RedirectResponse(url="/station-a/login")
@@ -185,11 +251,15 @@ def kitchen_login_submit(request: Request, pin: str = Form(...), db: Session = D
     request.session["waiter_id"] = waiter.id
     request.session["waiter_name"] = waiter.name
     record_access(db, request, "kitchen", waiter.name, waiter.id)
+    clock_in(db, "kitchen", waiter.name, waiter.id)
     return RedirectResponse(url="/kitchen/dashboard", status_code=303)
 
 
 @router.get("/kitchen/logout")
-def kitchen_logout(request: Request):
+def kitchen_logout(request: Request, db: Session = Depends(get_db)):
+    wid = request.session.get("waiter_id")
+    if wid:
+        clock_out(db, "kitchen", wid)
     request.session.pop("waiter_id", None)
     request.session.pop("waiter_name", None)
     return RedirectResponse(url="/kitchen/login")
@@ -778,6 +848,114 @@ def admin_access_log_export(request: Request, db: Session = Depends(get_db)):
     )
 
 
+# ─── admin time clock ─────────────────────────────────────────────────────────
+
+def _fmt_hm(seconds: float) -> str:
+    m = int(max(0, seconds) // 60)
+    return f"{m // 60}h {m % 60:02d}m"
+
+
+def _clock_range_start(rng: str):
+    now = cr_now()
+    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    if rng == "week":
+        return today - timedelta(days=today.weekday())  # Monday of this week
+    if rng == "all":
+        return None
+    return today  # default: today
+
+
+@router.get("/admin/clock")
+def admin_clock(request: Request, range: str = "today", db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    auto_close_stale_sessions(db)
+
+    rng = range if range in ("today", "week", "all") else "today"
+    start = _clock_range_start(rng)
+    now = cr_now()
+
+    q = db.query(WorkSession)
+    if start is not None:
+        q = q.filter(WorkSession.clock_in >= start)
+    sessions = q.order_by(WorkSession.clock_in.desc()).all()
+
+    users = {}
+    working_now = 0
+    for s in sessions:
+        name = s.actor_name or "—"
+        u = users.setdefault(name, {"name": name, "rows": [], "total_seconds": 0, "working": False})
+        end = s.clock_out or now
+        secs = max(0, (end - s.clock_in).total_seconds())
+        is_open = s.clock_out is None
+        u["rows"].append({
+            "role_label": CLOCK_ROLE_LABELS.get(s.role, s.role),
+            "role": s.role,
+            "date": s.clock_in.strftime("%d/%m/%Y"),
+            "in": s.clock_in.strftime("%H:%M"),
+            "out": ("—" if is_open else s.clock_out.strftime("%H:%M")),
+            "hours": _fmt_hm(secs),
+            "open": is_open,
+            "auto": s.auto_closed,
+        })
+        u["total_seconds"] += secs
+        if is_open:
+            u["working"] = True
+    for u in users.values():
+        u["total"] = _fmt_hm(u["total_seconds"])
+        if u["working"]:
+            working_now += 1
+
+    users_list = sorted(users.values(), key=lambda x: x["name"].lower())
+    return templates.TemplateResponse(
+        "admin_clock.html",
+        {
+            "request": request,
+            "users": users_list,
+            "active_range": rng,
+            "working_now": working_now,
+            "page_title": "Reloj",
+        },
+    )
+
+
+@router.get("/admin/clock/export.csv")
+def admin_clock_export(request: Request, range: str = "all", db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    import csv
+    auto_close_stale_sessions(db)
+    rng = range if range in ("today", "week", "all") else "all"
+    start = _clock_range_start(rng)
+    now = cr_now()
+    q = db.query(WorkSession)
+    if start is not None:
+        q = q.filter(WorkSession.clock_in >= start)
+    sessions = q.order_by(WorkSession.actor_name.asc(), WorkSession.clock_in.asc()).all()
+
+    buf = _io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["usuario", "modulo", "fecha", "entrada", "salida", "horas", "estado"])
+    for s in sessions:
+        end = s.clock_out or now
+        secs = max(0, (end - s.clock_in).total_seconds())
+        w.writerow([
+            s.actor_name or "",
+            CLOCK_ROLE_LABELS.get(s.role, s.role),
+            s.clock_in.strftime("%Y-%m-%d"),
+            s.clock_in.strftime("%H:%M"),
+            (s.clock_out.strftime("%H:%M") if s.clock_out else "ABIERTO"),
+            _fmt_hm(secs),
+            ("auto-cerrado" if s.auto_closed else ("abierto" if s.clock_out is None else "cerrado")),
+        ])
+    buf.seek(0)
+    return StreamingResponse(
+        _io.BytesIO(buf.getvalue().encode("utf-8-sig")),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=reloj.csv"},
+    )
+
+
 # ─── admin inventory ──────────────────────────────────────────────────────────
 
 @router.get("/admin/inventory")
@@ -861,11 +1039,15 @@ def inventory_login_submit(request: Request, pin: str = Form(...), db: Session =
     request.session["inv_user_id"] = waiter.id
     request.session["inv_user_name"] = waiter.name
     record_access(db, request, "inventory", waiter.name, waiter.id)
+    clock_in(db, "inventory", waiter.name, waiter.id)
     return RedirectResponse(url="/inventory", status_code=303)
 
 
 @router.get("/inventory/logout")
-def inventory_logout(request: Request):
+def inventory_logout(request: Request, db: Session = Depends(get_db)):
+    wid = request.session.get("inv_user_id")
+    if wid:
+        clock_out(db, "inventory", wid)
     request.session.pop("inv_user_id", None)
     request.session.pop("inv_user_name", None)
     return RedirectResponse(url="/inventory/login")
@@ -978,11 +1160,15 @@ def pos_login_submit(request: Request, pin: str = Form(...), db: Session = Depen
     request.session["pos_user_id"] = waiter.id
     request.session["pos_user_name"] = waiter.name
     record_access(db, request, "pos", waiter.name, waiter.id)
+    clock_in(db, "pos", waiter.name, waiter.id)
     return RedirectResponse(url="/pos", status_code=303)
 
 
 @router.get("/pos/logout")
-def pos_logout(request: Request):
+def pos_logout(request: Request, db: Session = Depends(get_db)):
+    wid = request.session.get("pos_user_id")
+    if wid:
+        clock_out(db, "pos", wid)
     request.session.pop("pos_user_id", None)
     request.session.pop("pos_user_name", None)
     return RedirectResponse(url="/pos/login")
