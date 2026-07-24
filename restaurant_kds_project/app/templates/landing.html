@@ -583,7 +583,26 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
     }
-    .benefit .b-ico { font-size: 24px; line-height: 1; flex-shrink: 0; }
+    .benefit .b-ico {
+      flex-shrink: 0;
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.10);
+      border: 1px solid rgba(56, 189, 248, 0.22);
+    }
+    .benefit .b-ico svg {
+      width: 15px;
+      height: 15px;
+      stroke: var(--accent);
+      fill: none;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
     .benefit .b-txt { font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.3; }
 
     .contact-form {
@@ -1435,10 +1454,10 @@
       </div>
 
       <div class="benefit-row">
-        <div class="benefit"><span class="b-ico">💰</span><span class="b-txt" data-i18n="c_b1">Ahorra dinero</span></div>
-        <div class="benefit"><span class="b-ico">📱</span><span class="b-txt" data-i18n="c_b2">Sin equipo — celular o tablet</span></div>
-        <div class="benefit"><span class="b-ico">🚫</span><span class="b-txt" data-i18n="c_b3">Sin cuotas ocultas</span></div>
-        <div class="benefit"><span class="b-ico">⚡</span><span class="b-txt" data-i18n="c_b4">Listo en minutos</span></div>
+        <div class="benefit"><span class="b-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></span><span class="b-txt" data-i18n="c_b1">Ahorra dinero</span></div>
+        <div class="benefit"><span class="b-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></span><span class="b-txt" data-i18n="c_b2">Sin equipo — celular o tablet</span></div>
+        <div class="benefit"><span class="b-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></span><span class="b-txt" data-i18n="c_b3">Sin cuotas ocultas</span></div>
+        <div class="benefit"><span class="b-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></span><span class="b-txt" data-i18n="c_b4">Listo en minutos</span></div>
       </div>
 
       <form class="contact-form" id="contactForm" autocomplete="on">
