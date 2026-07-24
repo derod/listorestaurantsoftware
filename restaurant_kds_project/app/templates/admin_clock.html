@@ -4,15 +4,18 @@
   .clk-head { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:18px; }
   .clk-head h1 { margin:0; }
   .clk-tools { display:flex; gap:10px; flex-wrap:wrap; }
-  .clk-btn { display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:12px; background:var(--card); border:1px solid var(--border); color:var(--text); text-decoration:none; font-weight:700; font-size:14px; }
+  .clk-btn { display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:12px; background:var(--card); border:1px solid var(--border); color:var(--text); text-decoration:none; font-weight:700; font-size:14px; cursor:pointer; }
   .clk-btn:hover { border-color:var(--accent); }
+  .clk-btn.primary { background:var(--accent); border-color:var(--accent); color:#111; }
 
   .clk-sub { color:var(--muted); font-size:14px; margin-bottom:18px; }
   .clk-sub .live { color:var(--green); font-weight:800; }
 
-  .clk-filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px; }
+  .clk-controls { display:flex; gap:16px; flex-wrap:wrap; align-items:center; margin-bottom:24px; }
+  .clk-filters { display:flex; gap:8px; flex-wrap:wrap; }
   .clk-filter { padding:8px 16px; border-radius:999px; background:var(--card); border:1px solid var(--border); color:var(--text); text-decoration:none; font-size:14px; font-weight:700; }
   .clk-filter.active { background:var(--accent); border-color:var(--accent); color:#111; }
+  .clk-emp-sel { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:9px 12px; color:var(--text); font-weight:700; font-size:14px; }
 
   .clk-user { background:var(--card); border:1px solid var(--border); border-radius:18px; padding:20px; margin-bottom:16px; }
   .clk-user-top { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
@@ -36,25 +39,51 @@
   .clk-open { color:var(--green); font-weight:800; }
   .clk-auto { color:var(--muted); font-size:12px; }
   .clk-empty { text-align:center; color:var(--muted); padding:60px 20px; font-size:16px; }
+
+  .clk-row-actions { display:flex; gap:6px; }
+  .mini { padding:5px 10px; font-size:12px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-weight:700; cursor:pointer; }
+  .mini:hover { border-color:var(--accent); }
+  .mini.danger { color:var(--red); border-color:rgba(228,91,91,0.4); }
+  .mini.danger:hover { background:rgba(228,91,91,0.15); }
+
+  .clk-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:2000; align-items:center; justify-content:center; padding:20px; }
+  .clk-overlay.open { display:flex; }
+  .clk-modal { background:var(--bg); border:1px solid var(--border); border-radius:20px; padding:28px; width:100%; max-width:440px; display:flex; flex-direction:column; gap:14px; }
+  .clk-modal h2 { margin:0; font-size:22px; }
+  .clk-field { display:flex; flex-direction:column; gap:6px; }
+  .clk-field label { font-size:12px; font-weight:700; color:var(--muted); letter-spacing:0.04em; }
+  .clk-field input, .clk-field select { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:11px 13px; font-size:15px; color:var(--text); font-family:inherit; }
+  .clk-modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:6px; }
+  .clk-result { font-size:14px; font-weight:700; min-height:18px; color:var(--red); }
 </style>
 
 <div class="clk-head">
   <h1>Reloj — Marcaciones</h1>
   <div class="clk-tools">
-    <a class="clk-btn" href="/admin/clock/export.csv?range={{ active_range }}">&#11015; Exportar CSV</a>
+    <button class="clk-btn primary" onclick="openAdd()">&#43; Agregar turno</button>
+    <a class="clk-btn" href="/admin/clock/export.csv?range={{ active_range }}&waiter={{ active_waiter }}">&#11015; CSV</a>
     <a class="clk-btn" href="/admin">&#8592; Dashboard</a>
   </div>
 </div>
 
 <div class="clk-sub">
   {% if working_now %}<span class="live">&#9679; {{ working_now }} trabajando ahora</span>{% else %}Nadie con turno abierto ahora.{% endif %}
-  &nbsp;·&nbsp; Clock in = ingreso · Clock out = "Cambiar agente" / Salir · los turnos sin salida se cierran solos a medianoche.
+  &nbsp;·&nbsp; Clock in = ingreso · Clock out = "Cambiar agente" / Salir · sin salida se cierra a medianoche.
 </div>
 
-<div class="clk-filters">
-  <a class="clk-filter {% if active_range == 'today' %}active{% endif %}" href="/admin/clock?range=today">Hoy</a>
-  <a class="clk-filter {% if active_range == 'week' %}active{% endif %}" href="/admin/clock?range=week">Esta semana</a>
-  <a class="clk-filter {% if active_range == 'all' %}active{% endif %}" href="/admin/clock?range=all">Todo</a>
+<div class="clk-controls">
+  <div class="clk-filters">
+    <a class="clk-filter {% if active_range == 'today' %}active{% endif %}" href="/admin/clock?range=today&waiter={{ active_waiter }}">Hoy</a>
+    <a class="clk-filter {% if active_range == 'week' %}active{% endif %}" href="/admin/clock?range=week&waiter={{ active_waiter }}">Semana</a>
+    <a class="clk-filter {% if active_range == 'biweekly' %}active{% endif %}" href="/admin/clock?range=biweekly&waiter={{ active_waiter }}">Quincena</a>
+    <a class="clk-filter {% if active_range == 'all' %}active{% endif %}" href="/admin/clock?range=all&waiter={{ active_waiter }}">Todo</a>
+  </div>
+  <select class="clk-emp-sel" onchange="location='/admin/clock?range={{ active_range }}&waiter='+this.value">
+    <option value="0">Todos los empleados</option>
+    {% for w in waiters %}
+    <option value="{{ w.id }}" {% if active_waiter == w.id %}selected{% endif %}>{{ w.name }}</option>
+    {% endfor %}
+  </select>
 </div>
 
 {% if not users %}
@@ -67,12 +96,12 @@
         {% if u.working %}<span class="clk-live-dot" title="Trabajando ahora"></span>{% endif %}
         {{ u.name }}
       </div>
-      <div class="clk-total">{{ u.total }} <small>total</small></div>
+      <div class="clk-total">{{ u.total }} <small>total {{ active_range }}</small></div>
     </div>
     <div class="clk-table-wrap">
       <table class="clk-table">
         <thead>
-          <tr><th>Fecha</th><th>Módulo</th><th>Entrada</th><th>Salida</th><th>Horas</th></tr>
+          <tr><th>Fecha</th><th>Módulo</th><th>Entrada</th><th>Salida</th><th>Horas</th><th></th></tr>
         </thead>
         <tbody>
           {% for r in u.rows %}
@@ -85,6 +114,14 @@
               {% else %}{{ r.out }}{% if r.auto %} <span class="clk-auto">(auto)</span>{% endif %}{% endif %}
             </td>
             <td>{{ r.hours }}</td>
+            <td>
+              <div class="clk-row-actions">
+                <button class="mini" onclick="openEdit(this)"
+                        data-id="{{ r.id }}" data-date="{{ r.date_iso }}" data-in="{{ r.in }}" data-out="{{ r.out_hhmm }}">Editar</button>
+                {% if r.open %}<button class="mini" onclick="closeSession({{ r.id }})">Cerrar</button>{% endif %}
+                <button class="mini danger" onclick="deleteSession({{ r.id }})">Eliminar</button>
+              </div>
+            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -93,4 +130,107 @@
   </div>
   {% endfor %}
 {% endif %}
+
+<!-- Add modal -->
+<div class="clk-overlay" id="clkAddModal">
+  <form class="clk-modal" id="clkAddForm" onsubmit="submitAdd(event)">
+    <h2>Agregar turno</h2>
+    <div class="clk-field">
+      <label>Empleado</label>
+      <select name="waiter_id" required>
+        <option value="">— Selecciona —</option>
+        {% for w in waiters %}<option value="{{ w.id }}">{{ w.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="clk-field">
+      <label>Módulo</label>
+      <select name="role" required>
+        {% for r in roles %}<option value="{{ r }}">{{ role_labels[r] }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="clk-field"><label>Fecha</label><input type="date" name="date" required></div>
+    <div class="clk-field"><label>Entrada</label><input type="time" name="in_time" required></div>
+    <div class="clk-field"><label>Salida (opcional — vacío = turno abierto)</label><input type="time" name="out_time"></div>
+    <div class="clk-result" id="clkAddResult"></div>
+    <div class="clk-modal-actions">
+      <button type="button" class="clk-btn" onclick="closeModal('clkAddModal')">Cancelar</button>
+      <button type="submit" class="clk-btn primary">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<!-- Edit modal -->
+<div class="clk-overlay" id="clkEditModal">
+  <form class="clk-modal" id="clkEditForm" onsubmit="submitEdit(event)">
+    <h2>Editar turno</h2>
+    <input type="hidden" name="sid" id="editSid">
+    <div class="clk-field"><label>Fecha</label><input type="date" name="date" id="editDate" required></div>
+    <div class="clk-field"><label>Entrada</label><input type="time" name="in_time" id="editIn" required></div>
+    <div class="clk-field"><label>Salida (vacío = turno abierto)</label><input type="time" name="out_time" id="editOut"></div>
+    <div class="clk-result" id="clkEditResult"></div>
+    <div class="clk-modal-actions">
+      <button type="button" class="clk-btn" onclick="closeModal('clkEditModal')">Cancelar</button>
+      <button type="submit" class="clk-btn primary">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  function openModal(id) { document.getElementById(id).classList.add("open"); }
+  function closeModal(id) { document.getElementById(id).classList.remove("open"); }
+
+  function openAdd() {
+    document.getElementById("clkAddForm").reset();
+    document.getElementById("clkAddResult").textContent = "";
+    openModal("clkAddModal");
+  }
+
+  function openEdit(btn) {
+    document.getElementById("editSid").value = btn.dataset.id;
+    document.getElementById("editDate").value = btn.dataset.date;
+    document.getElementById("editIn").value = btn.dataset.in;
+    document.getElementById("editOut").value = btn.dataset.out || "";
+    document.getElementById("clkEditResult").textContent = "";
+    openModal("clkEditModal");
+  }
+
+  async function _post(url, form, resultId) {
+    const body = new URLSearchParams(new FormData(form));
+    const res = await fetch(url, { method: "POST", body, credentials: "same-origin" });
+    if (!res.ok) {
+      let msg = "Error";
+      try { const d = await res.json(); msg = d.detail || msg; } catch (e) {}
+      if (resultId) document.getElementById(resultId).textContent = msg;
+      return false;
+    }
+    return true;
+  }
+
+  async function submitAdd(e) {
+    e.preventDefault();
+    if (await _post("/admin/clock/session", e.target, "clkAddResult")) location.reload();
+  }
+
+  async function submitEdit(e) {
+    e.preventDefault();
+    const sid = document.getElementById("editSid").value;
+    if (await _post("/admin/clock/session/" + sid, e.target, "clkEditResult")) location.reload();
+  }
+
+  async function closeSession(id) {
+    if (!confirm("¿Cerrar este turno ahora?")) return;
+    const res = await fetch("/admin/clock/session/" + id + "/close", { method: "POST", credentials: "same-origin" });
+    if (res.ok) location.reload(); else alert("No se pudo cerrar.");
+  }
+
+  async function deleteSession(id) {
+    if (!confirm("¿Eliminar este turno? No se puede deshacer.")) return;
+    const res = await fetch("/admin/clock/session/" + id + "/delete", { method: "POST", credentials: "same-origin" });
+    if (res.ok) location.reload(); else alert("No se pudo eliminar.");
+  }
+
+  document.querySelectorAll(".clk-overlay").forEach(o => {
+    o.addEventListener("click", e => { if (e.target === o) o.classList.remove("open"); });
+  });
+</script>
 {% endblock %}

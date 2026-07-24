@@ -860,24 +860,36 @@ def _clock_range_start(rng: str):
     today = now.replace(hour=0, minute=0, second=0, microsecond=0)
     if rng == "week":
         return today - timedelta(days=today.weekday())  # Monday of this week
+    if rng == "biweekly":
+        # Payroll fortnight: 1st–15th, then 16th–end of month.
+        return today.replace(day=1) if today.day <= 15 else today.replace(day=16)
     if rng == "all":
         return None
     return today  # default: today
 
 
+def _parse_clock_dt(date_str: str, time_str: str):
+    return datetime.strptime(f"{date_str.strip()} {time_str.strip()}", "%Y-%m-%d %H:%M")
+
+
+_CLOCK_RANGES = ("today", "week", "biweekly", "all")
+
+
 @router.get("/admin/clock")
-def admin_clock(request: Request, range: str = "today", db: Session = Depends(get_db)):
+def admin_clock(request: Request, range: str = "biweekly", waiter: int = 0, db: Session = Depends(get_db)):
     if not require_admin(request):
         return RedirectResponse(url="/admin/login")
     auto_close_stale_sessions(db)
 
-    rng = range if range in ("today", "week", "all") else "today"
+    rng = range if range in _CLOCK_RANGES else "biweekly"
     start = _clock_range_start(rng)
     now = cr_now()
 
     q = db.query(WorkSession)
     if start is not None:
         q = q.filter(WorkSession.clock_in >= start)
+    if waiter:
+        q = q.filter(WorkSession.waiter_id == waiter)
     sessions = q.order_by(WorkSession.clock_in.desc()).all()
 
     users = {}
@@ -889,11 +901,14 @@ def admin_clock(request: Request, range: str = "today", db: Session = Depends(ge
         secs = max(0, (end - s.clock_in).total_seconds())
         is_open = s.clock_out is None
         u["rows"].append({
+            "id": s.id,
             "role_label": CLOCK_ROLE_LABELS.get(s.role, s.role),
             "role": s.role,
             "date": s.clock_in.strftime("%d/%m/%Y"),
+            "date_iso": s.clock_in.strftime("%Y-%m-%d"),
             "in": s.clock_in.strftime("%H:%M"),
             "out": ("—" if is_open else s.clock_out.strftime("%H:%M")),
+            "out_hhmm": ("" if is_open else s.clock_out.strftime("%H:%M")),
             "hours": _fmt_hm(secs),
             "open": is_open,
             "auto": s.auto_closed,
@@ -907,30 +922,120 @@ def admin_clock(request: Request, range: str = "today", db: Session = Depends(ge
             working_now += 1
 
     users_list = sorted(users.values(), key=lambda x: x["name"].lower())
+    waiters = db.query(Waiter).order_by(Waiter.name.asc()).all()
     return templates.TemplateResponse(
         "admin_clock.html",
         {
             "request": request,
             "users": users_list,
             "active_range": rng,
+            "active_waiter": waiter,
+            "waiters": waiters,
+            "roles": CLOCK_ROLES,
+            "role_labels": CLOCK_ROLE_LABELS,
             "working_now": working_now,
             "page_title": "Reloj",
         },
     )
 
 
+# ─── time clock manual corrections ────────────────────────────────────────────
+
+@router.post("/admin/clock/session")
+def admin_clock_create(
+    request: Request,
+    waiter_id: int = Form(...),
+    role: str = Form(...),
+    date: str = Form(...),
+    in_time: str = Form(...),
+    out_time: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    if not require_admin(request):
+        raise HTTPException(401, "Admin session required")
+    if role not in CLOCK_ROLES:
+        raise HTTPException(400, "Módulo inválido")
+    w = db.query(Waiter).filter(Waiter.id == waiter_id).first()
+    if not w:
+        raise HTTPException(400, "Empleado no encontrado")
+    try:
+        ci = _parse_clock_dt(date, in_time)
+        co = _parse_clock_dt(date, out_time) if out_time.strip() else None
+    except ValueError:
+        raise HTTPException(400, "Fecha u hora inválida")
+    if co and co < ci:
+        raise HTTPException(400, "La salida no puede ser antes de la entrada")
+    db.add(WorkSession(waiter_id=w.id, actor_name=w.name, role=role, clock_in=ci, clock_out=co))
+    db.commit()
+    return {"ok": True}
+
+
+@router.post("/admin/clock/session/{sid}")
+def admin_clock_update(
+    sid: int,
+    request: Request,
+    date: str = Form(...),
+    in_time: str = Form(...),
+    out_time: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    if not require_admin(request):
+        raise HTTPException(401, "Admin session required")
+    s = db.query(WorkSession).filter(WorkSession.id == sid).first()
+    if not s:
+        raise HTTPException(404, "Turno no encontrado")
+    try:
+        ci = _parse_clock_dt(date, in_time)
+        co = _parse_clock_dt(date, out_time) if out_time.strip() else None
+    except ValueError:
+        raise HTTPException(400, "Fecha u hora inválida")
+    if co and co < ci:
+        raise HTTPException(400, "La salida no puede ser antes de la entrada")
+    s.clock_in = ci
+    s.clock_out = co
+    s.auto_closed = False
+    db.commit()
+    return {"ok": True}
+
+
+@router.post("/admin/clock/session/{sid}/close")
+def admin_clock_close(sid: int, request: Request, db: Session = Depends(get_db)):
+    if not require_admin(request):
+        raise HTTPException(401, "Admin session required")
+    s = db.query(WorkSession).filter(WorkSession.id == sid).first()
+    if not s:
+        raise HTTPException(404, "Turno no encontrado")
+    if s.clock_out is None:
+        s.clock_out = cr_now()
+        db.commit()
+    return {"ok": True}
+
+
+@router.post("/admin/clock/session/{sid}/delete")
+def admin_clock_delete(sid: int, request: Request, db: Session = Depends(get_db)):
+    if not require_admin(request):
+        raise HTTPException(401, "Admin session required")
+    s = db.query(WorkSession).filter(WorkSession.id == sid).first()
+    if s:
+        db.delete(s)
+        db.commit()
+    return {"ok": True}
+
+
 @router.get("/admin/clock/export.csv")
-def admin_clock_export(request: Request, range: str = "all", db: Session = Depends(get_db)):
+def admin_clock_export(request: Request, range: str = "all", waiter: int = 0, db: Session = Depends(get_db)):
     if not require_admin(request):
         return RedirectResponse(url="/admin/login")
     import csv
     auto_close_stale_sessions(db)
-    rng = range if range in ("today", "week", "all") else "all"
+    rng = range if range in _CLOCK_RANGES else "all"
     start = _clock_range_start(rng)
     now = cr_now()
     q = db.query(WorkSession)
     if start is not None:
         q = q.filter(WorkSession.clock_in >= start)
+    if waiter:
+        q = q.filter(WorkSession.waiter_id == waiter)
     sessions = q.order_by(WorkSession.actor_name.asc(), WorkSession.clock_in.asc()).all()
 
     buf = _io.StringIO()
