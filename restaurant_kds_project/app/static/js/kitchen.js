@@ -36,21 +36,47 @@ function addKitchenProduct(id, name) {
   renderKitchenSummary();
 }
 
+/* ─── Toast (reemplaza los alert nativos) ───────────────────────────── */
+function toast(message, type) {
+  let host = document.getElementById("kdsToastHost");
+  if (!host) {
+    host = document.createElement("div");
+    host.id = "kdsToastHost";
+    host.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:100000;display:flex;flex-direction:column;gap:10px;align-items:center;pointer-events:none;";
+    document.body.appendChild(host);
+  }
+  const t = document.createElement("div");
+  const ok = type !== "error";
+  t.textContent = message;
+  t.style.cssText =
+    "pointer-events:auto;min-width:220px;max-width:90vw;padding:16px 26px;border-radius:14px;font-size:22px;font-weight:800;text-align:center;color:#fff;" +
+    "box-shadow:0 10px 30px rgba(0,0,0,.45);opacity:0;transform:translateY(-12px);transition:opacity .2s,transform .2s;" +
+    (ok ? "background:var(--green,#2e7d32);" : "background:var(--red,#c62828);");
+  host.appendChild(t);
+  requestAnimationFrame(() => { t.style.opacity = "1"; t.style.transform = "translateY(0)"; });
+  setTimeout(() => {
+    t.style.opacity = "0";
+    t.style.transform = "translateY(-12px)";
+    setTimeout(() => t.remove(), 250);
+  }, 2600);
+}
+
 async function submitKitchenOrder() {
   const items = [...kitchenMap.values()].filter(x => x.quantity > 0)
     .map(x => ({ product_id: x.product_id, quantity: x.quantity }));
-  if (!items.length) return alert("Agrega productos primero.");
+  if (!items.length) return toast("Agrega productos primero.", "error");
   const res = await fetch("/api/orders", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ source_role: "kitchen", items })
   });
-  if (!res.ok) return alert("No se pudo enviar.");
+  if (!res.ok) return toast("No se pudo enviar.", "error");
   kitchenMap.clear();
   kitchenSequence.length = 0;
   renderKitchenSummary();
   document.getElementById("createModal").classList.remove("open");
   pollOrders();
+  toast("Pedido enviado.");
 }
 
 /* ─── Safari autoplay guard ─────────────────────────────────────────── */
@@ -513,7 +539,7 @@ function openKitchenNewProductModal() {
 function closeKitchenNewProductModal() { kNewModal.classList.remove("open"); }
 async function saveKitchenNewProduct() {
   const name = kNewInput.value.trim();
-  if (!name) return alert("Escribe un nombre.");
+  if (!name) return toast("Escribe un nombre.", "error");
   const res = await fetch("/api/products", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -521,7 +547,7 @@ async function saveKitchenNewProduct() {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    return alert(err.detail || "No se pudo crear.");
+    return toast(err.detail || "No se pudo crear.", "error");
   }
   closeKitchenNewProductModal();
   await refreshKitchenProductsGrid();
