@@ -1,8 +1,10 @@
 [build]
-buildCommand = "pip install -r restaurant_kds_project/requirements.txt"
+# Railpack runs inside restaurant_kds_project/ (where requirements.txt lives),
+# so paths here are relative to that folder — no restaurant_kds_project/ prefix.
+buildCommand = "pip install -r requirements.txt"
 
 [deploy]
-startCommand = "cd restaurant_kds_project && uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2"
+startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2"
 healthcheckPath = "/health"
 healthcheckTimeout = 30
 restartPolicyType = "on_failure"
