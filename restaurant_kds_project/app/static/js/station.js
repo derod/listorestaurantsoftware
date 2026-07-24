@@ -234,13 +234,38 @@ function _prewarmSounds() {
   });
 }
 
+let _audioPrewarmed = false;
+
+// Canonical iOS unlock: resume the context AND play a 1-frame silent buffer
+// inside the gesture. Without it, later source.start() stays muted on iPad.
+function _unlockAudio() {
+  const ctx = _getAudioCtx();
+  if (!ctx) return;
+  try {
+    const buf = ctx.createBuffer(1, 1, 22050);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start(0);
+  } catch (e) {}
+}
+window.unlockAudio = _unlockAudio;
+
 function _initAudioOnGesture() {
   window.userInteracted = true;
-  try { _getAudioCtx(); _prewarmSounds(); } catch (e) {}
+  _unlockAudio();
+  if (!_audioPrewarmed) { _audioPrewarmed = true; try { _prewarmSounds(); } catch (e) {} }
 }
-document.addEventListener("click",      _initAudioOnGesture, { once: true, capture: true });
-document.addEventListener("touchstart", _initAudioOnGesture, { once: true, capture: true });
-document.addEventListener("keydown",    _initAudioOnGesture, { once: true, capture: true });
+// NOT { once } — re-unlock on every tap so audio recovers after the iPad
+// sleeps/locks (iOS suspends the AudioContext when backgrounded).
+document.addEventListener("click",      _initAudioOnGesture, { capture: true });
+document.addEventListener("touchstart", _initAudioOnGesture, { capture: true });
+document.addEventListener("keydown",    _initAudioOnGesture, { capture: true });
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && _audioCtx && _audioCtx.state === "suspended") {
+    _audioCtx.resume().catch(() => {});
+  }
+});
 
 /* ─── Audio helpers ─────────────────────────────────────────────────── */
 

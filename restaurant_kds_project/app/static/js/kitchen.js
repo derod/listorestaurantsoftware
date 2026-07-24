@@ -129,15 +129,39 @@ function _prewarmSounds() {
   });
 }
 
+let _audioPrewarmed = false;
+
+// Canonical iOS unlock: resume the context AND play a 1-frame silent buffer
+// inside the gesture. Without the silent buffer, later source.start() calls
+// stay muted on iPad even though the context reports "running".
+function _unlockAudio() {
+  const ctx = _getAudioCtx();
+  if (!ctx) return;
+  try {
+    const buf = ctx.createBuffer(1, 1, 22050);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start(0);
+  } catch (e) {}
+}
+window.unlockAudio = _unlockAudio;
+
 function _initAudioCtxOnGesture() {
   window.userInteracted = true;
-  // Warm up + decode the sounds inside the gesture so Safari unlocks audio
-  // permanently and the first alert plays instantly.
-  try { _getAudioCtx(); _prewarmSounds(); } catch (e) {}
+  _unlockAudio();
+  if (!_audioPrewarmed) { _audioPrewarmed = true; try { _prewarmSounds(); } catch (e) {} }
 }
-document.addEventListener("click",      _initAudioCtxOnGesture, { once: true, capture: true });
-document.addEventListener("touchstart", _initAudioCtxOnGesture, { once: true, capture: true });
-document.addEventListener("keydown",    _initAudioCtxOnGesture, { once: true, capture: true });
+// NOT { once } — re-unlock on every tap so audio recovers after the iPad
+// sleeps/locks (iOS suspends the AudioContext when backgrounded).
+document.addEventListener("click",      _initAudioCtxOnGesture, { capture: true });
+document.addEventListener("touchstart", _initAudioCtxOnGesture, { capture: true });
+document.addEventListener("keydown",    _initAudioCtxOnGesture, { capture: true });
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && _audioCtx && _audioCtx.state === "suspended") {
+    _audioCtx.resume().catch(() => {});
+  }
+});
 
 /* ─── Audio ─────────────────────────────────────────────────────────── */
 
