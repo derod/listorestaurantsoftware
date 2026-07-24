@@ -520,6 +520,40 @@
       .stat-row { grid-template-columns: 1fr; }
       .ceo-body, .ceo-top { padding: 24px; }
     }
+
+    /* ── Video band backgrounds (injected by JS) ────────────────────── */
+    .has-band { position: relative; }
+    .has-band > .container { position: relative; z-index: 1; }
+    .band-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .band-bg video,
+    .band-bg .band-poster {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .band-scrim {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        180deg,
+        rgba(8, 9, 14, 0.86) 0%,
+        rgba(8, 9, 14, 0.70) 45%,
+        rgba(8, 9, 14, 0.92) 100%
+      );
+    }
+    /* Hero: bias the scrim to the left where the headline sits */
+    .hero.has-band .band-scrim {
+      background:
+        linear-gradient(90deg, rgba(8, 9, 14, 0.94) 0%, rgba(8, 9, 14, 0.55) 60%, rgba(8, 9, 14, 0.30) 100%),
+        linear-gradient(180deg, rgba(8, 9, 14, 0.55), rgba(8, 9, 14, 0.75));
+    }
   </style>
 </head>
 <body>
@@ -1323,7 +1357,68 @@
       });
       var langMap = { es: "es", en: "en", fr: "fr", pt: "pt-BR", rp: "es" };
       document.documentElement.lang = langMap[lang] || "es";
+      mountBands();
     }
+
+    /* ── Video band backgrounds ─────────────────────────────────────────
+       Injected only into the currently visible language block, so the 4
+       videos load once (not ×5) and swap when the language changes. */
+    var _bandObserver = null;
+
+    function mountBands() {
+      // Tear down any previously mounted bands (stops offscreen playback).
+      if (_bandObserver) { _bandObserver.disconnect(); _bandObserver = null; }
+      document.querySelectorAll(".band-bg").forEach(function (el) { el.remove(); });
+      document.querySelectorAll(".has-band").forEach(function (el) { el.classList.remove("has-band"); });
+
+      var active = document.querySelector("[data-lang].visible");
+      if (!active) return;
+
+      // Map: section → video basename. Leadership (section 03) stays plain.
+      var targets = [];
+      var hero = active.querySelector(".hero");
+      if (hero) targets.push([hero, "hero"]);
+      var sections = active.querySelectorAll(".section");
+      if (sections[0]) targets.push([sections[0], "platform"]); // 01 — plataforma
+      if (sections[1]) targets.push([sections[1], "company"]);  // 02 — empresa
+      var cta = active.querySelector(".cta-section");
+      if (cta) targets.push([cta, "cta"]);
+
+      var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      targets.forEach(function (pair) {
+        var sec = pair[0], name = pair[1];
+        sec.classList.add("has-band");
+        var bg = document.createElement("div");
+        bg.className = "band-bg";
+        if (reduce) {
+          bg.innerHTML =
+            '<img class="band-poster" src="/static/videos/' + name + '.jpg" alt="">' +
+            '<div class="band-scrim"></div>';
+        } else {
+          bg.innerHTML =
+            '<video src="/static/videos/' + name + '.mp4" poster="/static/videos/' + name + '.jpg" ' +
+            'autoplay muted loop playsinline preload="metadata"></video>' +
+            '<div class="band-scrim"></div>';
+        }
+        sec.insertBefore(bg, sec.firstChild);
+      });
+
+      // Pause videos that scroll out of view to save battery/CPU.
+      if (!reduce && "IntersectionObserver" in window) {
+        _bandObserver = new IntersectionObserver(function (entries) {
+          entries.forEach(function (e) {
+            var v = e.target.querySelector("video");
+            if (!v) return;
+            if (e.isIntersecting) { v.play().catch(function () {}); }
+            else { v.pause(); }
+          });
+        }, { threshold: 0.05 });
+        document.querySelectorAll(".band-bg").forEach(function (el) { _bandObserver.observe(el); });
+      }
+    }
+
+    mountBands();
   </script>
 
 </body>
