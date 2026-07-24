@@ -11,6 +11,12 @@
   .clk-sub { color:var(--muted); font-size:14px; margin-bottom:18px; }
   .clk-sub .live { color:var(--green); font-weight:800; }
 
+  .clk-grand { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:22px; }
+  .clk-grand-card { flex:1; min-width:200px; background:var(--card); border:1px solid var(--border); border-radius:16px; padding:18px 22px; }
+  .clk-grand-val { font-size:30px; font-weight:800; color:var(--accent); letter-spacing:-0.5px; }
+  .clk-grand-lbl { display:block; font-size:12px; color:var(--muted); font-weight:600; margin-top:2px; letter-spacing:0.03em; }
+  .clk-edited { color:var(--yellow); font-size:12px; font-weight:700; }
+
   .clk-controls { display:flex; gap:16px; flex-wrap:wrap; align-items:center; margin-bottom:24px; }
   .clk-filters { display:flex; gap:8px; flex-wrap:wrap; }
   .clk-filter { padding:8px 16px; border-radius:999px; background:var(--card); border:1px solid var(--border); color:var(--text); text-decoration:none; font-size:14px; font-weight:700; }
@@ -71,6 +77,19 @@
   &nbsp;·&nbsp; Clock in = ingreso · Clock out = "Cambiar agente" / Salir · sin salida se cierra a medianoche.
 </div>
 
+{% if users %}
+<div class="clk-grand">
+  <div class="clk-grand-card">
+    <span class="clk-grand-val">{{ grand_total }}</span>
+    <span class="clk-grand-lbl">Total del período (todos)</span>
+  </div>
+  <div class="clk-grand-card">
+    <span class="clk-grand-val">{{ grand_payroll }} h</span>
+    <span class="clk-grand-lbl">Horas nómina · redondeado a ¼ de hora</span>
+  </div>
+</div>
+{% endif %}
+
 <div class="clk-controls">
   <div class="clk-filters">
     <a class="clk-filter {% if active_range == 'today' %}active{% endif %}" href="/admin/clock?range=today&waiter={{ active_waiter }}">Hoy</a>
@@ -96,7 +115,7 @@
         {% if u.working %}<span class="clk-live-dot" title="Trabajando ahora"></span>{% endif %}
         {{ u.name }}
       </div>
-      <div class="clk-total">{{ u.total }} <small>total {{ active_range }}</small></div>
+      <div class="clk-total">{{ u.total }} · {{ u.payroll }} h <small>nómina</small></div>
     </div>
     <div class="clk-table-wrap">
       <table class="clk-table">
@@ -106,7 +125,7 @@
         <tbody>
           {% for r in u.rows %}
           <tr>
-            <td>{{ r.date }}</td>
+            <td>{{ r.date }}{% if r.edited %} <span class="clk-edited" title="Editado manualmente">&#9998; editado</span>{% endif %}</td>
             <td><span class="clk-tag tag-{{ r.role }}">{{ r.role_label }}</span></td>
             <td>{{ r.in }}</td>
             <td>

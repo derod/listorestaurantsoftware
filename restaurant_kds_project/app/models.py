@@ -219,3 +219,4 @@ class WorkSession(Base):
     clock_in: Mapped[datetime] = mapped_column(DateTime, default=cr_now, index=True)
     clock_out: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     auto_closed: Mapped[bool] = mapped_column(Boolean, default=False)
+    edited: Mapped[bool] = mapped_column(Boolean, default=False)  # manually added/edited by admin

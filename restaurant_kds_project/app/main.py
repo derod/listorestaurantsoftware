@@ -61,6 +61,11 @@ def _ensure_schema():
         if "tax_rate" not in audio_cols:
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE audio_settings ADD COLUMN tax_rate FLOAT DEFAULT 0"))
+    if "work_sessions" in insp.get_table_names():
+        ws_cols = {c["name"] for c in insp.get_columns("work_sessions")}
+        if "edited" not in ws_cols:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE work_sessions ADD COLUMN edited BOOLEAN DEFAULT 0"))
     # Performance indexes for orders table
     existing_indexes = {idx["name"] for idx in insp.get_indexes("orders")} if "orders" in insp.get_table_names() else set()
     with engine.begin() as conn:

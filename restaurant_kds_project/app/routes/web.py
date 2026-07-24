@@ -855,6 +855,11 @@ def _fmt_hm(seconds: float) -> str:
     return f"{m // 60}h {m % 60:02d}m"
 
 
+def _payroll_hours(seconds: float) -> float:
+    """Decimal hours rounded to the nearest quarter hour (payroll standard)."""
+    return round((max(0, seconds) / 3600.0) * 4) / 4
+
+
 def _clock_range_start(rng: str):
     now = cr_now()
     today = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -912,16 +917,19 @@ def admin_clock(request: Request, range: str = "biweekly", waiter: int = 0, db: 
             "hours": _fmt_hm(secs),
             "open": is_open,
             "auto": s.auto_closed,
+            "edited": s.edited,
         })
         u["total_seconds"] += secs
         if is_open:
             u["working"] = True
     for u in users.values():
         u["total"] = _fmt_hm(u["total_seconds"])
+        u["payroll"] = f"{_payroll_hours(u['total_seconds']):.2f}"
         if u["working"]:
             working_now += 1
 
     users_list = sorted(users.values(), key=lambda x: x["name"].lower())
+    grand_seconds = sum(u["total_seconds"] for u in users_list)
     waiters = db.query(Waiter).order_by(Waiter.name.asc()).all()
     return templates.TemplateResponse(
         "admin_clock.html",
@@ -934,6 +942,8 @@ def admin_clock(request: Request, range: str = "biweekly", waiter: int = 0, db: 
             "roles": CLOCK_ROLES,
             "role_labels": CLOCK_ROLE_LABELS,
             "working_now": working_now,
+            "grand_total": _fmt_hm(grand_seconds),
+            "grand_payroll": f"{_payroll_hours(grand_seconds):.2f}",
             "page_title": "Reloj",
         },
     )
@@ -965,7 +975,7 @@ def admin_clock_create(
         raise HTTPException(400, "Fecha u hora inválida")
     if co and co < ci:
         raise HTTPException(400, "La salida no puede ser antes de la entrada")
-    db.add(WorkSession(waiter_id=w.id, actor_name=w.name, role=role, clock_in=ci, clock_out=co))
+    db.add(WorkSession(waiter_id=w.id, actor_name=w.name, role=role, clock_in=ci, clock_out=co, edited=True))
     db.commit()
     return {"ok": True}
 
@@ -994,6 +1004,7 @@ def admin_clock_update(
     s.clock_in = ci
     s.clock_out = co
     s.auto_closed = False
+    s.edited = True
     db.commit()
     return {"ok": True}
 
@@ -1007,6 +1018,7 @@ def admin_clock_close(sid: int, request: Request, db: Session = Depends(get_db))
         raise HTTPException(404, "Turno no encontrado")
     if s.clock_out is None:
         s.clock_out = cr_now()
+        s.edited = True
         db.commit()
     return {"ok": True}
 
@@ -1040,7 +1052,7 @@ def admin_clock_export(request: Request, range: str = "all", waiter: int = 0, db
 
     buf = _io.StringIO()
     w = csv.writer(buf)
-    w.writerow(["usuario", "modulo", "fecha", "entrada", "salida", "horas", "estado"])
+    w.writerow(["usuario", "modulo", "fecha", "entrada", "salida", "horas", "horas_nomina", "estado"])
     for s in sessions:
         end = s.clock_out or now
         secs = max(0, (end - s.clock_in).total_seconds())
@@ -1051,7 +1063,9 @@ def admin_clock_export(request: Request, range: str = "all", waiter: int = 0, db
             s.clock_in.strftime("%H:%M"),
             (s.clock_out.strftime("%H:%M") if s.clock_out else "ABIERTO"),
             _fmt_hm(secs),
-            ("auto-cerrado" if s.auto_closed else ("abierto" if s.clock_out is None else "cerrado")),
+            f"{_payroll_hours(secs):.2f}",
+            (("auto-cerrado" if s.auto_closed else ("abierto" if s.clock_out is None else "cerrado"))
+             + (" · manual" if s.edited else "")),
         ])
     buf.seek(0)
     return StreamingResponse(
