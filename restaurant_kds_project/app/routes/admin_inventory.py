@@ -69,6 +69,50 @@ def list_ingredients(request: Request, db: Session = Depends(get_db)):
     ]
 
 
+@router.delete("/ingredients/{ingredient_id}")
+def delete_ingredient(ingredient_id: int, request: Request, db: Session = Depends(get_db)):
+    _require_admin(request)
+    ing = db.query(Ingredient).filter(Ingredient.id == ingredient_id).first()
+    if not ing:
+        raise HTTPException(404, "Insumo no encontrado")
+
+    # Block deletion if the ingredient is used by any recipe — deleting it would
+    # silently break a product's recipe. Ask the caller to unlink it first.
+    used = (
+        db.query(RecipeItem.id)
+        .filter(RecipeItem.ingredient_id == ingredient_id)
+        .first()
+    )
+    if used:
+        product_ids = [
+            r.product_id
+            for r in db.query(Recipe.product_id)
+            .join(RecipeItem, RecipeItem.recipe_id == Recipe.id)
+            .filter(RecipeItem.ingredient_id == ingredient_id)
+            .distinct()
+            .all()
+        ]
+        names = [
+            p.name
+            for p in db.query(Product.name).filter(Product.id.in_(product_ids)).all()
+        ]
+        detail = ", ".join(names) if names else "una o más recetas"
+        raise HTTPException(
+            409,
+            f"No se puede borrar: el insumo está en la receta de: {detail}. "
+            "Quítalo de esas recetas antes de borrarlo.",
+        )
+
+    # No recipe references → safe to delete. Remove its movement history first
+    # to satisfy the foreign key, then the ingredient itself.
+    db.query(InventoryMovement).filter(
+        InventoryMovement.ingredient_id == ingredient_id
+    ).delete()
+    db.delete(ing)
+    db.commit()
+    return {"deleted": ingredient_id}
+
+
 @router.post("/ingredients")
 def create_ingredient(payload: IngredientIn, request: Request, db: Session = Depends(get_db)):
     _require_admin(request)

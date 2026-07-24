@@ -29,6 +29,8 @@
   .inv2-card-name { font-size:24px; font-weight:800; }
   .inv2-card-stock { font-size:32px; font-weight:800; }
   .inv2-card-unit { color:#b7becd; font-size:18px; font-weight:600; }
+  .inv2-card-price { color:#8ea0c0; font-size:15px; font-weight:600; margin-top:2px; }
+  .inv2-card-price b { color:#cfd5e1; font-weight:800; }
   .inv2-badge { display:inline-flex; align-items:center; gap:8px; padding:6px 14px; border-radius:999px; font-weight:800; font-size:16px; width:fit-content; }
   .inv2-badge.ok { background:rgba(76,175,80,0.15); color:var(--green); }
   .inv2-badge.low { background:rgba(255,210,77,0.18); color:var(--yellow); }
@@ -396,11 +398,13 @@
           <span class="inv2-card-stock">${formatNum(ing.stock)}</span>
           <span class="inv2-card-unit">${escapeHtml(ing.unit || "")}</span>
         </div>
+        <div class="inv2-card-price">Precio: <b>${formatMoney(ing.cost_per_unit)}</b> / ${escapeHtml(ing.unit || "unidad")}</div>
         <span class="inv2-badge ${cls}">${statusLabel(cls)}</span>
         <div class="inv2-card-actions">
           <button class="inv2-btn blue sm" data-act="add" data-id="${ing.id}">➕ Agregar</button>
           <button class="inv2-btn yellow sm" data-act="adjust" data-id="${ing.id}">✏️ Ajustar</button>
           <button class="inv2-btn ghost sm wide" data-act="history" data-id="${ing.id}" data-name="${escapeAttr(ing.name)}">📜 Historial</button>
+          <button class="inv2-btn red sm wide" data-act="delete" data-id="${ing.id}" data-name="${escapeAttr(ing.name)}">🗑️ Eliminar</button>
         </div>
       `;
       grid.appendChild(card);
@@ -433,6 +437,10 @@
     const x = Number(n);
     return Number.isInteger(x) ? String(x) : x.toFixed(2);
   }
+  function formatMoney(n) {
+    const x = Number(n || 0);
+    return "₡" + x.toLocaleString("es-CR", { maximumFractionDigits: 2 });
+  }
   function escapeHtml(s) { return String(s || "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c])); }
   function escapeAttr(s) { return escapeHtml(s).replace(/"/g, "&quot;"); }
 
@@ -450,6 +458,8 @@
         $("#fAdjust [name=ingredient_id]").value = id;
       } else if (act === "history") {
         openHistory(id, t.dataset.name);
+      } else if (act === "delete") {
+        deleteIngredient(id, t.dataset.name);
       }
       return;
     }
@@ -466,6 +476,17 @@
   document.addEventListener("keydown", e => {
     if (e.key === "Escape") $$(".inv2-overlay.open").forEach(closeModal);
   });
+
+  async function deleteIngredient(id, name) {
+    if (!confirm(`¿Eliminar el insumo "${name}"?\n\nSe borrará también su historial de movimientos. Esta acción no se puede deshacer.`)) return;
+    try {
+      await api(`/admin/inv/ingredients/${id}`, { method: "DELETE" });
+      toast("Insumo eliminado");
+      await loadIngredients();
+    } catch (err) {
+      toast(err.message, false);
+    }
+  }
 
   // ─── form submits ─────────────────────────────────────────────────────
   $("#fAddIng").addEventListener("submit", async e => {
