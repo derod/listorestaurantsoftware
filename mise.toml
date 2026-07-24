@@ -1,7 +1,0 @@
-[tools]
-python = "3.12"
-
-[settings]
-# Railway's mise (>=2026.7) verifies GitHub artifact attestations, which the
-# prebuilt CPython tarballs don't publish → install fails. Disable the check.
-python.github_attestations = false

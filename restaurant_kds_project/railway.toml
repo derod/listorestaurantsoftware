@@ -1,0 +1,8 @@
+# Railway lee este archivo desde el Root Directory del servicio
+# (= restaurant_kds_project/). No hace falta buildCommand: Railpack instala
+# requirements.txt automáticamente. El arranque lo define el Procfile.
+[deploy]
+startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "on_failure"
