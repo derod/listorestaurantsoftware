@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Cuestionario Fácil</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/static/favicon.ico" sizes="any" />
+  <style>
+    *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#0f1115; --card:#171b22; --border:#252c38; --text:#eef2f8; --muted:#8a95a8;
+      --accent:#ff8c42; --blue:#4da3ff; --green:#4caf50; --yellow:#ffd24d; --red:#e45b5b;
+    }
+    html,body { height:100%; }
+    body {
+      background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+      -webkit-font-smoothing:antialiased; overflow:hidden; user-select:none; -webkit-user-select:none;
+    }
+    .screen { position:fixed; inset:0; display:none; flex-direction:column; }
+    .screen.active { display:flex; }
+
+    .topbar { display:flex; align-items:center; justify-content:space-between; padding:16px 22px; border-bottom:1px solid var(--border); }
+    .topbar .title { font-size:16px; font-weight:800; letter-spacing:0.02em; }
+    .topbar .title span { color:var(--accent); }
+    .exit { background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:12px; padding:8px 16px; font-size:15px; font-weight:700; text-decoration:none; cursor:pointer; }
+    .exit:hover { color:var(--red); border-color:var(--red); }
+
+    /* Hub */
+    .hub { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:34px; padding:24px; text-align:center; }
+    .hub h1 { font-size:clamp(30px,6vw,52px); font-weight:900; letter-spacing:-1px; }
+    .hub h1 span { color:var(--accent); }
+    .hub .lead { color:var(--muted); font-size:clamp(15px,2.5vw,19px); max-width:560px; }
+    .hub-group { width:100%; max-width:720px; }
+    .hub-label { font-size:13px; font-weight:800; letter-spacing:0.14em; text-transform:uppercase; color:var(--muted); margin-bottom:14px; }
+    .opt-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; }
+    .opt { background:var(--card); border:2px solid var(--border); border-radius:20px; padding:26px 18px; font-size:20px; font-weight:800; color:var(--text); cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:10px; transition:border-color .15s, transform .1s; }
+    .opt .emoji { font-size:38px; line-height:1; }
+    .opt small { font-size:13px; font-weight:600; color:var(--muted); }
+    .opt:hover { transform:translateY(-2px); }
+    .opt.sel { border-color:var(--accent); background:rgba(255,140,66,0.10); }
+    .start-btn { margin-top:6px; background:var(--accent); color:#111; border:none; border-radius:18px; padding:20px 60px; font-size:24px; font-weight:900; cursor:pointer; transition:transform .1s, opacity .15s; }
+    .start-btn:disabled { opacity:0.35; cursor:not-allowed; }
+    .start-btn:not(:disabled):hover { transform:translateY(-2px); }
+
+    /* Progress */
+    .progress-wrap { padding:14px 22px 0; }
+    .progress-bar { height:8px; background:var(--border); border-radius:999px; overflow:hidden; }
+    .progress-fill { height:100%; background:var(--accent); width:0%; transition:width .25s; }
+    .progress-txt { text-align:center; color:var(--muted); font-size:14px; font-weight:700; margin-top:8px; }
+
+    /* Slide */
+    .slide { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; padding:20px; text-align:center; }
+    .slide .qtype { font-size:14px; font-weight:800; letter-spacing:0.14em; text-transform:uppercase; }
+    .qtype.conteo { color:var(--blue); } .qtype.compra { color:var(--green); } .qtype.merma { color:var(--red); }
+    .slide .qname { font-size:clamp(32px,7vw,60px); font-weight:900; letter-spacing:-1px; line-height:1.05; max-width:900px; }
+    .slide .current { color:var(--muted); font-size:clamp(15px,2.5vw,19px); }
+    .slide .current b { color:var(--text); }
+
+    .numrow { display:flex; align-items:center; gap:18px; margin-top:6px; }
+    .stepper { width:76px; height:76px; border-radius:50%; border:2px solid var(--border); background:var(--card); color:var(--text); font-size:40px; font-weight:800; cursor:pointer; line-height:1; display:flex; align-items:center; justify-content:center; }
+    .stepper:active { transform:scale(0.94); }
+    .numinput { width:min(300px,60vw); text-align:center; font-size:64px; font-weight:900; background:transparent; border:none; border-bottom:3px solid var(--accent); color:var(--text); padding:6px 0; }
+    .numinput:focus { outline:none; }
+    .unit { color:var(--muted); font-size:20px; font-weight:700; margin-top:-4px; }
+
+    .chips { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+    .chip { background:var(--card); border:1px solid var(--border); border-radius:999px; padding:10px 18px; font-size:17px; font-weight:800; color:var(--text); cursor:pointer; }
+    .chip:hover { border-color:var(--accent); }
+
+    .actions { display:flex; gap:14px; padding:18px 22px 26px; }
+    .btn { flex:1; border:none; border-radius:18px; padding:22px; font-size:22px; font-weight:900; cursor:pointer; }
+    .btn.skip { background:var(--card); color:var(--muted); border:1px solid var(--border); flex:0 0 34%; }
+    .btn.next { background:var(--accent); color:#111; }
+    .btn.next:active { transform:scale(0.99); }
+
+    .saved { position:fixed; top:18px; left:50%; transform:translateX(-50%) translateY(-16px); opacity:0; background:var(--green); color:#fff; font-weight:800; font-size:17px; padding:12px 22px; border-radius:14px; transition:opacity .2s, transform .2s; z-index:50; pointer-events:none; }
+    .saved.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+    /* Done */
+    .done { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px; padding:24px; text-align:center; }
+    .done .check { font-size:90px; }
+    .done h1 { font-size:clamp(28px,6vw,46px); font-weight:900; }
+    .done p { color:var(--muted); font-size:18px; }
+    .done .row { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
+    .done a, .done button { background:var(--card); border:1px solid var(--border); color:var(--text); border-radius:16px; padding:16px 30px; font-size:18px; font-weight:800; text-decoration:none; cursor:pointer; }
+    .done .primary { background:var(--accent); color:#111; border:none; }
+  </style>
+</head>
+<body>
+  <div class="saved" id="saved">✓ Guardado</div>
+
+  <!-- HUB -->
+  <section class="screen active" id="hubScreen">
+    <div class="topbar">
+      <div class="title">Cuestionario <span>Fácil</span></div>
+      <a class="exit" href="/admin">✕ Salir</a>
+    </div>
+    <div class="hub">
+      <div>
+        <h1>Modo <span>rápido</span> de inventario</h1>
+        <p class="lead">Actualiza sin ir fila por fila: una pregunta a la vez, se guarda solo.</p>
+      </div>
+      <div class="hub-group">
+        <div class="hub-label">¿Qué vas a actualizar?</div>
+        <div class="opt-grid" id="targetOpts">
+          <button class="opt" data-target="insumo"><span class="emoji">🧺</span>Insumos<small id="cntInsumos"></small></button>
+          <button class="opt" data-target="producto"><span class="emoji">📦</span>Productos<small id="cntProductos"></small></button>
+        </div>
+      </div>
+      <div class="hub-group">
+        <div class="hub-label">¿Qué quieres hacer?</div>
+        <div class="opt-grid" id="modeOpts">
+          <button class="opt" data-mode="conteo"><span class="emoji">🔢</span>Conteo<small>fijar el stock real</small></button>
+          <button class="opt" data-mode="compra"><span class="emoji">🛒</span>Compras<small>sumar lo comprado</small></button>
+          <button class="opt" data-mode="merma"><span class="emoji">🗑️</span>Merma<small>descontar lo botado</small></button>
+        </div>
+      </div>
+      <button class="start-btn" id="startBtn" disabled>Empezar</button>
+    </div>
+  </section>
+
+  <!-- SLIDE -->
+  <section class="screen" id="slideScreen">
+    <div class="topbar">
+      <div class="title" id="slideTitle"></div>
+      <a class="exit" href="/admin">✕ Salir</a>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="progFill"></div></div>
+      <div class="progress-txt" id="progTxt"></div>
+    </div>
+    <div class="slide">
+      <div class="qtype" id="qType"></div>
+      <div class="qname" id="qName"></div>
+      <div class="current" id="qCurrent"></div>
+      <div class="numrow">
+        <button class="stepper" id="minusBtn">−</button>
+        <input class="numinput" id="numInput" type="number" inputmode="decimal" step="any" value="0" />
+        <button class="stepper" id="plusBtn">+</button>
+      </div>
+      <div class="unit" id="qUnit"></div>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="actions">
+      <button class="btn skip" id="skipBtn">Saltar</button>
+      <button class="btn next" id="nextBtn">Siguiente →</button>
+    </div>
+  </section>
+
+  <!-- DONE -->
+  <section class="screen" id="doneScreen">
+    <div class="topbar">
+      <div class="title">Cuestionario <span>Fácil</span></div>
+      <a class="exit" href="/admin">✕ Salir</a>
+    </div>
+    <div class="done">
+      <div class="check">✅</div>
+      <h1>¡Listo!</h1>
+      <p id="doneMsg"></p>
+      <div class="row">
+        <button class="primary" onclick="location.reload()">Hacer otro</button>
+        <a href="/admin/inventario">Ir a Insumos</a>
+        <a href="/admin/inventory">Ir a Productos</a>
+        <a href="/admin">Dashboard</a>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const INSUMOS = {{ insumos|tojson }};
+    const PRODUCTOS = {{ productos|tojson }};
+    const MODE_LABEL = { conteo:"Conteo", compra:"Compras", merma:"Merma" };
+    const TARGET_LABEL = { insumo:"Insumos", producto:"Productos" };
+
+    document.getElementById("cntInsumos").textContent = INSUMOS.length + " ítems";
+    document.getElementById("cntProductos").textContent = PRODUCTOS.length + " ítems";
+
+    let sel = { target:null, mode:null };
+    let items = [], idx = 0, updated = 0;
+
+    function pick(group, attr, val, btn) {
+      document.querySelectorAll(`#${group} .opt`).forEach(o => o.classList.remove("sel"));
+      btn.classList.add("sel");
+      sel[attr] = val;
+      document.getElementById("startBtn").disabled = !(sel.target && sel.mode);
+    }
+    document.querySelectorAll("#targetOpts .opt").forEach(b => b.onclick = () => pick("targetOpts","target",b.dataset.target,b));
+    document.querySelectorAll("#modeOpts .opt").forEach(b => b.onclick = () => pick("modeOpts","mode",b.dataset.mode,b));
+
+    function show(id) {
+      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+    }
+
+    document.getElementById("startBtn").onclick = () => {
+      items = (sel.target === "insumo" ? INSUMOS : PRODUCTOS).map(x => ({...x}));
+      idx = 0; updated = 0;
+      if (!items.length) { alert("No hay ítems para este objetivo."); return; }
+      document.getElementById("slideTitle").innerHTML =
+        TARGET_LABEL[sel.target] + " · <span>" + MODE_LABEL[sel.mode] + "</span>";
+      show("slideScreen");
+      renderSlide();
+    };
+
+    const numInput = document.getElementById("numInput");
+
+    function renderSlide() {
+      const it = items[idx];
+      const total = items.length;
+      document.getElementById("progFill").style.width = ((idx) / total * 100) + "%";
+      document.getElementById("progTxt").textContent = `${idx + 1} / ${total}`;
+
+      const qType = document.getElementById("qType");
+      qType.className = "qtype " + sel.mode;
+      const prompts = {
+        conteo: "¿Cuánto hay de",
+        compra: "¿Cuánto compraste de",
+        merma:  "¿Cuánto se botó de",
+      };
+      qType.textContent = MODE_LABEL[sel.mode];
+      document.getElementById("qName").textContent = it.name;
+      document.getElementById("qCurrent").innerHTML =
+        `Stock actual: <b>${it.stock}</b> ${it.unit}`;
+      document.getElementById("qUnit").textContent = prompts[sel.mode] + " " + it.name + "? (" + it.unit + ")";
+
+      // default value: conteo -> current stock; compra/merma -> 0
+      numInput.value = (sel.mode === "conteo") ? it.stock : 0;
+
+      // quick chips
+      const chips = document.getElementById("chips");
+      const opts = (sel.mode === "conteo") ? [0, 1, 5, 10] : [1, 2, 5, 10];
+      chips.innerHTML = "";
+      opts.forEach(v => {
+        const c = document.createElement("button");
+        c.className = "chip";
+        c.textContent = (sel.mode === "conteo") ? String(v) : "+" + v;
+        c.onclick = () => {
+          if (sel.mode === "conteo") numInput.value = v;
+          else numInput.value = (parseFloat(numInput.value || 0) + v);
+        };
+        chips.appendChild(c);
+      });
+      setTimeout(() => numInput.focus(), 50);
+    }
+
+    function step(d) { numInput.value = Math.max(0, (parseFloat(numInput.value || 0) + d)); }
+    document.getElementById("plusBtn").onclick = () => step(1);
+    document.getElementById("minusBtn").onclick = () => step(-1);
+
+    function toast() {
+      const t = document.getElementById("saved");
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 900);
+    }
+
+    function advance() {
+      idx++;
+      if (idx >= items.length) {
+        document.getElementById("doneMsg").textContent =
+          `${updated} ${updated === 1 ? "ítem actualizado" : "ítems actualizados"} de ${items.length}.`;
+        show("doneScreen");
+      } else {
+        renderSlide();
+      }
+    }
+
+    async function saveCurrent() {
+      const it = items[idx];
+      const val = parseFloat(numInput.value || 0);
+      // decide if there's a change worth saving
+      if (sel.mode === "conteo") {
+        if (val === it.stock) return false;   // no change
+      } else if (!(val > 0)) {
+        return false;                          // nothing bought/wasted
+      }
+      const res = await fetch("/admin/inv/quiz/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ target: sel.target, id: it.id, mode: sel.mode, value: val })
+      });
+      if (!res.ok) { alert("No se pudo guardar. Intenta de nuevo."); throw new Error("save failed"); }
+      const data = await res.json();
+      it.stock = data.new_stock;
+      updated++;
+      toast();
+      return true;
+    }
+
+    document.getElementById("nextBtn").onclick = async () => {
+      const btn = document.getElementById("nextBtn");
+      btn.disabled = true;
+      try { await saveCurrent(); advance(); }
+      catch (e) {} finally { btn.disabled = false; }
+    };
+    document.getElementById("skipBtn").onclick = () => advance();
+
+    numInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") document.getElementById("nextBtn").click();
+    });
+  </script>
+</body>
+</html>

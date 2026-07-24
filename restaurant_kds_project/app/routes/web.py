@@ -9,7 +9,9 @@ from pathlib import Path
 import shutil
 
 from ..database import get_db, DATA_DIR
-from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, ContactMessage, AccessLog, WorkSession, cr_now
+from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, ContactMessage, AccessLog, WorkSession, Ingredient, cr_now
+from ..inventory_service import create_inventory_movement
+from pydantic import BaseModel
 from ..utils import duration_seconds
 from ..order_history import (
     OrderHistoryFilters, get_order_history, get_all_for_export,
@@ -1073,6 +1075,90 @@ def admin_clock_export(request: Request, range: str = "all", waiter: int = 0, db
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=reloj.csv"},
     )
+
+
+# ─── cuestionario fácil (full-screen slide inventory) ─────────────────────────
+
+@router.get("/cuestionario")
+def cuestionario_page(request: Request, db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    ingredients = db.query(Ingredient).order_by(Ingredient.name.asc()).all()
+    insumos = [
+        {"id": i.id, "name": i.name, "unit": i.unit or "unid", "stock": round(i.stock or 0, 2)}
+        for i in ingredients
+    ]
+    products = db.query(Product).filter(Product.active == True).order_by(
+        Product.display_order.asc(), Product.name.asc()
+    ).all()
+    inv_map = {inv.product_id: inv for inv in db.query(Inventory).all()}
+    productos = [
+        {"id": p.id, "name": p.name, "unit": "unid",
+         "stock": round((inv_map.get(p.id).quantity if inv_map.get(p.id) else 0), 2)}
+        for p in products
+    ]
+    return templates.TemplateResponse(
+        "cuestionario.html",
+        {"request": request, "insumos": insumos, "productos": productos, "page_title": "Cuestionario Fácil"},
+    )
+
+
+class QuizApply(BaseModel):
+    target: str   # insumo | producto
+    id: int
+    mode: str     # conteo | compra | merma
+    value: float
+    reference: str | None = None
+
+
+@router.post("/admin/inv/quiz/apply")
+def cuestionario_apply(payload: QuizApply, request: Request, db: Session = Depends(get_db)):
+    if not require_admin(request):
+        raise HTTPException(401, "Admin session required")
+    if payload.target not in ("insumo", "producto"):
+        raise HTTPException(400, "Objetivo inválido")
+    if payload.mode not in ("conteo", "compra", "merma"):
+        raise HTTPException(400, "Modo inválido")
+    value = float(payload.value or 0)
+    ref = payload.reference or f"cuestionario:{cr_now().strftime('%Y-%m-%d')}"
+
+    if payload.target == "insumo":
+        ing = db.query(Ingredient).filter(Ingredient.id == payload.id).first()
+        if not ing:
+            raise HTTPException(404, "Insumo no encontrado")
+        if payload.mode == "conteo":
+            delta = value - float(ing.stock or 0)
+            if delta != 0:
+                create_inventory_movement(db, ing.id, "adjustment", delta, reference=ref)
+        elif payload.mode == "compra":
+            if value > 0:
+                create_inventory_movement(db, ing.id, "in", value, reference=ref)
+        else:  # merma
+            if value > 0:
+                create_inventory_movement(db, ing.id, "waste", value, reference=ref)
+        db.refresh(ing)
+        return {"ok": True, "new_stock": round(ing.stock or 0, 2)}
+
+    # producto — product-level Inventory + InventoryLog
+    product = db.query(Product).filter(Product.id == payload.id).first()
+    if not product:
+        raise HTTPException(404, "Producto no encontrado")
+    inv = db.query(Inventory).filter(Inventory.product_id == product.id).first()
+    if not inv:
+        inv = Inventory(product_id=product.id, quantity=0)
+        db.add(inv)
+        db.flush()
+    old = float(inv.quantity or 0)
+    if payload.mode == "conteo":
+        new = value
+    elif payload.mode == "compra":
+        new = old + value
+    else:  # merma
+        new = old - value
+    inv.quantity = new
+    db.add(InventoryLog(product_id=product.id, old_quantity=old, new_quantity=new, actor_name="Cuestionario"))
+    db.commit()
+    return {"ok": True, "new_stock": round(new, 2)}
 
 
 # ─── admin inventory ──────────────────────────────────────────────────────────
