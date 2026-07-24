@@ -156,14 +156,9 @@ function renderKitchenInternal(orders) {
   });
 }
 
-/* ─── Safari autoplay guard ─────────────────────────────────────────── */
+/* ─── Safari / iPad autoplay guard ─────────────────────────────────── */
 
 if (typeof window.userInteracted === "undefined") window.userInteracted = false;
-document.addEventListener("click", () => { window.userInteracted = true; }, { once: true, capture: true });
-document.addEventListener("touchstart", () => { window.userInteracted = true; }, { once: true, capture: true });
-document.addEventListener("keydown", () => { window.userInteracted = true; }, { once: true, capture: true });
-
-/* ─── Audio helpers ─────────────────────────────────────────────────── */
 
 const AUDIO = window.STATION_AUDIO || {};
 const activeAudioPlayers = new Set();
@@ -173,8 +168,91 @@ function normalizeAudioSrc(src) {
   try { return encodeURI(src); } catch (e) { return src; }
 }
 
+// Shared AudioContext — created once on first gesture. iOS limits how many
+// contexts a page may create, so we must NOT make a new one per beep.
+let _audioCtx = null;
+function _getAudioCtx() {
+  if (!_audioCtx) {
+    try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch (e) { return null; }
+  }
+  if (_audioCtx.state === "suspended") { _audioCtx.resume().catch(() => {}); }
+  return _audioCtx;
+}
+
+// Decoded MP3s cached as AudioBuffers. On iPad this is the only reliable path:
+// the <audio> element is silenced by the hardware mute switch and needs a
+// per-element gesture unlock; the AudioContext plays through silent mode
+// after one tap.
+const _soundBuffers = {};
+const _soundLoading = {};
+
+function _loadBuffer(src) {
+  if (_soundBuffers[src]) return Promise.resolve(_soundBuffers[src]);
+  if (_soundLoading[src]) return _soundLoading[src];
+  const ctx = _getAudioCtx();
+  if (!ctx || typeof ctx.decodeAudioData !== "function") return Promise.reject(new Error("no webaudio"));
+  const p = fetch(normalizeAudioSrc(src), { credentials: "same-origin" })
+    .then((r) => { if (!r.ok) throw new Error("http " + r.status); return r.arrayBuffer(); })
+    .then((buf) => new Promise((res, rej) => {
+      const ret = ctx.decodeAudioData(buf, res, rej);
+      if (ret && typeof ret.then === "function") ret.then(res, rej);
+    }))
+    .then((decoded) => { _soundBuffers[src] = decoded; delete _soundLoading[src]; return decoded; })
+    .catch((err) => { delete _soundLoading[src]; throw err; });
+  _soundLoading[src] = p;
+  return p;
+}
+
+function _playBuffer(buffer) {
+  const ctx = _getAudioCtx();
+  if (!ctx) return false;
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  const gain = ctx.createGain();
+  gain.gain.value = AUDIO.volume ?? 1;
+  source.connect(gain);
+  gain.connect(ctx.destination);
+  try { source.start(0); } catch (e) { return false; }
+  return true;
+}
+
+function _playViaWebAudio(src) {
+  const ctx = _getAudioCtx();
+  if (!ctx || typeof ctx.decodeAudioData !== "function") return false;
+  if (_soundBuffers[src]) return _playBuffer(_soundBuffers[src]);
+  _loadBuffer(src)
+    .then((buf) => _playBuffer(buf))
+    .catch((err) => { console.warn("[KDS] WebAudio failed, using <audio>:", src, err); _playSoundFileElement(src); });
+  return true;
+}
+
+function _prewarmSounds() {
+  Object.keys(AUDIO).forEach((k) => {
+    const v = AUDIO[k];
+    if (typeof v === "string" && /\.(mp3|wav|ogg|m4a|aac)$/i.test(v)) _loadBuffer(v).catch(() => {});
+  });
+}
+
+function _initAudioOnGesture() {
+  window.userInteracted = true;
+  try { _getAudioCtx(); _prewarmSounds(); } catch (e) {}
+}
+document.addEventListener("click",      _initAudioOnGesture, { once: true, capture: true });
+document.addEventListener("touchstart", _initAudioOnGesture, { once: true, capture: true });
+document.addEventListener("keydown",    _initAudioOnGesture, { once: true, capture: true });
+
+/* ─── Audio helpers ─────────────────────────────────────────────────── */
+
 function playSoundFile(src) {
   if (!window.userInteracted) return false;
+  if (!src) return false;
+  // Prefer Web Audio (works on iPad even in silent mode); fall back to <audio>.
+  if (_playViaWebAudio(src)) return true;
+  return _playSoundFileElement(src);
+}
+
+function _playSoundFileElement(src) {
   if (!src) return false;
   try {
     const audio = new Audio(normalizeAudioSrc(src));
@@ -203,7 +281,8 @@ function playSoundFile(src) {
 function beep(freq, durMs) {
   if (!window.userInteracted) return;
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = _getAudioCtx();
+    if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = "sine"; osc.frequency.value = freq;

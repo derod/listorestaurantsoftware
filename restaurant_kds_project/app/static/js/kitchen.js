@@ -70,10 +70,70 @@ function _getAudioCtx() {
   return _audioCtx;
 }
 
+// Decoded MP3s cached as AudioBuffers so we can play them through the
+// AudioContext. On iPad this is the ONLY reliable path: the <audio> element
+// is muted by the hardware silent switch and needs a per-element gesture
+// unlock, while the AudioContext plays through silent mode after one tap.
+const _soundBuffers = {};   // src -> AudioBuffer
+const _soundLoading = {};   // src -> Promise
+
+function _loadBuffer(src) {
+  if (_soundBuffers[src]) return Promise.resolve(_soundBuffers[src]);
+  if (_soundLoading[src]) return _soundLoading[src];
+  const ctx = _getAudioCtx();
+  if (!ctx || typeof ctx.decodeAudioData !== "function") return Promise.reject(new Error("no webaudio"));
+  const p = fetch(normalizeAudioSrc(src), { credentials: "same-origin" })
+    .then((r) => { if (!r.ok) throw new Error("http " + r.status); return r.arrayBuffer(); })
+    .then((buf) => new Promise((res, rej) => {
+      // Safari <14.1 only supports the callback form of decodeAudioData.
+      const ret = ctx.decodeAudioData(buf, res, rej);
+      if (ret && typeof ret.then === "function") ret.then(res, rej);
+    }))
+    .then((decoded) => { _soundBuffers[src] = decoded; delete _soundLoading[src]; return decoded; })
+    .catch((err) => { delete _soundLoading[src]; throw err; });
+  _soundLoading[src] = p;
+  return p;
+}
+
+function _playBuffer(buffer) {
+  const ctx = _getAudioCtx();
+  if (!ctx) return false;
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  const gain = ctx.createGain();
+  gain.gain.value = window.KITCHEN_AUDIO.volume ?? 1;
+  source.connect(gain);
+  gain.connect(ctx.destination);
+  try { source.start(0); } catch (e) { return false; }
+  return true;
+}
+
+// Play via Web Audio. Returns true if it handled playback (so the caller
+// skips the <audio> fallback and we never double up). Falls back only when
+// Web Audio is unavailable or the decode fails.
+function _playViaWebAudio(src) {
+  const ctx = _getAudioCtx();
+  if (!ctx || typeof ctx.decodeAudioData !== "function") return false;
+  if (_soundBuffers[src]) return _playBuffer(_soundBuffers[src]);
+  _loadBuffer(src)
+    .then((buf) => _playBuffer(buf))
+    .catch((err) => { console.warn("[KDS] WebAudio failed, using <audio>:", src, err); _playSoundElement(src); });
+  return true;
+}
+
+function _prewarmSounds() {
+  const cfg = window.KITCHEN_AUDIO || {};
+  Object.keys(cfg).forEach((k) => {
+    const v = cfg[k];
+    if (typeof v === "string" && /\.(mp3|wav|ogg|m4a|aac)$/i.test(v)) _loadBuffer(v).catch(() => {});
+  });
+}
+
 function _initAudioCtxOnGesture() {
   window.userInteracted = true;
-  // Warm up the context inside the gesture so Safari unlocks it permanently.
-  try { _getAudioCtx(); } catch (e) {}
+  // Warm up + decode the sounds inside the gesture so Safari unlocks audio
+  // permanently and the first alert plays instantly.
+  try { _getAudioCtx(); _prewarmSounds(); } catch (e) {}
 }
 document.addEventListener("click",      _initAudioCtxOnGesture, { once: true, capture: true });
 document.addEventListener("touchstart", _initAudioCtxOnGesture, { once: true, capture: true });
@@ -142,6 +202,13 @@ function showAudioLockedHint() {
 }
 
 function playSound(src) {
+  if (!src) return false;
+  // Prefer Web Audio (works on iPad even in silent mode); fall back to <audio>.
+  if (window.userInteracted && _playViaWebAudio(src)) return true;
+  return _playSoundElement(src);
+}
+
+function _playSoundElement(src) {
   if (!src) return false;
   try {
     const audio = new Audio(normalizeAudioSrc(src));
