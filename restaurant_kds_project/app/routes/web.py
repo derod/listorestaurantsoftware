@@ -9,7 +9,7 @@ from pathlib import Path
 import shutil
 
 from ..database import get_db, DATA_DIR
-from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, ContactMessage, AccessLog, WorkSession, Ingredient, cr_now
+from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, ContactMessage, AccessLog, WorkSession, Ingredient, Recipe, RecipeItem, InventoryMovement, cr_now
 from ..inventory_service import create_inventory_movement
 from pydantic import BaseModel
 from ..utils import duration_seconds
@@ -697,6 +697,101 @@ def admin_reports(request: Request, db: Session = Depends(get_db)):
             "today_label": today_start.strftime("%Y-%m-%d"),
             "week_label": f"{week_start.strftime('%Y-%m-%d')} → {today_start.strftime('%Y-%m-%d')}",
             "page_title": "Reportes",
+        },
+    )
+
+
+# ─── admin rentabilidad (profit report) ───────────────────────────────────────
+
+def _period_start(rng: str):
+    now = cr_now()
+    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    if rng == "today":
+        return today
+    if rng == "week":
+        return today - timedelta(days=today.weekday())
+    if rng == "month":
+        return today.replace(day=1)
+    return None  # all
+
+
+def _colon(x) -> str:
+    return "₡" + f"{round(x):,}"
+
+
+@router.get("/admin/rentabilidad")
+def admin_rentabilidad(request: Request, range: str = "month", db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    from sqlalchemy import func
+
+    rng = range if range in ("today", "week", "month", "all") else "month"
+    start = _period_start(rng)
+
+    ingredients = db.query(Ingredient).all()
+    ing_cost = {i.id: float(i.cost_per_unit or 0) for i in ingredients}
+
+    # Vendido (POS revenue)
+    sq = db.query(Sale)
+    if start is not None:
+        sq = sq.filter(Sale.created_at >= start)
+    sales = sq.all()
+    vendido = sum(float(s.total or 0) for s in sales)
+    num_sales = len(sales)
+
+    # Comprado (ingredient purchases) & Merma (waste), valued at cost_per_unit
+    mq = db.query(InventoryMovement)
+    if start is not None:
+        mq = mq.filter(InventoryMovement.created_at >= start)
+    movs = mq.all()
+    comprado = sum(float(m.quantity or 0) * ing_cost.get(m.ingredient_id, 0) for m in movs if m.type == "in")
+    merma = sum(float(m.quantity or 0) * ing_cost.get(m.ingredient_id, 0) for m in movs if m.type == "waste")
+
+    # Valor de inventario actual (snapshot de insumos)
+    inv_value = sum(float(i.stock or 0) * float(i.cost_per_unit or 0) for i in ingredients)
+
+    # COGS vía recetas (parcial: solo productos con receta)
+    recipe_pid = {r.id: r.product_id for r in db.query(Recipe).all()}
+    recipe_cost = {}
+    for ri in db.query(RecipeItem).all():
+        recipe_cost[ri.recipe_id] = recipe_cost.get(ri.recipe_id, 0) + float(ri.quantity or 0) * ing_cost.get(ri.ingredient_id, 0)
+    product_unit_cost = {pid: recipe_cost.get(rid, 0) for rid, pid in recipe_pid.items()}
+
+    iq = db.query(SaleItem).join(Sale, SaleItem.sale_id == Sale.id)
+    if start is not None:
+        iq = iq.filter(Sale.created_at >= start)
+    cogs = 0.0
+    covered_rev = 0.0
+    for it in iq.all():
+        if it.product_id in product_unit_cost:
+            cogs += product_unit_cost[it.product_id] * float(it.quantity or 0)
+            covered_rev += float(it.line_total or 0)
+    gross = covered_rev - cogs
+    margin = (gross / covered_rev * 100) if covered_rev > 0 else 0
+    coverage = (covered_rev / vendido * 100) if vendido > 0 else 0
+    products_total = db.query(func.count(Product.id)).filter(Product.active == True).scalar() or 0
+    products_recipe = len(set(recipe_pid.values()))
+
+    balance = vendido - comprado
+    bar_max = max(vendido, comprado, merma, 1)
+
+    return templates.TemplateResponse(
+        "admin_rentabilidad.html",
+        {
+            "request": request,
+            "active_range": rng,
+            "vendido": _colon(vendido), "num_sales": num_sales,
+            "comprado": _colon(comprado), "merma": _colon(merma),
+            "inv_value": _colon(inv_value),
+            "balance": _colon(balance), "balance_pos": balance >= 0,
+            "cogs": _colon(cogs), "gross": _colon(gross),
+            "margin": round(margin), "coverage": round(coverage),
+            "has_cost": covered_rev > 0,
+            "products_total": products_total, "products_recipe": products_recipe,
+            "bar_vendido": round(vendido / bar_max * 100),
+            "bar_comprado": round(comprado / bar_max * 100),
+            "bar_merma": round(merma / bar_max * 100),
+            "page_title": "Rentabilidad",
         },
     )
 

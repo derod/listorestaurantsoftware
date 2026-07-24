@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .rent-head { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:18px; }
+  .rent-head h1 { margin:0; }
+  .rent-filters { display:flex; gap:8px; flex-wrap:wrap; }
+  .rent-filter { padding:8px 16px; border-radius:999px; background:var(--card); border:1px solid var(--border); color:var(--text); text-decoration:none; font-size:14px; font-weight:700; }
+  .rent-filter.active { background:var(--accent); border-color:var(--accent); color:#111; }
+  .rent-back { padding:8px 16px; border-radius:12px; background:var(--card); border:1px solid var(--border); color:var(--text); text-decoration:none; font-weight:700; font-size:14px; }
+
+  .rent-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:16px; margin-bottom:24px; }
+  .rent-card { background:var(--card); border:1px solid var(--border); border-radius:18px; padding:22px; display:flex; flex-direction:column; gap:6px; }
+  .rent-card .ico { font-size:26px; }
+  .rent-card .label { font-size:13px; color:var(--muted); font-weight:700; letter-spacing:0.03em; }
+  .rent-card .value { font-size:32px; font-weight:900; letter-spacing:-0.5px; }
+  .rent-card .hint { font-size:12px; color:var(--muted); }
+  .v-green .value { color:var(--green); }
+  .v-blue .value { color:var(--blue); }
+  .v-red .value { color:var(--red); }
+  .v-accent .value { color:var(--accent); }
+
+  .rent-bars { background:var(--card); border:1px solid var(--border); border-radius:18px; padding:22px; margin-bottom:24px; }
+  .rent-bars h2 { font-size:16px; margin:0 0 16px; }
+  .bar-row { display:flex; align-items:center; gap:14px; margin-bottom:12px; }
+  .bar-name { width:150px; font-size:14px; font-weight:700; color:var(--muted); flex-shrink:0; }
+  .bar-track { flex:1; background:var(--bg); border-radius:999px; height:26px; overflow:hidden; }
+  .bar-fill { height:100%; border-radius:999px; min-width:2px; transition:width .3s; }
+  .bar-fill.green { background:var(--green); } .bar-fill.blue { background:var(--blue); } .bar-fill.red { background:var(--red); }
+  .bar-val { width:120px; text-align:right; font-weight:800; font-size:15px; }
+
+  .rent-profit { background:var(--card); border:1px solid var(--border); border-radius:18px; padding:24px; }
+  .rent-profit.ok { border-color:rgba(76,175,80,0.4); }
+  .rent-profit h2 { margin:0 0 4px; font-size:18px; }
+  .rent-profit .big { font-size:38px; font-weight:900; color:var(--green); letter-spacing:-0.5px; }
+  .rent-profit .meta { color:var(--muted); font-size:14px; margin-top:6px; }
+  .rent-note { background:rgba(255,210,77,0.08); border:1px solid rgba(255,210,77,0.35); border-radius:14px; padding:16px 18px; color:#e8d9a0; font-size:14px; line-height:1.5; }
+  .rent-note a { color:var(--accent); font-weight:700; text-decoration:none; }
+</style>
+
+<div class="rent-head">
+  <h1>Rentabilidad</h1>
+  <a class="rent-back" href="/admin">&#8592; Dashboard</a>
+</div>
+
+<div class="rent-filters" style="margin-bottom:22px;">
+  <a class="rent-filter {% if active_range=='today' %}active{% endif %}" href="/admin/rentabilidad?range=today">Hoy</a>
+  <a class="rent-filter {% if active_range=='week' %}active{% endif %}" href="/admin/rentabilidad?range=week">Semana</a>
+  <a class="rent-filter {% if active_range=='month' %}active{% endif %}" href="/admin/rentabilidad?range=month">Mes</a>
+  <a class="rent-filter {% if active_range=='all' %}active{% endif %}" href="/admin/rentabilidad?range=all">Todo</a>
+</div>
+
+<div class="rent-grid">
+  <div class="rent-card v-green">
+    <div class="ico">&#128176;</div>
+    <div class="label">Vendido (POS)</div>
+    <div class="value">{{ vendido }}</div>
+    <div class="hint">{{ num_sales }} venta{{ '' if num_sales == 1 else 's' }}</div>
+  </div>
+  <div class="rent-card v-blue">
+    <div class="ico">&#128722;</div>
+    <div class="label">Comprado (insumos)</div>
+    <div class="value">{{ comprado }}</div>
+    <div class="hint">entradas de stock valoradas al costo</div>
+  </div>
+  <div class="rent-card v-red">
+    <div class="ico">&#128465;</div>
+    <div class="label">Merma</div>
+    <div class="value">{{ merma }}</div>
+    <div class="hint">pérdida por lo botado</div>
+  </div>
+  <div class="rent-card v-accent">
+    <div class="ico">&#128230;</div>
+    <div class="label">Valor de inventario</div>
+    <div class="value">{{ inv_value }}</div>
+    <div class="hint">insumos en stock ahora</div>
+  </div>
+  <div class="rent-card {% if balance_pos %}v-green{% else %}v-red{% endif %}">
+    <div class="ico">&#9878;</div>
+    <div class="label">Balance (vendido − comprado)</div>
+    <div class="value">{{ balance }}</div>
+    <div class="hint">entra vs sale en el período</div>
+  </div>
+</div>
+
+<div class="rent-bars">
+  <h2>Vendido vs Gastado</h2>
+  <div class="bar-row">
+    <div class="bar-name">Vendido</div>
+    <div class="bar-track"><div class="bar-fill green" style="width:{{ bar_vendido }}%;"></div></div>
+    <div class="bar-val">{{ vendido }}</div>
+  </div>
+  <div class="bar-row">
+    <div class="bar-name">Comprado</div>
+    <div class="bar-track"><div class="bar-fill blue" style="width:{{ bar_comprado }}%;"></div></div>
+    <div class="bar-val">{{ comprado }}</div>
+  </div>
+  <div class="bar-row">
+    <div class="bar-name">Merma</div>
+    <div class="bar-track"><div class="bar-fill red" style="width:{{ bar_merma }}%;"></div></div>
+    <div class="bar-val">{{ merma }}</div>
+  </div>
+</div>
+
+{% if has_cost %}
+<div class="rent-profit ok">
+  <h2>Ganancia bruta (costeada)</h2>
+  <div class="big">{{ gross }}</div>
+  <div class="meta">Margen {{ margin }}% · Costo de lo vendido {{ cogs }} · basado en el <b>{{ coverage }}%</b> de las ventas (productos con receta).</div>
+</div>
+{% else %}
+<div class="rent-note">
+  💡 Para ver <b>ganancia y margen por venta</b>, agrega <b>recetas</b> a tus productos (producto → insumos que lleva). Ahora mismo {{ products_recipe }} de {{ products_total }} productos tienen receta. Cárgalas en <a href="/admin/inventario">Insumos → Modo avanzado: Recetas</a>.
+</div>
+{% endif %}
+{% endblock %}
