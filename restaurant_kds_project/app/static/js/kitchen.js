@@ -134,6 +134,23 @@ let _audioPrewarmed = false;
 // Canonical iOS unlock: resume the context AND play a 1-frame silent buffer
 // inside the gesture. Without the silent buffer, later source.start() calls
 // stay muted on iPad even though the context reports "running".
+// A permanent silent node keeps the context "running" so iOS doesn't suspend
+// it — that's what lets order alerts play WITHOUT a fresh user gesture.
+let _keepAliveNode = null;
+function _startKeepAlive() {
+  const ctx = _getAudioCtx();
+  if (!ctx || _keepAliveNode) return;
+  try {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    gain.gain.value = 0;             // inaudible
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    _keepAliveNode = osc;            // hold a reference so it isn't GC'd
+  } catch (e) {}
+}
+
 function _unlockAudio() {
   const ctx = _getAudioCtx();
   if (!ctx) return;
@@ -144,6 +161,7 @@ function _unlockAudio() {
     src.connect(ctx.destination);
     src.start(0);
   } catch (e) {}
+  _startKeepAlive();
 }
 window.unlockAudio = _unlockAudio;
 
