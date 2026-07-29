@@ -70,6 +70,20 @@ async function submitOrder() {
   fetchRecent();
 }
 
+let stationProducts = [];
+let stationSort = "manual";    // "manual" | "az"
+let stationReorder = false;
+
+function productImg(p) {
+  return p.image_path ? `<img src="${p.image_path}" alt="" style="width:100%;height:110px;object-fit:cover;border-radius:12px;margin-bottom:8px;">` : "";
+}
+
+function currentProductOrder() {
+  const list = stationProducts.slice();
+  if (stationSort === "az") list.sort((a, b) => a.name.localeCompare(b.name));
+  return list;
+}
+
 function bindProductButtons() {
   document.querySelectorAll("#productsGrid .product-btn").forEach(btn => {
     if (btn.dataset.bound) return;
@@ -77,18 +91,81 @@ function bindProductButtons() {
     btn.addEventListener("click", () => addProduct(btn.dataset.productId, btn.dataset.productName));
   });
 }
-bindProductButtons();
+
+function renderProducts() {
+  const grid = document.getElementById("productsGrid");
+  if (!grid) return;
+  const list = currentProductOrder();
+  if (stationReorder) {
+    grid.innerHTML = list.map((p, i) => `
+      <div class="product-btn reordering">
+        ${productImg(p)}<span>${p.name}</span>
+        <div class="reorder-arrows">
+          <button class="reorder-arrow" data-move="up" data-id="${p.id}" ${i === 0 ? "disabled" : ""}>▲</button>
+          <button class="reorder-arrow" data-move="down" data-id="${p.id}" ${i === list.length - 1 ? "disabled" : ""}>▼</button>
+        </div>
+      </div>`).join("");
+  } else {
+    grid.innerHTML = list.map(p =>
+      `<button class="product-btn" data-product-id="${p.id}" data-product-name="${p.name}">${productImg(p)}<span>${p.name}</span></button>`
+    ).join("");
+    bindProductButtons();
+  }
+}
 
 async function refreshProductsGrid() {
-  const res = await fetch("/api/products");
-  const products = await res.json();
-  const grid = document.getElementById("productsGrid");
-  grid.innerHTML = products.map(p => {
-    const img = p.image_path ? `<img src="${p.image_path}" alt="" style="width:100%;height:110px;object-fit:cover;border-radius:12px;margin-bottom:8px;">` : "";
-    return `<button class="product-btn" data-product-id="${p.id}" data-product-name="${p.name}">${img}<span>${p.name}</span></button>`;
-  }).join("");
-  bindProductButtons();
+  try {
+    const res = await fetch("/api/products");
+    stationProducts = await res.json();
+  } catch (e) { return; }
+  renderProducts();
 }
+
+async function moveProduct(id, dir) {
+  try {
+    const res = await fetch(`/api/products/${id}/move`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ direction: dir })
+    });
+    if (!res.ok) throw new Error();
+    await refreshProductsGrid();
+  } catch (e) { toast("No se pudo reordenar.", "error"); }
+}
+
+document.querySelectorAll(".sort-btn").forEach(b => {
+  b.addEventListener("click", () => {
+    if (stationReorder) return;
+    stationSort = b.dataset.sort;
+    document.querySelectorAll(".sort-btn").forEach(x => x.classList.toggle("active", x === b));
+    renderProducts();
+  });
+});
+
+const _reorderBtn = document.getElementById("reorderBtn");
+if (_reorderBtn) {
+  _reorderBtn.addEventListener("click", () => {
+    stationReorder = !stationReorder;
+    _reorderBtn.classList.toggle("on", stationReorder);
+    _reorderBtn.textContent = stationReorder ? "✓ Listo" : "↕ Ordenar";
+    if (stationReorder) {
+      stationSort = "manual";
+      document.querySelectorAll(".sort-btn").forEach(x => x.classList.toggle("active", x.dataset.sort === "manual"));
+    }
+    document.querySelectorAll(".sort-btn").forEach(x => { x.disabled = stationReorder; });
+    renderProducts();
+  });
+}
+
+const _productsGridEl = document.getElementById("productsGrid");
+if (_productsGridEl) {
+  _productsGridEl.addEventListener("click", (e) => {
+    const arrow = e.target.closest("[data-move]");
+    if (arrow) { e.stopPropagation(); moveProduct(arrow.dataset.id, arrow.dataset.move); }
+  });
+}
+
+refreshProductsGrid();
 
 const newProductModal = document.getElementById("newProductModal");
 const newProductInput = document.getElementById("newProductName");

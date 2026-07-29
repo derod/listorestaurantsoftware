@@ -50,6 +50,36 @@ def products(db: Session = Depends(get_db)):
     return [{"id": p.id, "name": p.name, "active": p.active, "image_path": p.image_path, "price": p.price or 0} for p in rows]
 
 
+class MoveDir(BaseModel):
+    direction: str  # up | down
+
+
+@router.post("/products/{product_id}/move")
+def move_product_api(product_id: int, payload: MoveDir, db: Session = Depends(get_db)):
+    if payload.direction not in ("up", "down"):
+        raise HTTPException(400, "direction inválida")
+    products = (
+        db.query(Product)
+        .filter(Product.active == True)
+        .order_by(Product.display_order.asc(), Product.name.asc())
+        .all()
+    )
+    # Normalize to sequential order so swaps are always well-defined.
+    for i, p in enumerate(products):
+        p.display_order = i
+    idx = next((i for i, p in enumerate(products) if p.id == product_id), None)
+    if idx is None:
+        raise HTTPException(404, "Producto no encontrado")
+    new_idx = idx - 1 if payload.direction == "up" else idx + 1
+    if 0 <= new_idx < len(products):
+        products[idx].display_order, products[new_idx].display_order = (
+            products[new_idx].display_order,
+            products[idx].display_order,
+        )
+    db.commit()
+    return {"ok": True}
+
+
 @router.post("/products")
 def create_product(payload: ProductCreate, db: Session = Depends(get_db)):
     name = payload.name.strip()

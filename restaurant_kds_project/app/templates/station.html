@@ -13,8 +13,13 @@
 <div class="screen two-panel">
   <section class="panel products-panel">
     <h1 style="display:none;">{{ page_title }}</h1>
-    <div style="margin-bottom:14px;">
+    <div class="prod-controls">
       <button class="action" id="newProductBtn" style="background:rgba(77,163,255,0.18);color:var(--blue);min-height:56px;font-size:22px;">+ Nuevo producto</button>
+      <div class="sort-toggle">
+        <button type="button" class="sort-btn active" data-sort="manual">Manual</button>
+        <button type="button" class="sort-btn" data-sort="az">A–Z</button>
+      </div>
+      <button type="button" class="action" id="reorderBtn" style="min-height:56px;font-size:22px;">↕ Ordenar</button>
     </div>
     <div class="products-grid" id="productsGrid">
       {% for product in products %}
@@ -49,6 +54,18 @@
 </div>
 
 <style>
+  .prod-controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+  .sort-toggle { display:flex; gap:0; border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+  .sort-btn { background:var(--muted); color:var(--text); border:none; padding:12px 20px; font-size:20px; font-weight:800; cursor:pointer; }
+  .sort-btn.active { background:var(--accent); color:#111; }
+  .sort-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  #reorderBtn.on { background:var(--accent); color:#111; }
+  .product-btn.reordering { position:relative; border:2px dashed var(--accent); }
+  .reorder-arrows { display:flex; gap:8px; justify-content:center; margin-top:10px; }
+  .reorder-arrow { flex:1; min-height:56px; font-size:28px; font-weight:900; border:none; border-radius:12px; background:var(--muted); color:var(--text); cursor:pointer; }
+  .reorder-arrow:active { transform:scale(0.95); }
+  .reorder-arrow:disabled { opacity:0.3; cursor:not-allowed; }
+
   .recent-card { margin-top:22px; border-top:1px solid var(--border); padding-top:18px; }
   .recent-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
   .recent-title { font-size:22px; margin:0; }
@@ -100,5 +117,5 @@ window.STATION_AUDIO = {
   volume: {{ settings.master_volume if settings else 1.0 }}
 };
 </script>
-<script src="/static/js/station.js?v=cancel1"></script>
+<script src="/static/js/station.js?v=sort1"></script>
 {% endblock %}
