@@ -488,6 +488,44 @@ function renderOrders(orders) {
 
 /* ─── Polling ───────────────────────────────────────────────────────── */
 
+/* ─── Cancelled-order alerts (persistent until dismissed) ───────────── */
+let cancelledShown = new Set();
+let firstCancelledPoll = true;
+
+async function pollCancelled() {
+  try {
+    const res = await fetch("/api/orders/cancelled-recent?minutes=5");
+    const cancelled = await res.json();
+    cancelled.forEach(o => {
+      if (cancelledShown.has(o.id)) return;
+      cancelledShown.add(o.id);
+      if (firstCancelledPoll) return;  // don't alert for ones already cancelled at load
+      showCancelledAlert(o);
+      if (!playSound(window.KITCHEN_AUDIO.cancelSound)) beep(300, 600);
+      flashPageTitle("🚫 CANCELADO");
+      speakSpanish(`Pedido cancelado. ${formatSpeech(o.items)}.`);
+    });
+    firstCancelledPoll = false;
+  } catch (e) {}
+}
+
+function showCancelledAlert(o) {
+  const host = document.getElementById("cancelledAlerts");
+  if (!host || document.getElementById("cancelled-" + o.id)) return;
+  const items = o.items.map(i => `${i.quantity} ${i.product_name}`).join(", ");
+  const el = document.createElement("div");
+  el.className = "cancel-alert";
+  el.id = "cancelled-" + o.id;
+  el.innerHTML =
+    '<div class="ca-left">' +
+      '<div class="ca-title">🚫 CANCELADO · #' + o.id + '</div>' +
+      '<div class="ca-items">' + items + '</div>' +
+    '</div>' +
+    '<button class="ca-dismiss">Entendido</button>';
+  el.querySelector(".ca-dismiss").addEventListener("click", () => el.remove());
+  host.prepend(el);
+}
+
 async function pollOrders() {
   const res = await fetch("/api/orders/active");
   const all = await res.json();
@@ -505,6 +543,7 @@ async function pollOrders() {
   });
   window.INITIAL_ORDERS = orders;
   renderOrders(orders);
+  pollCancelled();
 }
 
 /* ─── Event listeners ───────────────────────────────────────────────── */

@@ -58,9 +58,21 @@
   </div>
 </div>
 
+<div id="cancelledAlerts"></div>
+
 <div id="ordersContainer" class="orders-full">
   <div class="empty-kitchen">Cargando pedidos...</div>
 </div>
+
+<style>
+  #cancelledAlerts { display:flex; flex-direction:column; gap:14px; margin-bottom:18px; }
+  .cancel-alert { background:rgba(228,91,91,0.14); border:2px solid var(--red); border-radius:20px; padding:22px; display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap; animation:cancelPulse 1s ease-in-out 3; }
+  .cancel-alert .ca-left { display:flex; flex-direction:column; gap:8px; }
+  .cancel-alert .ca-title { font-size:30px; font-weight:900; color:var(--red); letter-spacing:0.02em; }
+  .cancel-alert .ca-items { font-size:26px; font-weight:700; }
+  .cancel-alert .ca-dismiss { min-height:64px; padding:0 34px; font-size:24px; font-weight:800; border:none; border-radius:16px; background:var(--red); color:#fff; cursor:pointer; }
+  @keyframes cancelPulse { 0%,100%{ box-shadow:0 0 0 0 rgba(228,91,91,0); } 50%{ box-shadow:0 0 0 6px rgba(228,91,91,0.25); } }
+</style>
 
 <!-- Modal: Crear pedido salon -->
 <div class="modal-overlay" id="createModal">
@@ -109,5 +121,5 @@ window.KITCHEN_AUDIO = {
 };
 window.INITIAL_ORDERS = {{ orders_json|safe }};
 </script>
-<script src="/static/js/kitchen.js?v=audio5"></script>
+<script src="/static/js/kitchen.js?v=cancel1"></script>
 {% endblock %}

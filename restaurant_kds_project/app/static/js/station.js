@@ -450,10 +450,14 @@ function recentBadge(s) {
   return `<span class="recent-badge rb-${s}">${label}</span>`;
 }
 
+const CANCELABLE = new Set(["nuevo", "aceptado", "preparando", "listo"]);
+
 function renderRecent() {
   const list = document.getElementById("recentList");
   const toggle = document.getElementById("recentToggle");
+  const cancelLastBtn = document.getElementById("cancelLastBtn");
   if (!list || !toggle) return;
+  if (cancelLastBtn) cancelLastBtn.disabled = !recentOrders.some(o => CANCELABLE.has(o.status));
   if (!recentOrders.length) {
     list.innerHTML = '<div class="recent-empty">Aún no has enviado órdenes.</div>';
     toggle.style.display = "none";
@@ -463,6 +467,8 @@ function renderRecent() {
   list.innerHTML = shown.map(o => {
     const time = (o.created_at || "").slice(11, 16);
     const items = o.items.map(i => `${i.quantity} ${i.product_name}`).join(", ");
+    const cancelBtn = CANCELABLE.has(o.status)
+      ? `<button class="recent-row-cancel" data-cancel-id="${o.id}">Cancelar</button>` : "";
     return `
       <div class="recent-row">
         <div class="recent-row-top">
@@ -470,6 +476,7 @@ function renderRecent() {
           ${recentBadge(o.status)}
         </div>
         <div class="recent-items">${items}</div>
+        ${cancelBtn}
       </div>`;
   }).join("");
   if (recentOrders.length > RECENT_COLLAPSED) {
@@ -480,11 +487,40 @@ function renderRecent() {
   }
 }
 
+async function cancelOrder(id) {
+  if (!confirm(`¿Cancelar la orden #${id}?`)) return;
+  try {
+    const res = await fetch(`/api/orders/${id}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "cancelado", actor_role: window.KDS_CONFIG.sourceRole })
+    });
+    if (!res.ok) throw new Error();
+    toast(`Orden #${id} cancelada.`);
+    fetchRecent();
+  } catch (e) { toast("No se pudo cancelar.", "error"); }
+}
+
+function cancelLast() {
+  const last = recentOrders.find(o => CANCELABLE.has(o.status));
+  if (!last) { toast("No hay órdenes por cancelar.", "error"); return; }
+  cancelOrder(last.id);
+}
+
 const _recentToggleBtn = document.getElementById("recentToggle");
 if (_recentToggleBtn) {
   _recentToggleBtn.addEventListener("click", () => {
     recentExpanded = !recentExpanded;
     renderRecent();
+  });
+}
+const _cancelLastBtn = document.getElementById("cancelLastBtn");
+if (_cancelLastBtn) _cancelLastBtn.addEventListener("click", cancelLast);
+const _recentListEl = document.getElementById("recentList");
+if (_recentListEl) {
+  _recentListEl.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-cancel-id]");
+    if (btn) cancelOrder(btn.dataset.cancelId);
   });
 }
 

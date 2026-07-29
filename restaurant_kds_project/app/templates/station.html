@@ -36,7 +36,10 @@
     </div>
 
     <div class="recent-card">
-      <h3 class="recent-title">Órdenes recientes</h3>
+      <div class="recent-head">
+        <h3 class="recent-title">Órdenes recientes</h3>
+        <button type="button" id="cancelLastBtn" class="recent-cancel-last">Cancelar último</button>
+      </div>
       <div id="recentList" class="recent-list">
         <div class="recent-empty">Aún no has enviado órdenes.</div>
       </div>
@@ -47,7 +50,13 @@
 
 <style>
   .recent-card { margin-top:22px; border-top:1px solid var(--border); padding-top:18px; }
-  .recent-title { font-size:22px; margin:0 0 12px; }
+  .recent-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+  .recent-title { font-size:22px; margin:0; }
+  .recent-cancel-last { background:rgba(228,91,91,0.16); color:var(--red); border:1px solid rgba(228,91,91,0.45); border-radius:12px; padding:8px 14px; font-size:16px; font-weight:800; cursor:pointer; }
+  .recent-cancel-last:hover { background:rgba(228,91,91,0.28); }
+  .recent-cancel-last:disabled { opacity:0.4; cursor:not-allowed; }
+  .recent-row-cancel { align-self:flex-start; background:transparent; color:var(--red); border:1px solid rgba(228,91,91,0.4); border-radius:10px; padding:5px 12px; font-size:14px; font-weight:700; cursor:pointer; }
+  .recent-row-cancel:hover { background:rgba(228,91,91,0.18); }
   .recent-list { display:flex; flex-direction:column; gap:10px; }
   .recent-empty { color:#6c757d; font-size:18px; padding:8px 0; }
   .recent-row { background:#10141b; border:1px solid var(--border); border-radius:14px; padding:12px 14px; display:flex; flex-direction:column; gap:6px; }
@@ -91,5 +100,5 @@ window.STATION_AUDIO = {
   volume: {{ settings.master_volume if settings else 1.0 }}
 };
 </script>
-<script src="/static/js/station.js?v=recent1"></script>
+<script src="/static/js/station.js?v=cancel1"></script>
 {% endblock %}

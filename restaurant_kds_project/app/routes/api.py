@@ -4,7 +4,8 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy.orm import Session, joinedload
 from ..database import get_db
 from ..schemas import OrderCreate, OrderUpdate, StatusUpdate, ProductCreate
-from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, ContactMessage
+from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, ContactMessage, cr_now
+from datetime import timedelta
 from ..utils import create_order, get_order, update_order_items, change_order_status, duration_seconds
 from ..notifications import send_lead_notification
 from pydantic import BaseModel, Field
@@ -103,6 +104,23 @@ def recent_orders(
     if waiter_id:
         q = q.filter(Order.waiter_id == waiter_id)
     rows = q.order_by(Order.created_at.desc()).limit(max(1, min(limit, 50))).all()
+    return [serialize_order(o) for o in rows]
+
+
+@router.get("/orders/cancelled-recent")
+def cancelled_recent(minutes: int = 5, db: Session = Depends(get_db)):
+    cutoff = cr_now() - timedelta(minutes=max(1, min(minutes, 120)))
+    rows = (
+        db.query(Order)
+        .options(joinedload(Order.items).joinedload(OrderItem.product))
+        .filter(
+            Order.status == "cancelado",
+            Order.cancelled_at != None,  # noqa: E711
+            Order.cancelled_at >= cutoff,
+        )
+        .order_by(Order.cancelled_at.desc())
+        .all()
+    )
     return [serialize_order(o) for o in rows]
 
 
