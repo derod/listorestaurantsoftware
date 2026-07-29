@@ -37,18 +37,16 @@
     <div class="big-actions">
       <button class="action primary" id="sendBtn">Enviar</button>
       <button class="action" id="clearBtn">Borrar</button>
-      <button class="action" id="undoBtn">Quitar último</button>
+      <button class="action" id="undoBtn">Quitar último producto</button>
     </div>
 
     <div class="recent-card">
-      <div class="recent-head">
-        <h3 class="recent-title">Órdenes recientes</h3>
-        <button type="button" id="cancelLastBtn" class="recent-cancel-last">Cancelar último</button>
-      </div>
+      <h3 class="recent-title">Órdenes recientes</h3>
       <div id="recentList" class="recent-list">
         <div class="recent-empty">Aún no has enviado órdenes.</div>
       </div>
       <button type="button" id="recentToggle" class="recent-toggle" style="display:none;">Ver más</button>
+      <button type="button" id="cancelLastBtn" class="recent-cancel-last">🚫 Cancelar última orden enviada</button>
     </div>
   </aside>
 </div>
@@ -73,10 +71,9 @@
   .reorder-arrow:disabled { opacity:0.3; cursor:not-allowed; }
 
   .recent-card { margin-top:22px; border-top:1px solid var(--border); padding-top:18px; }
-  .recent-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
-  .recent-title { font-size:22px; margin:0; }
-  .recent-cancel-last { background:rgba(228,91,91,0.16); color:var(--red); border:1px solid rgba(228,91,91,0.45); border-radius:12px; padding:8px 14px; font-size:16px; font-weight:800; cursor:pointer; }
-  .recent-cancel-last:hover { background:rgba(228,91,91,0.28); }
+  .recent-title { font-size:22px; margin:0 0 12px; }
+  .recent-cancel-last { width:100%; margin-top:18px; min-height:74px; padding:16px 20px; background:rgba(228,91,91,0.18); color:var(--red); border:2px solid rgba(228,91,91,0.55); border-radius:16px; font-size:22px; font-weight:800; cursor:pointer; }
+  .recent-cancel-last:hover { background:rgba(228,91,91,0.3); }
   .recent-cancel-last:disabled { opacity:0.4; cursor:not-allowed; }
   .recent-row-cancel { align-self:flex-start; background:transparent; color:var(--red); border:1px solid rgba(228,91,91,0.4); border-radius:10px; padding:5px 12px; font-size:14px; font-weight:700; cursor:pointer; }
   .recent-row-cancel:hover { background:rgba(228,91,91,0.18); }
