@@ -31,6 +31,9 @@
   .inv2-card-unit { color:#b7becd; font-size:18px; font-weight:600; }
   .inv2-card-price { color:#8ea0c0; font-size:15px; font-weight:600; margin-top:2px; }
   .inv2-card-price b { color:#cfd5e1; font-weight:800; }
+  .inv2-cats { display:flex; flex-direction:column; gap:26px; }
+  .inv2-cat-title { font-size:22px; font-weight:800; color:#cfd5e1; margin-bottom:14px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--border); padding-bottom:8px; }
+  .inv2-cat-count { font-size:15px; font-weight:700; color:#8ea0c0; background:rgba(255,255,255,0.06); border-radius:999px; padding:2px 10px; }
   .inv2-badge { display:inline-flex; align-items:center; gap:8px; padding:6px 14px; border-radius:999px; font-weight:800; font-size:16px; width:fit-content; }
   .inv2-badge.ok { background:rgba(76,175,80,0.15); color:var(--green); }
   .inv2-badge.low { background:rgba(255,210,77,0.18); color:var(--yellow); }
@@ -119,7 +122,7 @@
   </div>
 
   <!-- Tarjetas de insumos -->
-  <div id="ingGrid" class="inv2-grid"></div>
+  <div id="ingGrid" class="inv2-cats"></div>
   <div id="ingEmpty" class="inv2-empty" style="display:none;">No hay insumos aún. Usa el botón "Agregar insumo" para comenzar.</div>
 
   <!-- Modo avanzado: recetas -->
@@ -138,6 +141,16 @@
     <div class="inv2-field">
       <label>Nombre</label>
       <input name="name" required maxlength="200" placeholder="Ej: Tomate">
+    </div>
+    <div class="inv2-field">
+      <label>Categoría</label>
+      <select name="category">
+        <option value="">— Sin categoría —</option>
+        <option value="Abarrotes">Abarrotes</option>
+        <option value="Salsas y condimentos">Salsas y condimentos</option>
+        <option value="Limpieza e higiene">Limpieza e higiene</option>
+        <option value="Otros">Otros</option>
+      </select>
     </div>
     <div class="inv2-field">
       <label>Unidad de medida</label>
@@ -376,24 +389,11 @@
   }
 
   // ─── render cards ─────────────────────────────────────────────────────
-  function renderCards() {
-    const grid = $("#ingGrid");
-    const empty = $("#ingEmpty");
-    grid.innerHTML = "";
-    if (!ingredients.length) {
-      empty.style.display = "block";
-      $("#lowStockAlert").style.display = "none";
-      return;
-    }
-    empty.style.display = "none";
+  const CATEGORY_ORDER = ["Abarrotes", "Salsas y condimentos", "Limpieza e higiene", "Otros"];
 
-    const low = [];
-    ingredients.forEach(ing => {
-      const cls = statusClass(ing.stock);
-      if (cls !== "ok") low.push(ing);
-      const card = document.createElement("div");
-      card.className = "inv2-card " + cls;
-      card.innerHTML = `
+  function ingCardHtml(ing, cls) {
+    return `
+      <div class="inv2-card ${cls}">
         <div class="inv2-card-name">${escapeHtml(ing.name)}</div>
         <div>
           <span class="inv2-card-stock">${formatNum(ing.stock)}</span>
@@ -407,9 +407,43 @@
           <button class="inv2-btn ghost sm wide" data-act="history" data-id="${ing.id}" data-name="${escapeAttr(ing.name)}">📜 Historial</button>
           <button class="inv2-btn red sm wide" data-act="delete" data-id="${ing.id}" data-name="${escapeAttr(ing.name)}">🗑️ Eliminar</button>
         </div>
-      `;
-      grid.appendChild(card);
+      </div>`;
+  }
+
+  function renderCards() {
+    const grid = $("#ingGrid");
+    const empty = $("#ingEmpty");
+    grid.innerHTML = "";
+    if (!ingredients.length) {
+      empty.style.display = "block";
+      $("#lowStockAlert").style.display = "none";
+      return;
+    }
+    empty.style.display = "none";
+
+    const low = [];
+    const groups = {};
+    ingredients.forEach(ing => {
+      if (statusClass(ing.stock) !== "ok") low.push(ing);
+      const cat = (ing.category && ing.category.trim()) ? ing.category.trim() : "Sin categoría";
+      (groups[cat] = groups[cat] || []).push(ing);
     });
+
+    const rank = (c) => {
+      const i = CATEGORY_ORDER.indexOf(c);
+      if (i !== -1) return i;
+      return c === "Sin categoría" ? 999 : 500;
+    };
+    const cats = Object.keys(groups).sort((a, b) => (rank(a) - rank(b)) || a.localeCompare(b));
+
+    grid.innerHTML = cats.map(cat => {
+      const items = groups[cat].slice().sort((a, b) => a.name.localeCompare(b.name));
+      const cards = items.map(ing => ingCardHtml(ing, statusClass(ing.stock))).join("");
+      return `<div class="inv2-cat">
+        <div class="inv2-cat-title">${escapeHtml(cat)} <span class="inv2-cat-count">${items.length}</span></div>
+        <div class="inv2-grid">${cards}</div>
+      </div>`;
+    }).join("");
 
     if (low.length) {
       $("#lowStockAlert").style.display = "flex";
@@ -496,6 +530,7 @@
     const data = {
       name: form.name.value.trim(),
       unit: form.unit.value,
+      category: form.category.value || null,
       cost_per_unit: parseFloat(form.cost_per_unit.value || "0"),
       stock: parseFloat(form.stock.value || "0"),
     };

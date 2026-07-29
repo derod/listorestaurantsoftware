@@ -145,6 +145,7 @@ class Ingredient(Base):
     unit: Mapped[str] = mapped_column(String(20), default="unit")
     cost_per_unit: Mapped[float] = mapped_column(Float, default=0)
     stock: Mapped[float] = mapped_column(Float, default=0)
+    category: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
 
 

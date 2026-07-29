@@ -31,6 +31,7 @@ class IngredientIn(BaseModel):
     unit: str = Field(default="unit", max_length=20)
     cost_per_unit: float = 0
     stock: float = 0
+    category: Optional[str] = Field(default=None, max_length=80)
 
 
 class MovementIn(BaseModel):
@@ -63,6 +64,7 @@ def list_ingredients(request: Request, db: Session = Depends(get_db)):
             "unit": i.unit,
             "cost_per_unit": i.cost_per_unit,
             "stock": i.stock,
+            "category": i.category,
             "created_at": i.created_at.isoformat() if i.created_at else None,
         }
         for i in rows
@@ -124,6 +126,7 @@ def create_ingredient(payload: IngredientIn, request: Request, db: Session = Dep
         unit=payload.unit.strip() or "unit",
         cost_per_unit=float(payload.cost_per_unit or 0),
         stock=float(payload.stock or 0),
+        category=(payload.category.strip() if payload.category else None) or None,
     )
     db.add(ing)
     db.commit()

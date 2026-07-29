@@ -66,6 +66,11 @@ def _ensure_schema():
         if "edited" not in ws_cols:
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE work_sessions ADD COLUMN edited BOOLEAN DEFAULT 0"))
+    if "ingredients" in insp.get_table_names():
+        ing_cols = {c["name"] for c in insp.get_columns("ingredients")}
+        if "category" not in ing_cols:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE ingredients ADD COLUMN category VARCHAR(80)"))
     # Performance indexes for orders table
     existing_indexes = {idx["name"] for idx in insp.get_indexes("orders")} if "orders" in insp.get_table_names() else set()
     with engine.begin() as conn:
