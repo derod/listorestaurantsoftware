@@ -80,6 +80,18 @@
     <div class="value">{{ balance }}</div>
     <div class="hint">entra vs sale en el período</div>
   </div>
+  <div class="rent-card v-red">
+    <div class="ico">&#128179;</div>
+    <div class="label">Gastos del negocio</div>
+    <div class="value">{{ gastos }}</div>
+    <div class="hint"><a href="/admin/gastos" style="color:var(--accent);text-decoration:none;">salarios, alquiler, servicios…</a></div>
+  </div>
+</div>
+
+<div class="rent-profit {% if neta_pos %}ok{% endif %}" style="{% if not neta_pos %}border-color:rgba(228,91,91,0.5);{% endif %}margin-bottom:24px;">
+  <h2>Ganancia neta</h2>
+  <div class="big" style="{% if not neta_pos %}color:var(--red);{% endif %}">{{ neta }}</div>
+  <div class="meta">Vendido − Comprado − Gastos del negocio. Es lo que realmente te queda en el período (base efectivo).</div>
 </div>
 
 <div class="rent-bars">
@@ -95,8 +107,13 @@
     <div class="bar-val">{{ comprado }}</div>
   </div>
   <div class="bar-row">
+    <div class="bar-name">Gastos</div>
+    <div class="bar-track"><div class="bar-fill red" style="width:{{ bar_gastos }}%;"></div></div>
+    <div class="bar-val">{{ gastos }}</div>
+  </div>
+  <div class="bar-row">
     <div class="bar-name">Merma</div>
-    <div class="bar-track"><div class="bar-fill red" style="width:{{ bar_merma }}%;"></div></div>
+    <div class="bar-track"><div class="bar-fill red" style="width:{{ bar_merma }}%;opacity:0.6;"></div></div>
     <div class="bar-val">{{ merma }}</div>
   </div>
 </div>

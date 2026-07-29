@@ -9,7 +9,7 @@ from pathlib import Path
 import shutil
 
 from ..database import get_db, DATA_DIR
-from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, ContactMessage, AccessLog, WorkSession, Ingredient, Recipe, RecipeItem, InventoryMovement, cr_now
+from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, ContactMessage, AccessLog, WorkSession, Ingredient, Recipe, RecipeItem, InventoryMovement, Expense, FixedExpense, cr_now
 from ..inventory_service import create_inventory_movement
 from pydantic import BaseModel
 from ..utils import duration_seconds
@@ -772,8 +772,15 @@ def admin_rentabilidad(request: Request, range: str = "month", db: Session = Dep
     products_total = db.query(func.count(Product.id)).filter(Product.active == True).scalar() or 0
     products_recipe = len(set(recipe_pid.values()))
 
+    # Gastos operativos del período (salarios, alquiler, servicios, comisiones…)
+    gq = db.query(Expense)
+    if start is not None:
+        gq = gq.filter(Expense.date >= start)
+    gastos = sum(float(e.amount or 0) for e in gq.all())
+
     balance = vendido - comprado
-    bar_max = max(vendido, comprado, merma, 1)
+    neta = vendido - comprado - gastos
+    bar_max = max(vendido, comprado, merma, gastos, 1)
 
     return templates.TemplateResponse(
         "admin_rentabilidad.html",
@@ -784,6 +791,8 @@ def admin_rentabilidad(request: Request, range: str = "month", db: Session = Dep
             "comprado": _colon(comprado), "merma": _colon(merma),
             "inv_value": _colon(inv_value),
             "balance": _colon(balance), "balance_pos": balance >= 0,
+            "gastos": _colon(gastos),
+            "neta": _colon(neta), "neta_pos": neta >= 0,
             "cogs": _colon(cogs), "gross": _colon(gross),
             "margin": round(margin), "coverage": round(coverage),
             "has_cost": covered_rev > 0,
@@ -791,8 +800,218 @@ def admin_rentabilidad(request: Request, range: str = "month", db: Session = Dep
             "bar_vendido": round(vendido / bar_max * 100),
             "bar_comprado": round(comprado / bar_max * 100),
             "bar_merma": round(merma / bar_max * 100),
+            "bar_gastos": round(gastos / bar_max * 100),
             "page_title": "Rentabilidad",
         },
+    )
+
+
+# ─── admin gastos del negocio (expenses) ──────────────────────────────────────
+
+EXPENSE_CATEGORIES = [
+    "Salarios", "Caja Costarricense", "Electricidad", "Agua", "Gas", "Internet",
+    "Alquiler", "Limpieza", "Empaques", "SINPE", "Comisión tarjeta", "Banco",
+    "Contador", "Otros",
+]
+EXPENSE_METHODS = ["efectivo", "tarjeta", "sinpe", "transferencia"]
+
+
+def _month_bounds(month_str: str):
+    now = cr_now()
+    try:
+        y, m = [int(x) for x in month_str.split("-")]
+        start = datetime(y, m, 1)
+    except Exception:
+        start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    nxt = datetime(start.year + 1, 1, 1) if start.month == 12 else datetime(start.year, start.month + 1, 1)
+    return start, nxt
+
+
+def _parse_date(date_str: str):
+    try:
+        return datetime.strptime(date_str.strip(), "%Y-%m-%d")
+    except Exception:
+        return cr_now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+@router.get("/admin/gastos")
+def admin_gastos(request: Request, month: str = "", db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    start, nxt = _month_bounds(month)
+    rows = (
+        db.query(Expense)
+        .filter(Expense.date >= start, Expense.date < nxt)
+        .order_by(Expense.date.desc(), Expense.id.desc())
+        .all()
+    )
+    by_cat = {}
+    total = 0.0
+    expenses = []
+    for e in rows:
+        by_cat[e.category] = by_cat.get(e.category, 0) + float(e.amount or 0)
+        total += float(e.amount or 0)
+        expenses.append({
+            "id": e.id,
+            "category": e.category,
+            "description": e.description or "",
+            "method": e.payment_method or "",
+            "amount": float(e.amount or 0),
+            "amount_fmt": _colon(e.amount or 0),
+            "date": e.date.strftime("%d/%m/%Y") if e.date else "",
+            "date_iso": e.date.strftime("%Y-%m-%d") if e.date else "",
+        })
+    cat_totals = [(c, _colon(v)) for c, v in sorted(by_cat.items(), key=lambda kv: -kv[1])]
+    fixed = db.query(FixedExpense).order_by(FixedExpense.category.asc()).all()
+    fixed_view = [{"id": f.id, "category": f.category, "description": f.description or "",
+                   "amount_fmt": _colon(f.amount or 0), "active": f.active} for f in fixed]
+    fixed_total = sum(float(f.amount or 0) for f in fixed if f.active)
+
+    prev_m = (start - timedelta(days=1)).strftime("%Y-%m")
+    next_m = nxt.strftime("%Y-%m")
+    return templates.TemplateResponse(
+        "admin_gastos.html",
+        {
+            "request": request,
+            "expenses": expenses,
+            "cat_totals": cat_totals,
+            "total": _colon(total),
+            "fixed": fixed_view,
+            "fixed_total": _colon(fixed_total),
+            "categories": EXPENSE_CATEGORIES,
+            "methods": EXPENSE_METHODS,
+            "month": start.strftime("%Y-%m"),
+            "month_label": start.strftime("%m/%Y"),
+            "prev_month": prev_m,
+            "next_month": next_m,
+            "page_title": "Gastos del negocio",
+        },
+    )
+
+
+@router.post("/admin/gastos")
+def create_expense(request: Request, category: str = Form(...), amount: str = Form(...),
+                   date: str = Form(""), description: str = Form(""),
+                   payment_method: str = Form(""), month: str = Form(""),
+                   db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    if category in EXPENSE_CATEGORIES:
+        try:
+            amt = float(amount)
+        except Exception:
+            amt = 0
+        db.add(Expense(
+            category=category,
+            description=(description.strip() or None),
+            amount=amt,
+            date=_parse_date(date),
+            payment_method=(payment_method if payment_method in EXPENSE_METHODS else None),
+        ))
+        db.commit()
+    return RedirectResponse(url=f"/admin/gastos?month={month or ''}", status_code=303)
+
+
+@router.post("/admin/gastos/{expense_id}/edit")
+def edit_expense(expense_id: int, request: Request, category: str = Form(...), amount: str = Form(...),
+                 date: str = Form(""), description: str = Form(""), payment_method: str = Form(""),
+                 month: str = Form(""), db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    e = db.query(Expense).filter(Expense.id == expense_id).first()
+    if e and category in EXPENSE_CATEGORIES:
+        try:
+            e.amount = float(amount)
+        except Exception:
+            pass
+        e.category = category
+        e.description = description.strip() or None
+        e.date = _parse_date(date)
+        e.payment_method = payment_method if payment_method in EXPENSE_METHODS else None
+        db.commit()
+    return RedirectResponse(url=f"/admin/gastos?month={month or ''}", status_code=303)
+
+
+@router.post("/admin/gastos/{expense_id}/delete")
+def delete_expense(expense_id: int, request: Request, month: str = Form(""), db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    e = db.query(Expense).filter(Expense.id == expense_id).first()
+    if e:
+        db.delete(e)
+        db.commit()
+    return RedirectResponse(url=f"/admin/gastos?month={month or ''}", status_code=303)
+
+
+@router.post("/admin/gastos/fijos")
+def create_fixed(request: Request, category: str = Form(...), amount: str = Form(...),
+                 description: str = Form(""), month: str = Form(""), db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    if category in EXPENSE_CATEGORIES:
+        try:
+            amt = float(amount)
+        except Exception:
+            amt = 0
+        db.add(FixedExpense(category=category, description=(description.strip() or None), amount=amt, active=True))
+        db.commit()
+    return RedirectResponse(url=f"/admin/gastos?month={month or ''}", status_code=303)
+
+
+@router.post("/admin/gastos/fijos/{fixed_id}/delete")
+def delete_fixed(fixed_id: int, request: Request, month: str = Form(""), db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    f = db.query(FixedExpense).filter(FixedExpense.id == fixed_id).first()
+    if f:
+        db.delete(f)
+        db.commit()
+    return RedirectResponse(url=f"/admin/gastos?month={month or ''}", status_code=303)
+
+
+@router.post("/admin/gastos/generar")
+def generar_gastos_mes(request: Request, month: str = Form(""), db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    start, nxt = _month_bounds(month)
+    now = cr_now()
+    # date for generated rows: today if generating current month, else 1st of month
+    gen_date = now.replace(hour=0, minute=0, second=0, microsecond=0) if (start <= now < nxt) else start
+    templates_active = db.query(FixedExpense).filter(FixedExpense.active == True).all()
+    for f in templates_active:
+        exists = (
+            db.query(Expense.id)
+            .filter(Expense.fixed_id == f.id, Expense.date >= start, Expense.date < nxt)
+            .first()
+        )
+        if exists:
+            continue
+        db.add(Expense(category=f.category, description=f.description, amount=f.amount,
+                       date=gen_date, payment_method=None, fixed_id=f.id))
+    db.commit()
+    return RedirectResponse(url=f"/admin/gastos?month={start.strftime('%Y-%m')}", status_code=303)
+
+
+@router.get("/admin/gastos/export.csv")
+def export_gastos(request: Request, month: str = "", db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    import csv
+    start, nxt = _month_bounds(month)
+    rows = db.query(Expense).filter(Expense.date >= start, Expense.date < nxt).order_by(Expense.date.asc()).all()
+    buf = _io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["fecha", "categoria", "descripcion", "metodo", "monto"])
+    for e in rows:
+        w.writerow([
+            e.date.strftime("%Y-%m-%d") if e.date else "",
+            e.category, e.description or "", e.payment_method or "", round(e.amount or 0),
+        ])
+    buf.seek(0)
+    return StreamingResponse(
+        _io.BytesIO(buf.getvalue().encode("utf-8-sig")),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=gastos-{start.strftime('%Y-%m')}.csv"},
     )
 
 

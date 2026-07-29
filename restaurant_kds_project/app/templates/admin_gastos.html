@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .g-head { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:18px; }
+  .g-head h1 { margin:0; }
+  .g-tools { display:flex; gap:10px; flex-wrap:wrap; }
+  .g-btn { display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:12px; background:var(--card); border:1px solid var(--border); color:var(--text); text-decoration:none; font-weight:700; font-size:15px; cursor:pointer; }
+  .g-btn:hover { border-color:var(--accent); }
+  .g-btn.primary { background:var(--accent); border-color:var(--accent); color:#111; }
+
+  .g-monthnav { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+  .g-month { font-size:22px; font-weight:800; min-width:120px; text-align:center; }
+
+  .g-totals { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-bottom:24px; }
+  .g-total-card { background:var(--card); border:1px solid var(--border); border-radius:18px; padding:20px; }
+  .g-total-card.big { border-color:rgba(255,140,66,0.5); }
+  .t-label { font-size:13px; color:var(--muted); font-weight:700; }
+  .t-val { font-size:30px; font-weight:900; color:var(--accent); margin-top:4px; }
+  .g-cat { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:15px; }
+  .g-cat b { color:var(--text); font-size:17px; }
+
+  .g-table-wrap { overflow-x:auto; border:1px solid var(--border); border-radius:16px; margin-bottom:26px; }
+  table.g-table { width:100%; border-collapse:collapse; font-size:15px; }
+  .g-table th, .g-table td { text-align:left; padding:13px 15px; border-bottom:1px solid var(--border); white-space:nowrap; }
+  .g-table th { font-size:11px; letter-spacing:0.04em; text-transform:uppercase; color:var(--muted); }
+  .g-table tr:last-child td { border-bottom:none; }
+  .g-amount { font-weight:800; color:var(--accent); }
+  .g-row-actions { display:flex; gap:6px; }
+  .mini { padding:5px 10px; font-size:12px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-weight:700; cursor:pointer; }
+  .mini.danger { color:var(--red); border-color:rgba(228,91,91,0.4); }
+  .g-empty { text-align:center; color:var(--muted); padding:44px 20px; }
+
+  .g-fixed { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:18px 20px; }
+  .g-fixed summary { font-size:18px; font-weight:800; cursor:pointer; }
+  .g-fixed-list { display:flex; flex-direction:column; gap:8px; margin:16px 0; }
+  .g-fixed-item { display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:12px 14px; font-size:15px; }
+  .g-fixed-add { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-top:12px; }
+
+  .g-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:2000; align-items:center; justify-content:center; padding:20px; }
+  .g-overlay.open { display:flex; }
+  .g-modal { background:var(--bg); border:1px solid var(--border); border-radius:20px; padding:28px; width:100%; max-width:460px; display:flex; flex-direction:column; gap:14px; }
+  .g-modal h2 { margin:0; font-size:22px; }
+  .g-field { display:flex; flex-direction:column; gap:6px; }
+  .g-field label { font-size:12px; font-weight:700; color:var(--muted); }
+  .g-field input, .g-field select { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:11px 13px; font-size:15px; color:var(--text); font-family:inherit; }
+  .g-modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:6px; }
+</style>
+
+<div class="g-head">
+  <h1>Gastos del negocio</h1>
+  <div class="g-tools">
+    <a class="g-btn" href="/admin/gastos/export.csv?month={{ month }}">&#11015; CSV</a>
+    <a class="g-btn" href="/admin">&#8592; Dashboard</a>
+  </div>
+</div>
+
+<div class="g-monthnav">
+  <a class="g-btn" href="/admin/gastos?month={{ prev_month }}">&#8592;</a>
+  <div class="g-month">{{ month_label }}</div>
+  <a class="g-btn" href="/admin/gastos?month={{ next_month }}">&#8594;</a>
+  <button class="g-btn primary" onclick="openModal('addModal')">&#43; Agregar gasto</button>
+</div>
+
+<div class="g-totals">
+  <div class="g-total-card big"><div class="t-label">Total del mes</div><div class="t-val">{{ total }}</div></div>
+  {% for c, v in cat_totals %}
+  <div class="g-cat"><span>{{ c }}</span><b>{{ v }}</b></div>
+  {% endfor %}
+</div>
+
+{% if not expenses %}
+  <div class="g-empty">No hay gastos registrados en {{ month_label }}. Usa “Agregar gasto”.</div>
+{% else %}
+<div class="g-table-wrap">
+  <table class="g-table">
+    <thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Método</th><th>Monto</th><th></th></tr></thead>
+    <tbody>
+      {% for e in expenses %}
+      <tr>
+        <td>{{ e.date }}</td>
+        <td>{{ e.category }}</td>
+        <td>{{ e.description }}</td>
+        <td>{{ e.method }}</td>
+        <td class="g-amount">{{ e.amount_fmt }}</td>
+        <td>
+          <div class="g-row-actions">
+            <button class="mini" onclick="openEdit(this)"
+              data-id="{{ e.id }}" data-category="{{ e.category }}" data-amount="{{ e.amount }}"
+              data-date="{{ e.date_iso }}" data-desc="{{ e.description }}" data-method="{{ e.method }}">Editar</button>
+            <form method="post" action="/admin/gastos/{{ e.id }}/delete" onsubmit="return confirm('¿Eliminar este gasto?')" style="display:inline;">
+              <input type="hidden" name="month" value="{{ month }}">
+              <button type="submit" class="mini danger">Eliminar</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<details class="g-fixed">
+  <summary>Gastos fijos mensuales (plantilla)</summary>
+  <p style="color:var(--muted);font-size:14px;margin:12px 0;">
+    Define aquí los gastos que se repiten cada mes (alquiler, salarios, CCSS, internet…). Total fijo activo: <b>{{ fixed_total }}</b>.
+    Luego usa “Generar gastos del mes” para crearlos en {{ month_label }} con un clic.
+  </p>
+
+  <form method="post" action="/admin/gastos/generar" onsubmit="return confirm('¿Generar los gastos fijos en {{ month_label }}? No se duplican los ya generados.')" style="margin-bottom:14px;">
+    <input type="hidden" name="month" value="{{ month }}">
+    <button type="submit" class="g-btn primary">⚙ Generar gastos del mes</button>
+  </form>
+
+  {% if fixed %}
+  <div class="g-fixed-list">
+    {% for f in fixed %}
+    <div class="g-fixed-item">
+      <span>{{ f.category }}{% if f.description %} · {{ f.description }}{% endif %}</span>
+      <span style="display:flex;align-items:center;gap:12px;">
+        <b>{{ f.amount_fmt }}</b>
+        <form method="post" action="/admin/gastos/fijos/{{ f.id }}/delete" onsubmit="return confirm('¿Quitar este gasto fijo de la plantilla?')" style="display:inline;">
+          <input type="hidden" name="month" value="{{ month }}">
+          <button type="submit" class="mini danger">Quitar</button>
+        </form>
+      </span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <form method="post" action="/admin/gastos/fijos" class="g-fixed-add">
+    <input type="hidden" name="month" value="{{ month }}">
+    <div class="g-field" style="flex:1;min-width:160px;">
+      <label>Categoría</label>
+      <select name="category" required>
+        {% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="g-field" style="flex:1;min-width:140px;">
+      <label>Descripción (opcional)</label>
+      <input name="description" maxlength="300" placeholder="Ej: Salario Juan">
+    </div>
+    <div class="g-field" style="width:130px;">
+      <label>Monto ₡</label>
+      <input name="amount" type="number" step="1" min="0" required>
+    </div>
+    <button type="submit" class="g-btn">Agregar fijo</button>
+  </form>
+</details>
+
+<!-- Add modal -->
+<div class="g-overlay" id="addModal">
+  <form class="g-modal" method="post" action="/admin/gastos">
+    <h2>Agregar gasto</h2>
+    <input type="hidden" name="month" value="{{ month }}">
+    <div class="g-field"><label>Categoría</label>
+      <select name="category" required>{% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}</select>
+    </div>
+    <div class="g-field"><label>Monto ₡</label><input name="amount" type="number" step="1" min="0" required></div>
+    <div class="g-field"><label>Fecha</label><input name="date" type="date" id="addDate"></div>
+    <div class="g-field"><label>Descripción (opcional)</label><input name="description" maxlength="300"></div>
+    <div class="g-field"><label>Método (opcional)</label>
+      <select name="payment_method"><option value="">—</option>{% for m in methods %}<option value="{{ m }}">{{ m }}</option>{% endfor %}</select>
+    </div>
+    <div class="g-modal-actions">
+      <button type="button" class="g-btn" onclick="closeModal('addModal')">Cancelar</button>
+      <button type="submit" class="g-btn primary">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<!-- Edit modal -->
+<div class="g-overlay" id="editModal">
+  <form class="g-modal" method="post" id="editForm" action="">
+    <h2>Editar gasto</h2>
+    <input type="hidden" name="month" value="{{ month }}">
+    <div class="g-field"><label>Categoría</label>
+      <select name="category" id="eCat" required>{% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}</select>
+    </div>
+    <div class="g-field"><label>Monto ₡</label><input name="amount" id="eAmount" type="number" step="1" min="0" required></div>
+    <div class="g-field"><label>Fecha</label><input name="date" id="eDate" type="date"></div>
+    <div class="g-field"><label>Descripción (opcional)</label><input name="description" id="eDesc" maxlength="300"></div>
+    <div class="g-field"><label>Método (opcional)</label>
+      <select name="payment_method" id="eMethod"><option value="">—</option>{% for m in methods %}<option value="{{ m }}">{{ m }}</option>{% endfor %}</select>
+    </div>
+    <div class="g-modal-actions">
+      <button type="button" class="g-btn" onclick="closeModal('editModal')">Cancelar</button>
+      <button type="submit" class="g-btn primary">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  function openModal(id) { document.getElementById(id).classList.add("open"); }
+  function closeModal(id) { document.getElementById(id).classList.remove("open"); }
+  // default add date = today
+  (function () { var d = document.getElementById("addDate"); if (d) d.value = new Date().toISOString().slice(0, 10); })();
+
+  function openEdit(btn) {
+    document.getElementById("editForm").action = "/admin/gastos/" + btn.dataset.id + "/edit";
+    document.getElementById("eCat").value = btn.dataset.category;
+    document.getElementById("eAmount").value = btn.dataset.amount;
+    document.getElementById("eDate").value = btn.dataset.date;
+    document.getElementById("eDesc").value = btn.dataset.desc;
+    document.getElementById("eMethod").value = btn.dataset.method || "";
+    openModal("editModal");
+  }
+  document.querySelectorAll(".g-overlay").forEach(function (o) {
+    o.addEventListener("click", function (e) { if (e.target === o) o.classList.remove("open"); });
+  });
+</script>
+{% endblock %}

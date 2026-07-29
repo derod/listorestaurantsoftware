@@ -210,6 +210,30 @@ class AccessLog(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now, index=True)
 
 
+class Expense(Base):
+    """A registered business expense (gasto del negocio)."""
+    __tablename__ = "expenses"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    category: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    description: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    amount: Mapped[float] = mapped_column(Float, default=0)
+    date: Mapped[datetime] = mapped_column(DateTime, default=cr_now, index=True)
+    payment_method: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    fixed_id: Mapped[int | None] = mapped_column(Integer, nullable=True)  # from a FixedExpense template
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
+
+
+class FixedExpense(Base):
+    """A recurring monthly expense template (gasto fijo)."""
+    __tablename__ = "fixed_expenses"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    category: Mapped[str] = mapped_column(String(80), nullable=False)
+    description: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    amount: Mapped[float] = mapped_column(Float, default=0)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
+
+
 class WorkSession(Base):
     """A clock-in / clock-out shift for a staff member on a given module."""
     __tablename__ = "work_sessions"
