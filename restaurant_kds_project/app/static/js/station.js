@@ -67,6 +67,7 @@ async function submitOrder() {
   orderSequence.length = 0;
   renderSummary();
   toast("Pedido enviado.");
+  fetchRecent();
 }
 
 function bindProductButtons() {
@@ -426,11 +427,70 @@ async function pollKitchenInternal() {
 
     firstPoll = false;
     renderKitchenInternal(kitchenOrders);
+    fetchRecent();
   } catch (e) {}
+}
+
+/* ─── Órdenes recientes (las que envió este agente) ─────────────────── */
+let recentOrders = [];
+let recentExpanded = false;
+const RECENT_COLLAPSED = 6;
+
+async function fetchRecent() {
+  try {
+    const wid = window.KDS_CONFIG.waiterId;
+    const res = await fetch(`/api/orders/recent?source_role=station_a&waiter_id=${wid}&limit=20`);
+    recentOrders = await res.json();
+    renderRecent();
+  } catch (e) {}
+}
+
+function recentBadge(s) {
+  const label = s.charAt(0).toUpperCase() + s.slice(1);
+  return `<span class="recent-badge rb-${s}">${label}</span>`;
+}
+
+function renderRecent() {
+  const list = document.getElementById("recentList");
+  const toggle = document.getElementById("recentToggle");
+  if (!list || !toggle) return;
+  if (!recentOrders.length) {
+    list.innerHTML = '<div class="recent-empty">Aún no has enviado órdenes.</div>';
+    toggle.style.display = "none";
+    return;
+  }
+  const shown = recentExpanded ? recentOrders : recentOrders.slice(0, RECENT_COLLAPSED);
+  list.innerHTML = shown.map(o => {
+    const time = (o.created_at || "").slice(11, 16);
+    const items = o.items.map(i => `${i.quantity} ${i.product_name}`).join(", ");
+    return `
+      <div class="recent-row">
+        <div class="recent-row-top">
+          <span class="recent-id">#${o.id} <span class="recent-time">${time}</span></span>
+          ${recentBadge(o.status)}
+        </div>
+        <div class="recent-items">${items}</div>
+      </div>`;
+  }).join("");
+  if (recentOrders.length > RECENT_COLLAPSED) {
+    toggle.style.display = "block";
+    toggle.textContent = recentExpanded ? "Ver menos" : `Ver más (${recentOrders.length - RECENT_COLLAPSED})`;
+  } else {
+    toggle.style.display = "none";
+  }
+}
+
+const _recentToggleBtn = document.getElementById("recentToggle");
+if (_recentToggleBtn) {
+  _recentToggleBtn.addEventListener("click", () => {
+    recentExpanded = !recentExpanded;
+    renderRecent();
+  });
 }
 
 pollKitchenInternal();
 setInterval(pollKitchenInternal, 4000);
+fetchRecent();
 
 /* ─── On-screen audio diagnostic ────────────────────────────────────── */
 function _injectAudioTest() {

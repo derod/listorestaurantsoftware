@@ -90,6 +90,22 @@ def active_orders(db: Session = Depends(get_db)):
     return [serialize_order(o) for o in rows]
 
 
+@router.get("/orders/recent")
+def recent_orders(
+    source_role: Optional[str] = None,
+    waiter_id: Optional[int] = None,
+    limit: int = 20,
+    db: Session = Depends(get_db),
+):
+    q = db.query(Order).options(joinedload(Order.items).joinedload(OrderItem.product))
+    if source_role:
+        q = q.filter(Order.source_role == source_role)
+    if waiter_id:
+        q = q.filter(Order.waiter_id == waiter_id)
+    rows = q.order_by(Order.created_at.desc()).limit(max(1, min(limit, 50))).all()
+    return [serialize_order(o) for o in rows]
+
+
 @router.put("/orders/{order_id}")
 def edit_order(order_id: int, payload: OrderUpdate, db: Session = Depends(get_db)):
     order = get_order(db, order_id)

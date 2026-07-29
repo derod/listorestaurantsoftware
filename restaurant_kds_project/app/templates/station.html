@@ -34,8 +34,36 @@
       <button class="action" id="clearBtn">Borrar</button>
       <button class="action" id="undoBtn">Quitar último</button>
     </div>
+
+    <div class="recent-card">
+      <h3 class="recent-title">Órdenes recientes</h3>
+      <div id="recentList" class="recent-list">
+        <div class="recent-empty">Aún no has enviado órdenes.</div>
+      </div>
+      <button type="button" id="recentToggle" class="recent-toggle" style="display:none;">Ver más</button>
+    </div>
   </aside>
 </div>
+
+<style>
+  .recent-card { margin-top:22px; border-top:1px solid var(--border); padding-top:18px; }
+  .recent-title { font-size:22px; margin:0 0 12px; }
+  .recent-list { display:flex; flex-direction:column; gap:10px; }
+  .recent-empty { color:#6c757d; font-size:18px; padding:8px 0; }
+  .recent-row { background:#10141b; border:1px solid var(--border); border-radius:14px; padding:12px 14px; display:flex; flex-direction:column; gap:6px; }
+  .recent-row-top { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .recent-id { font-size:20px; font-weight:800; }
+  .recent-time { color:#8a95a8; font-size:16px; font-weight:600; }
+  .recent-badge { font-size:14px; font-weight:800; padding:3px 10px; border-radius:999px; text-transform:uppercase; }
+  .rb-nuevo { background:rgba(56,163,255,0.18); color:var(--blue); }
+  .rb-aceptado, .rb-preparando { background:rgba(255,210,77,0.18); color:var(--yellow); }
+  .rb-listo { background:rgba(76,175,80,0.2); color:var(--green); }
+  .rb-despachado { background:rgba(120,130,150,0.18); color:#9aa6bd; }
+  .rb-cancelado { background:rgba(228,91,91,0.2); color:var(--red); }
+  .recent-items { font-size:17px; color:#cfd5e1; }
+  .recent-toggle { margin-top:12px; width:100%; min-height:52px; border:1px solid var(--border); background:var(--muted); color:var(--text); border-radius:14px; font-size:18px; font-weight:700; cursor:pointer; }
+  .recent-toggle:hover { border-color:var(--accent); }
+</style>
 
 <section style="margin-top:32px;">
   <h2 style="font-size:32px;margin-bottom:16px;">Pedidos de salón</h2>
@@ -63,5 +91,5 @@ window.STATION_AUDIO = {
   volume: {{ settings.master_volume if settings else 1.0 }}
 };
 </script>
-<script src="/static/js/station.js?v=audio5"></script>
+<script src="/static/js/station.js?v=recent1"></script>
 {% endblock %}
