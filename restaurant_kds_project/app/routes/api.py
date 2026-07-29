@@ -54,6 +54,21 @@ class MoveDir(BaseModel):
     direction: str  # up | down
 
 
+class ReorderIds(BaseModel):
+    ids: list[int]
+
+
+@router.post("/products/reorder")
+def reorder_products(payload: ReorderIds, db: Session = Depends(get_db)):
+    order = {pid: i for i, pid in enumerate(payload.ids)}
+    prods = db.query(Product).filter(Product.id.in_(payload.ids)).all()
+    for p in prods:
+        if p.id in order:
+            p.display_order = order[p.id]
+    db.commit()
+    return {"ok": True}
+
+
 @router.post("/products/{product_id}/move")
 def move_product_api(product_id: int, payload: MoveDir, db: Session = Depends(get_db)):
     if payload.direction not in ("up", "down"):

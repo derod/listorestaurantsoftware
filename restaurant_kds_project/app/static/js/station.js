@@ -97,19 +97,86 @@ function renderProducts() {
   if (!grid) return;
   const list = currentProductOrder();
   if (stationReorder) {
-    grid.innerHTML = list.map((p, i) => `
-      <div class="product-btn reordering">
-        ${productImg(p)}<span>${p.name}</span>
-        <div class="reorder-arrows">
-          <button class="reorder-arrow" data-move="up" data-id="${p.id}" ${i === 0 ? "disabled" : ""}>▲</button>
-          <button class="reorder-arrow" data-move="down" data-id="${p.id}" ${i === list.length - 1 ? "disabled" : ""}>▼</button>
-        </div>
-      </div>`).join("");
+    grid.classList.add("reorder-active");
+    grid.innerHTML =
+      '<div class="reorder-hint">Arrastra ⠿ para reordenar (o usa ▲▼). El orden se guarda solo.</div>' +
+      '<div class="reorder-list">' +
+      list.map((p, i) => `
+        <div class="reorder-item" data-id="${p.id}">
+          <span class="reorder-handle">⠿</span>
+          <span class="reorder-name">${p.name}</span>
+          <span class="reorder-item-arrows">
+            <button class="reorder-arrow" data-move="up" data-id="${p.id}" ${i === 0 ? "disabled" : ""}>▲</button>
+            <button class="reorder-arrow" data-move="down" data-id="${p.id}" ${i === list.length - 1 ? "disabled" : ""}>▼</button>
+          </span>
+        </div>`).join("") +
+      '</div>';
+    setupDragSort();
   } else {
+    grid.classList.remove("reorder-active");
     grid.innerHTML = list.map(p =>
       `<button class="product-btn" data-product-id="${p.id}" data-product-name="${p.name}">${productImg(p)}<span>${p.name}</span></button>`
     ).join("");
     bindProductButtons();
+  }
+}
+
+function getDragAfterElement(container, y) {
+  const els = [...container.querySelectorAll(".reorder-item:not(.dragging)")];
+  return els.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) return { offset, element: child };
+    return closest;
+  }, { offset: -Infinity }).element || null;
+}
+
+function setupDragSort() {
+  const listEl = document.querySelector("#productsGrid .reorder-list");
+  if (!listEl) return;
+  let dragEl = null;
+
+  listEl.querySelectorAll(".reorder-item").forEach(item => {
+    item.addEventListener("pointerdown", (e) => {
+      if (e.target.closest(".reorder-arrow")) return;  // let arrows work
+      dragEl = item;
+      item.classList.add("dragging");
+      try { item.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+    item.addEventListener("pointermove", (e) => {
+      if (!dragEl) return;
+      e.preventDefault();
+      const after = getDragAfterElement(listEl, e.clientY);
+      if (after == null) listEl.appendChild(dragEl);
+      else listEl.insertBefore(dragEl, after);
+    });
+    const end = async (e) => {
+      if (!dragEl) return;
+      dragEl.classList.remove("dragging");
+      try { item.releasePointerCapture(e.pointerId); } catch (_) {}
+      dragEl = null;
+      await commitReorder(listEl);
+    };
+    item.addEventListener("pointerup", end);
+    item.addEventListener("pointercancel", () => {
+      if (dragEl) { dragEl.classList.remove("dragging"); dragEl = null; }
+    });
+  });
+}
+
+async function commitReorder(listEl) {
+  const ids = [...listEl.querySelectorAll(".reorder-item")].map(el => Number(el.dataset.id));
+  try {
+    const res = await fetch("/api/products/reorder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids })
+    });
+    if (!res.ok) throw new Error();
+    stationProducts.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+  } catch (e) {
+    toast("No se pudo guardar el orden.", "error");
+    await refreshProductsGrid();
   }
 }
 
