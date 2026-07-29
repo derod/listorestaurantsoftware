@@ -1394,7 +1394,7 @@ def admin_clock_export(request: Request, range: str = "all", waiter: int = 0, db
 # ─── cuestionario fácil (full-screen slide inventory) ─────────────────────────
 
 @router.get("/cuestionario")
-def cuestionario_page(request: Request, db: Session = Depends(get_db)):
+def cuestionario_page(request: Request, gmonth: str = "", db: Session = Depends(get_db)):
     if not require_admin(request):
         return RedirectResponse(url="/admin/login")
     ingredients = db.query(Ingredient).order_by(Ingredient.name.asc()).all()
@@ -1411,10 +1411,58 @@ def cuestionario_page(request: Request, db: Session = Depends(get_db)):
          "stock": round((inv_map.get(p.id).quantity if inv_map.get(p.id) else 0), 2)}
         for p in products
     ]
+    # Gastos flow: current questionnaire amount per category for the month
+    gm_start, gm_nxt = _month_bounds(gmonth)
+    gcur = {}
+    for e in db.query(Expense).filter(
+        Expense.source == "cuestionario", Expense.date >= gm_start, Expense.date < gm_nxt
+    ).all():
+        gcur[e.category] = float(e.amount or 0)
+    gastos = [{"category": c, "current": round(gcur.get(c, 0))} for c in EXPENSE_CATEGORIES]
     return templates.TemplateResponse(
         "cuestionario.html",
-        {"request": request, "insumos": insumos, "productos": productos, "page_title": "Cuestionario Fácil"},
+        {
+            "request": request, "insumos": insumos, "productos": productos,
+            "gastos": gastos, "gmonth": gm_start.strftime("%Y-%m"),
+            "gmonth_label": gm_start.strftime("%m/%Y"),
+            "page_title": "Cuestionario Fácil",
+        },
     )
+
+
+class GastoQuizIn(BaseModel):
+    category: str
+    month: str
+    amount: float
+
+
+@router.post("/admin/gastos/quiz/apply")
+def gastos_quiz_apply(payload: GastoQuizIn, request: Request, db: Session = Depends(get_db)):
+    if not require_admin(request):
+        raise HTTPException(401, "Admin session required")
+    if payload.category not in EXPENSE_CATEGORIES:
+        raise HTTPException(400, "Categoría inválida")
+    start, nxt = _month_bounds(payload.month)
+    now = cr_now()
+    gen_date = now.replace(hour=0, minute=0, second=0, microsecond=0) if (start <= now < nxt) else start
+    e = (
+        db.query(Expense)
+        .filter(Expense.category == payload.category, Expense.source == "cuestionario",
+                Expense.date >= start, Expense.date < nxt)
+        .first()
+    )
+    amt = float(payload.amount or 0)
+    if amt <= 0:
+        if e:
+            db.delete(e)
+            db.commit()
+        return {"ok": True, "amount": 0}
+    if e:
+        e.amount = amt
+    else:
+        db.add(Expense(category=payload.category, amount=amt, date=gen_date, source="cuestionario"))
+    db.commit()
+    return {"ok": True, "amount": round(amt)}
 
 
 class QuizApply(BaseModel):

@@ -71,6 +71,11 @@ def _ensure_schema():
         if "category" not in ing_cols:
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE ingredients ADD COLUMN category VARCHAR(80)"))
+    if "expenses" in insp.get_table_names():
+        exp_cols = {c["name"] for c in insp.get_columns("expenses")}
+        if "source" not in exp_cols:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE expenses ADD COLUMN source VARCHAR(40)"))
     # Performance indexes for orders table
     existing_indexes = {idx["name"] for idx in insp.get_indexes("orders")} if "orders" in insp.get_table_names() else set()
     with engine.begin() as conn:

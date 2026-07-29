@@ -220,6 +220,7 @@ class Expense(Base):
     date: Mapped[datetime] = mapped_column(DateTime, default=cr_now, index=True)
     payment_method: Mapped[str | None] = mapped_column(String(40), nullable=True)
     fixed_id: Mapped[int | None] = mapped_column(Integer, nullable=True)  # from a FixedExpense template
+    source: Mapped[str | None] = mapped_column(String(40), nullable=True)  # e.g. 'cuestionario'
     created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
 
 

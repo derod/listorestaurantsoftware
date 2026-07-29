@@ -106,9 +106,10 @@
         <div class="opt-grid" id="targetOpts">
           <button class="opt" data-target="insumo"><span class="emoji">🧺</span>Insumos<small id="cntInsumos"></small></button>
           <button class="opt" data-target="producto"><span class="emoji">📦</span>Productos<small id="cntProductos"></small></button>
+          <button class="opt" data-target="gasto"><span class="emoji">💳</span>Gastos<small id="cntGastos"></small></button>
         </div>
       </div>
-      <div class="hub-group">
+      <div class="hub-group" id="modeGroup">
         <div class="hub-label">¿Qué quieres hacer?</div>
         <div class="opt-grid" id="modeOpts">
           <button class="opt" data-mode="conteo"><span class="emoji">🔢</span>Conteo<small>fijar el stock real</small></button>
@@ -160,6 +161,7 @@
       <p id="doneMsg"></p>
       <div class="row">
         <button class="primary" onclick="location.reload()">Hacer otro</button>
+        <a href="/admin/gastos">Ir a Gastos</a>
         <a href="/admin/inventario">Ir a Insumos</a>
         <a href="/admin/inventory">Ir a Productos</a>
         <a href="/admin">Dashboard</a>
@@ -170,22 +172,43 @@
   <script>
     const INSUMOS = {{ insumos|tojson }};
     const PRODUCTOS = {{ productos|tojson }};
-    const MODE_LABEL = { conteo:"Conteo", compra:"Compras", merma:"Merma" };
-    const TARGET_LABEL = { insumo:"Insumos", producto:"Productos" };
+    const GASTOS = {{ gastos|tojson }};
+    const GASTOS_MONTH = "{{ gmonth }}";
+    const GASTOS_MONTH_LABEL = "{{ gmonth_label }}";
+    const MODE_LABEL = { conteo:"Conteo", compra:"Compras", merma:"Merma", gasto:"Gastos" };
+    const TARGET_LABEL = { insumo:"Insumos", producto:"Productos", gasto:"Gastos" };
 
     document.getElementById("cntInsumos").textContent = INSUMOS.length + " ítems";
     document.getElementById("cntProductos").textContent = PRODUCTOS.length + " ítems";
+    document.getElementById("cntGastos").textContent = GASTOS_MONTH_LABEL;
 
     let sel = { target:null, mode:null };
     let items = [], idx = 0, updated = 0;
 
+    function updateStart() {
+      document.getElementById("startBtn").disabled = !(sel.target && sel.mode);
+    }
+    function selectTarget(btn) {
+      document.querySelectorAll("#targetOpts .opt").forEach(o => o.classList.remove("sel"));
+      btn.classList.add("sel");
+      sel.target = btn.dataset.target;
+      const isGasto = sel.target === "gasto";
+      document.getElementById("modeGroup").style.display = isGasto ? "none" : "";
+      if (isGasto) {
+        sel.mode = "gasto";
+      } else if (sel.mode === "gasto") {
+        sel.mode = null;
+        document.querySelectorAll("#modeOpts .opt").forEach(o => o.classList.remove("sel"));
+      }
+      updateStart();
+    }
     function pick(group, attr, val, btn) {
       document.querySelectorAll(`#${group} .opt`).forEach(o => o.classList.remove("sel"));
       btn.classList.add("sel");
       sel[attr] = val;
-      document.getElementById("startBtn").disabled = !(sel.target && sel.mode);
+      updateStart();
     }
-    document.querySelectorAll("#targetOpts .opt").forEach(b => b.onclick = () => pick("targetOpts","target",b.dataset.target,b));
+    document.querySelectorAll("#targetOpts .opt").forEach(b => b.onclick = () => selectTarget(b));
     document.querySelectorAll("#modeOpts .opt").forEach(b => b.onclick = () => pick("modeOpts","mode",b.dataset.mode,b));
 
     function show(id) {
@@ -194,11 +217,15 @@
     }
 
     document.getElementById("startBtn").onclick = () => {
-      items = (sel.target === "insumo" ? INSUMOS : PRODUCTOS).map(x => ({...x}));
+      if (sel.target === "gasto") {
+        items = GASTOS.map(g => ({ category: g.category, name: g.category, current: g.current, stock: g.current, unit: "₡" }));
+      } else {
+        items = (sel.target === "insumo" ? INSUMOS : PRODUCTOS).map(x => ({...x}));
+      }
       idx = 0; updated = 0;
       if (!items.length) { alert("No hay ítems para este objetivo."); return; }
       document.getElementById("slideTitle").innerHTML =
-        TARGET_LABEL[sel.target] + " · <span>" + MODE_LABEL[sel.mode] + "</span>";
+        TARGET_LABEL[sel.target] + " · <span>" + (sel.target === "gasto" ? GASTOS_MONTH_LABEL : MODE_LABEL[sel.mode]) + "</span>";
       show("slideScreen");
       renderSlide();
     };
@@ -212,6 +239,20 @@
       document.getElementById("progTxt").textContent = `${idx + 1} / ${total}`;
 
       const qType = document.getElementById("qType");
+
+      if (sel.target === "gasto") {
+        qType.className = "qtype compra";
+        qType.textContent = "Gastos · " + GASTOS_MONTH_LABEL;
+        document.getElementById("qName").textContent = it.name;
+        document.getElementById("qCurrent").innerHTML =
+          `Ya registrado en ${GASTOS_MONTH_LABEL}: <b>₡${(it.current || 0).toLocaleString("es-CR")}</b>`;
+        document.getElementById("qUnit").textContent = "¿Cuánto gastaste en " + it.name + "? (₡)";
+        numInput.value = it.current || 0;
+        document.getElementById("chips").innerHTML = "";
+        setTimeout(() => numInput.focus(), 50);
+        return;
+      }
+
       qType.className = "qtype " + sel.mode;
       const prompts = {
         conteo: "¿Cuánto hay de",
@@ -268,6 +309,23 @@
     async function saveCurrent() {
       const it = items[idx];
       const val = parseFloat(numInput.value || 0);
+
+      if (sel.target === "gasto") {
+        if (val === it.current) return false;   // no change
+        const res = await fetch("/admin/gastos/quiz/apply", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ category: it.category, month: GASTOS_MONTH, amount: val })
+        });
+        if (!res.ok) { alert("No se pudo guardar. Intenta de nuevo."); throw new Error("save failed"); }
+        const data = await res.json();
+        it.current = data.amount;
+        updated++;
+        toast();
+        return true;
+      }
+
       // decide if there's a change worth saving
       if (sel.mode === "conteo") {
         if (val === it.stock) return false;   // no change
@@ -299,6 +357,15 @@
     numInput.addEventListener("keydown", e => {
       if (e.key === "Enter") document.getElementById("nextBtn").click();
     });
+
+    // Auto-select the Gastos flow when opened from the Gastos page.
+    (function () {
+      const params = new URLSearchParams(location.search);
+      if (params.get("start") === "gasto") {
+        const btn = document.querySelector('#targetOpts .opt[data-target="gasto"]');
+        if (btn) selectTarget(btn);
+      }
+    })();
   </script>
 </body>
 </html>
