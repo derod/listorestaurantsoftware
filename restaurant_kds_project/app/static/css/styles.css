@@ -67,3 +67,50 @@ h2 { font-size: 32px; margin: 0 0 16px; }
 @media (max-width: 1200px) {
   .products-grid, .kitchen-create-grid, .stats-grid, .big-actions, .order-actions, .screen.two-panel, .kitchen-layout, .summary-inline { grid-template-columns: 1fr 1fr; }
 }
+
+/* ─── Mobile-first responsiveness ──────────────────────────────────────── */
+html, body { max-width: 100%; overflow-x: hidden; }
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* Tablet / small laptop */
+@media (max-width: 760px) {
+  body { font-size: 17px; }
+  h1, h2, h3, p, label, th, td, input, button, a, div, span { font-size: 17px; }
+  h1 { font-size: 26px; margin-bottom: 14px; }
+  h2 { font-size: 21px; margin-bottom: 12px; }
+
+  .topbar { padding: 10px 14px; gap: 8px; }
+  .brand { font-size: 18px; }
+  .nav { gap: 6px; }
+  .nav a { font-size: 14px; padding: 7px 11px; border-radius: 10px; }
+  .page { padding: 14px; }
+
+  .panel, .table-card, .stat-card { padding: 15px; border-radius: 16px; overflow-x: auto; }
+
+  /* Stack the operational two-panel layouts on phones */
+  .screen.two-panel, .kitchen-layout, .summary-inline { grid-template-columns: 1fr; }
+
+  /* Keep item pickers & order actions 2-up for fast tapping */
+  .products-grid, .kitchen-create-grid, .order-actions { grid-template-columns: 1fr 1fr; }
+  .stats-grid, .big-actions { grid-template-columns: 1fr 1fr; }
+
+  .product-btn { min-height: 80px; font-size: 18px; padding: 12px; border-radius: 16px; }
+  .action { min-height: 60px; font-size: 18px; padding: 12px; }
+  .small-action { min-height: 48px; font-size: 16px; }
+  .stat-value { font-size: 28px; }
+  .summary-total { font-size: 22px; }
+  .timer { font-size: 22px; }
+  .order-line { font-size: 18px; }
+  .cards-stack { max-height: none; }
+
+  .big-table th, .big-table td { padding: 10px; font-size: 15px; }
+  .big-form input, .audio-form input { min-height: 52px; }
+}
+
+/* Phones */
+@media (max-width: 430px) {
+  h1 { font-size: 22px; }
+  .brand { font-size: 16px; }
+  .stats-grid, .big-actions,
+  .products-grid, .kitchen-create-grid, .order-actions { grid-template-columns: 1fr; }
+}
