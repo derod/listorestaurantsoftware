@@ -118,19 +118,19 @@
       badge.className = "lead-badge badge-" + status;
       card.className = "lead-card st-" + status;
     } catch (e) {
-      alert("No se pudo actualizar el estado.");
+      window.toast("No se pudo actualizar el estado.", false);
     }
   }
 
   async function deleteLead(id) {
-    if (!confirm("¿Eliminar este contacto? No se puede deshacer.")) return;
+    if (!(await window.askConfirm("¿Eliminar este contacto? No se puede deshacer.", { yes: "Eliminar" }))) return;
     try {
       const res = await fetch(`/admin/leads/${id}/delete`, { method: "POST", credentials: "same-origin" });
       if (!res.ok) throw new Error();
       const card = document.getElementById("lead-" + id);
       if (card) card.remove();
     } catch (e) {
-      alert("No se pudo eliminar.");
+      window.toast("No se pudo eliminar.", false);
     }
   }
 </script>

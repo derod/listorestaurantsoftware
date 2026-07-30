@@ -88,7 +88,7 @@
             <button class="mini" onclick="openEdit(this)"
               data-id="{{ e.id }}" data-category="{{ e.category }}" data-amount="{{ e.amount }}"
               data-date="{{ e.date_iso }}" data-desc="{{ e.description }}" data-method="{{ e.method }}">Editar</button>
-            <form method="post" action="/admin/gastos/{{ e.id }}/delete" onsubmit="return confirm('¿Eliminar este gasto?')" style="display:inline;">
+            <form method="post" action="/admin/gastos/{{ e.id }}/delete" onsubmit="return window.confirmForm(this, '¿Eliminar este gasto?')" style="display:inline;">
               <input type="hidden" name="month" value="{{ month }}">
               <button type="submit" class="mini danger">Eliminar</button>
             </form>
@@ -108,7 +108,7 @@
     Luego usa “Generar gastos del mes” para crearlos en {{ month_label }} con un clic.
   </p>
 
-  <form method="post" action="/admin/gastos/generar" onsubmit="return confirm('¿Generar los gastos fijos en {{ month_label }}? No se duplican los ya generados.')" style="margin-bottom:14px;">
+  <form method="post" action="/admin/gastos/generar" onsubmit="return window.confirmForm(this, '¿Generar los gastos fijos en {{ month_label }}? No se duplican los ya generados.')" style="margin-bottom:14px;">
     <input type="hidden" name="month" value="{{ month }}">
     <button type="submit" class="g-btn primary">⚙ Generar gastos del mes</button>
   </form>
@@ -120,7 +120,7 @@
       <span>{{ f.category }}{% if f.description %} · {{ f.description }}{% endif %}</span>
       <span style="display:flex;align-items:center;gap:12px;">
         <b>{{ f.amount_fmt }}</b>
-        <form method="post" action="/admin/gastos/fijos/{{ f.id }}/delete" onsubmit="return confirm('¿Quitar este gasto fijo de la plantilla?')" style="display:inline;">
+        <form method="post" action="/admin/gastos/fijos/{{ f.id }}/delete" onsubmit="return window.confirmForm(this, '¿Quitar este gasto fijo de la plantilla?')" style="display:inline;">
           <input type="hidden" name="month" value="{{ month }}">
           <button type="submit" class="mini danger">Quitar</button>
         </form>

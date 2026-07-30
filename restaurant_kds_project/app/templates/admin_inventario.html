@@ -597,7 +597,7 @@
   });
 
   async function deleteIngredient(id, name) {
-    if (!confirm(`¿Eliminar el insumo "${name}"?\n\nSe borrará también su historial de movimientos. Esta acción no se puede deshacer.`)) return;
+    if (!(await window.askConfirm(`¿Eliminar el insumo "${name}"? Se borra también su historial. No se puede deshacer.`, { yes: "Eliminar" }))) return;
     try {
       await api(`/admin/inv/ingredients/${id}`, { method: "DELETE" });
       toast("Insumo eliminado");

@@ -120,24 +120,5 @@ window.STATION_AUDIO = {
   volume: {{ settings.master_volume if settings else 1.0 }}
 };
 </script>
-<div class="confirm-overlay" id="confirmOverlay">
-  <div class="confirm-box">
-    <div class="confirm-msg" id="confirmMsg">¿Cancelar?</div>
-    <div class="confirm-actions">
-      <button class="confirm-no" id="confirmNo">No</button>
-      <button class="confirm-yes" id="confirmYes">Sí, cancelar</button>
-    </div>
-  </div>
-</div>
-<style>
-  .confirm-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:3000; align-items:center; justify-content:center; padding:20px; }
-  .confirm-overlay.open { display:flex; }
-  .confirm-box { background:var(--bg); border:1px solid var(--border); border-radius:20px; padding:26px; width:100%; max-width:380px; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,.5); }
-  .confirm-msg { font-size:26px; font-weight:800; margin-bottom:20px; }
-  .confirm-actions { display:flex; gap:12px; }
-  .confirm-actions button { flex:1; min-height:64px; border:none; border-radius:14px; font-size:22px; font-weight:800; cursor:pointer; }
-  .confirm-no { background:var(--muted); color:var(--text); }
-  .confirm-yes { background:var(--red); color:#fff; }
-</style>
-<script src="/static/js/station.js?v=confirm1"></script>
+<script src="/static/js/station.js?v=confirm2"></script>
 {% endblock %}

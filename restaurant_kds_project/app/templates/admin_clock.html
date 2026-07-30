@@ -237,15 +237,15 @@
   }
 
   async function closeSession(id) {
-    if (!confirm("¿Cerrar este turno ahora?")) return;
+    if (!(await window.askConfirm("¿Cerrar este turno ahora?", { yes: "Cerrar" }))) return;
     const res = await fetch("/admin/clock/session/" + id + "/close", { method: "POST", credentials: "same-origin" });
-    if (res.ok) location.reload(); else alert("No se pudo cerrar.");
+    if (res.ok) location.reload(); else window.toast("No se pudo cerrar.", false);
   }
 
   async function deleteSession(id) {
-    if (!confirm("¿Eliminar este turno? No se puede deshacer.")) return;
+    if (!(await window.askConfirm("¿Eliminar este turno? No se puede deshacer.", { yes: "Eliminar" }))) return;
     const res = await fetch("/admin/clock/session/" + id + "/delete", { method: "POST", credentials: "same-origin" });
-    if (res.ok) location.reload(); else alert("No se pudo eliminar.");
+    if (res.ok) location.reload(); else window.toast("No se pudo eliminar.", false);
   }
 
   document.querySelectorAll(".clk-overlay").forEach(o => {
