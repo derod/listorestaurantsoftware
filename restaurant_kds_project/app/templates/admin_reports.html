@@ -2,45 +2,98 @@
 {% block content %}
 <style>
   .rep-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(360px, 1fr)); gap:22px; }
+  .rep-section-title { margin:28px 0 4px; font-size:19px; font-weight:800; color:#e8edf8; }
+  .rep-section-note { color:#8ea0c0; font-size:14px; margin-bottom:14px; }
   .rep-card { background:var(--card); border:1px solid var(--border); border-radius:20px; padding:22px; }
   .rep-card h2 { margin:0 0 6px; font-size:24px; }
-  .rep-sub { color:#6c757d; font-size:14px; margin-bottom:16px; }
-  .rep-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); font-size:20px; }
+  .rep-sub { color:#8ea0c0; font-size:14px; margin-bottom:16px; }
+  .rep-row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); font-size:20px; }
   .rep-row:last-child { border-bottom:none; }
-  .rep-row strong { color:var(--accent); font-size:22px; }
-  .rep-empty { text-align:center; color:#6c757d; padding:20px; }
+  .rep-row strong { color:var(--accent); font-size:22px; white-space:nowrap; }
+  .rep-row .rep-name { display:flex; align-items:center; gap:8px; }
+  .rep-low-tag { font-size:12px; font-weight:800; color:#0b0f18; background:var(--yellow); border-radius:999px; padding:2px 8px; }
+  .rep-row.low strong { color:var(--yellow); }
+  .rep-unit { color:#8ea0c0; font-size:15px; font-weight:600; }
+  .rep-waste { color:var(--red); font-size:13px; font-weight:700; margin-left:8px; }
+  .rep-empty { text-align:center; color:#8ea0c0; padding:20px; }
 </style>
+
+{% macro num(n) -%}
+{{ n|int if n == n|int else '%.2f'|format(n) }}
+{%- endmacro %}
 
 <h1>Reportes</h1>
 
+<!-- ── B) Consumo de platos: KDS despachado + ventas POS ─────────────────── -->
+<div class="rep-section-title">Platos vendidos / despachados</div>
+<div class="rep-section-note">Incluye pedidos despachados por Cocina (KDS) y las ventas del POS.</div>
 <div class="rep-grid">
   <div class="rep-card">
-    <h2>Consumo diario</h2>
+    <h2>Hoy</h2>
     <div class="rep-sub">{{ today_label }}</div>
     {% for row in daily %}
-    <div class="rep-row"><span>{{ row.name }}</span><strong>{{ row.total }}</strong></div>
+    <div class="rep-row"><span class="rep-name">{{ row.name }}</span><strong>{{ num(row.total) }}</strong></div>
     {% else %}
-    <div class="rep-empty">Sin pedidos despachados hoy.</div>
+    <div class="rep-empty">Sin ventas ni despachos hoy.</div>
     {% endfor %}
   </div>
 
   <div class="rep-card">
-    <h2>Consumo semanal</h2>
-    <div class="rep-sub">{{ week_label }} (últimos 7 días)</div>
+    <h2>Últimos 7 días</h2>
+    <div class="rep-sub">{{ week_label }}</div>
     {% for row in weekly %}
-    <div class="rep-row"><span>{{ row.name }}</span><strong>{{ row.total }}</strong></div>
+    <div class="rep-row"><span class="rep-name">{{ row.name }}</span><strong>{{ num(row.total) }}</strong></div>
     {% else %}
-    <div class="rep-empty">Sin pedidos despachados.</div>
+    <div class="rep-empty">Sin ventas ni despachos.</div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ── C) Consumo de insumos: movimientos de salida/merma ────────────────── -->
+<div class="rep-section-title">Consumo de insumos</div>
+<div class="rep-section-note">Salidas del inventario de insumos (ventas con receta + mermas registradas).</div>
+<div class="rep-grid">
+  <div class="rep-card">
+    <h2>Hoy</h2>
+    <div class="rep-sub">{{ today_label }}</div>
+    {% for row in ing_daily %}
+    <div class="rep-row">
+      <span class="rep-name">{{ row.name }}</span>
+      <strong>{{ num(row.total) }} <span class="rep-unit">{{ row.unit }}</span>{% if row.waste %}<span class="rep-waste">merma {{ num(row.waste) }}</span>{% endif %}</strong>
+    </div>
+    {% else %}
+    <div class="rep-empty">Sin salidas de insumos hoy.</div>
     {% endfor %}
   </div>
 
   <div class="rep-card">
-    <h2>Stock actual</h2>
+    <h2>Últimos 7 días</h2>
+    <div class="rep-sub">{{ week_label }}</div>
+    {% for row in ing_weekly %}
+    <div class="rep-row">
+      <span class="rep-name">{{ row.name }}</span>
+      <strong>{{ num(row.total) }} <span class="rep-unit">{{ row.unit }}</span>{% if row.waste %}<span class="rep-waste">merma {{ num(row.waste) }}</span>{% endif %}</strong>
+    </div>
+    {% else %}
+    <div class="rep-empty">Sin salidas de insumos.</div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ── A) Stock actual: inventario de insumos ────────────────────────────── -->
+<div class="rep-section-title">Stock actual de insumos</div>
+<div class="rep-section-note">Mismo inventario que <a href="/admin/inventario" style="color:var(--accent);">Insumos</a>. Se descuenta con cada venta del POS según la receta.</div>
+<div class="rep-grid">
+  <div class="rep-card">
+    <h2>Existencias</h2>
     <div class="rep-sub">Inventario al momento</div>
     {% for row in stock %}
-    <div class="rep-row"><span>{{ row.name }}</span><strong>{{ row.quantity|int if row.quantity == row.quantity|int else row.quantity }}</strong></div>
+    <div class="rep-row {{ 'low' if row.low else '' }}">
+      <span class="rep-name">{{ row.name }}{% if row.low %}<span class="rep-low-tag">BAJO</span>{% endif %}</span>
+      <strong>{{ num(row.stock) }} <span class="rep-unit">{{ row.unit }}</span></strong>
+    </div>
     {% else %}
-    <div class="rep-empty">Sin productos.</div>
+    <div class="rep-empty">Sin insumos registrados.</div>
     {% endfor %}
   </div>
 </div>

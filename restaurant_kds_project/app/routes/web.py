@@ -664,8 +664,11 @@ def admin_reports(request: Request, db: Session = Depends(get_db)):
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = today_start - timedelta(days=6)
 
+    # ── B) Consumo de platos = pedidos despachados (KDS) + ventas POS ──────────
     def consumption(since: datetime):
-        rows = (
+        agg = {}
+        # KDS: pedidos marcados como despachados
+        kds = (
             db.query(Product.id, Product.name, OrderItem.quantity)
             .join(OrderItem, OrderItem.product_id == Product.id)
             .join(Order, Order.id == OrderItem.order_id)
@@ -673,19 +676,62 @@ def admin_reports(request: Request, db: Session = Depends(get_db)):
             .filter(Order.dispatched_at >= since)
             .all()
         )
-        agg = {}
-        for pid, pname, qty in rows:
-            if pid not in agg:
-                agg[pid] = {"product_id": pid, "name": pname, "total": 0}
-            agg[pid]["total"] += qty
+        for pid, pname, qty in kds:
+            a = agg.setdefault(pid, {"product_id": pid, "name": pname, "total": 0})
+            a["total"] += qty or 0
+        # POS: ventas registradas
+        pos = (
+            db.query(Product.id, Product.name, SaleItem.quantity)
+            .join(SaleItem, SaleItem.product_id == Product.id)
+            .join(Sale, Sale.id == SaleItem.sale_id)
+            .filter(Sale.created_at >= since)
+            .all()
+        )
+        for pid, pname, qty in pos:
+            a = agg.setdefault(pid, {"product_id": pid, "name": pname, "total": 0})
+            a["total"] += qty or 0
         return sorted(agg.values(), key=lambda x: x["total"], reverse=True)
 
     daily = consumption(today_start)
     weekly = consumption(week_start)
 
-    inv_map = {inv.product_id: inv.quantity for inv in db.query(Inventory).all()}
-    products = db.query(Product).filter(Product.active == True).order_by(Product.name.asc()).all()
-    stock = [{"name": p.name, "quantity": inv_map.get(p.id, 0)} for p in products]
+    # ── C) Consumo de insumos = movimientos de salida/merma en el período ──────
+    def ing_consumption(since: datetime):
+        rows = (
+            db.query(
+                Ingredient.id, Ingredient.name, Ingredient.unit,
+                InventoryMovement.type, InventoryMovement.quantity,
+            )
+            .join(InventoryMovement, InventoryMovement.ingredient_id == Ingredient.id)
+            .filter(InventoryMovement.type.in_(["out", "waste"]))
+            .filter(InventoryMovement.created_at >= since)
+            .all()
+        )
+        agg = {}
+        for iid, iname, unit, mtype, qty in rows:
+            a = agg.setdefault(iid, {"name": iname, "unit": unit or "", "out": 0.0, "waste": 0.0})
+            if mtype == "waste":
+                a["waste"] += qty or 0
+            else:
+                a["out"] += qty or 0
+        for a in agg.values():
+            a["total"] = a["out"] + a["waste"]
+        return sorted(agg.values(), key=lambda x: x["total"], reverse=True)
+
+    ing_daily = ing_consumption(today_start)
+    ing_weekly = ing_consumption(week_start)
+
+    # ── A) Stock actual = inventario de insumos (mismo que /admin/inventario) ──
+    ings = db.query(Ingredient).order_by(Ingredient.name.asc()).all()
+    stock = [
+        {
+            "name": ing.name,
+            "stock": ing.stock,
+            "unit": ing.unit or "",
+            "low": bool(ing.min_stock and ing.stock <= ing.min_stock),
+        }
+        for ing in ings
+    ]
 
     return templates.TemplateResponse(
         "admin_reports.html",
@@ -693,6 +739,8 @@ def admin_reports(request: Request, db: Session = Depends(get_db)):
             "request": request,
             "daily": daily,
             "weekly": weekly,
+            "ing_daily": ing_daily,
+            "ing_weekly": ing_weekly,
             "stock": stock,
             "today_label": today_start.strftime("%Y-%m-%d"),
             "week_label": f"{week_start.strftime('%Y-%m-%d')} → {today_start.strftime('%Y-%m-%d')}",
