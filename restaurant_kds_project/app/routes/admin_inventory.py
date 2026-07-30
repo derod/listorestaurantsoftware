@@ -2,7 +2,7 @@
 Admin-only ingredient inventory routes.
 
 All endpoints require an authenticated admin session (same gate as /admin/*).
-Mounted under /admin/inventory/* to keep the surface protected.
+Mounted under /admin/inv/* to keep the surface protected.
 """
 from __future__ import annotations
 

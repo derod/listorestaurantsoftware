@@ -1622,57 +1622,6 @@ def cuestionario_apply(payload: QuizApply, request: Request, db: Session = Depen
     return {"ok": True, "new_stock": round(new, 2)}
 
 
-# ─── admin inventory ──────────────────────────────────────────────────────────
-
-@router.get("/admin/inventory")
-def admin_inventory(request: Request, db: Session = Depends(get_db)):
-    if not require_admin(request):
-        return RedirectResponse(url="/admin/login")
-    products = db.query(Product).filter(Product.active == True).order_by(Product.display_order.asc(), Product.name.asc()).all()
-    inv_map = {inv.product_id: inv for inv in db.query(Inventory).all()}
-    items = []
-    for p in products:
-        inv = inv_map.get(p.id)
-        items.append({
-            "product_id": p.id,
-            "name": p.name,
-            "quantity": inv.quantity if inv else 0,
-            "updated_at": inv.updated_at if inv else None,
-        })
-    logs = (
-        db.query(InventoryLog)
-        .options(joinedload(InventoryLog.product))
-        .order_by(InventoryLog.created_at.desc())
-        .limit(30)
-        .all()
-    )
-    return templates.TemplateResponse(
-        "admin_inventory.html",
-        {"request": request, "items": items, "logs": logs, "page_title": "Inventario"},
-    )
-
-
-@router.post("/admin/inventory/{product_id}")
-def update_inventory(product_id: int, request: Request, quantity: float = Form(...), db: Session = Depends(get_db)):
-    if not require_admin(request):
-        return RedirectResponse(url="/admin/login")
-    product = db.query(Product).filter(Product.id == product_id).first()
-    if not product:
-        return RedirectResponse(url="/admin/inventory", status_code=303)
-    inv = db.query(Inventory).filter(Inventory.product_id == product_id).first()
-    old_qty = inv.quantity if inv else 0
-    new_qty = max(0, quantity)
-    if inv:
-        inv.quantity = new_qty
-    else:
-        inv = Inventory(product_id=product_id, quantity=new_qty)
-        db.add(inv)
-    actor = request.session.get("admin_email") or "admin"
-    db.add(InventoryLog(product_id=product_id, old_quantity=old_qty, new_quantity=new_qty, actor_name=actor))
-    db.commit()
-    return RedirectResponse(url="/admin/inventory", status_code=303)
-
-
 # ─── general inventory (shared login) ─────────────────────────────────────────
 
 def require_inventory_user(request: Request):
