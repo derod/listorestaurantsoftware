@@ -152,6 +152,24 @@ def recent_orders(
     return [serialize_order(o) for o in rows]
 
 
+@router.get("/orders/ready-recent")
+def ready_recent(minutes: int = 5, db: Session = Depends(get_db)):
+    from sqlalchemy import or_
+    cutoff = cr_now() - timedelta(minutes=max(1, min(minutes, 120)))
+    rows = (
+        db.query(Order)
+        .options(joinedload(Order.items).joinedload(OrderItem.product))
+        .filter(
+            Order.source_role == "station_a",
+            Order.status.in_(["listo", "despachado"]),
+            or_(Order.dispatched_at >= cutoff, Order.ready_at >= cutoff),
+        )
+        .order_by(Order.updated_at.desc())
+        .all()
+    )
+    return [serialize_order(o) for o in rows]
+
+
 @router.get("/orders/cancelled-recent")
 def cancelled_recent(minutes: int = 5, db: Session = Depends(get_db)):
     cutoff = cr_now() - timedelta(minutes=max(1, min(minutes, 120)))

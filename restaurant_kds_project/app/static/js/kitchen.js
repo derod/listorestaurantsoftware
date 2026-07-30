@@ -438,7 +438,7 @@ function renderOrders(orders) {
       `;
     } else if (status === "preparando") {
       buttonsHtml = `
-        <button class="btn-listo" data-action="listo" data-order-id="${order.id}">LISTO</button>
+        <button class="btn-listo" data-action="despachar" data-order-id="${order.id}">LISTO</button>
         <button class="btn-cancelado" data-action="cancel" data-order-id="${order.id}">CANCELAR</button>
       `;
     } else if (status === "listo") {

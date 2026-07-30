@@ -561,17 +561,30 @@ async function pollKitchenInternal() {
     }
     stationKnownIds = new Set(kitchenOrders.map(o => o.id));
 
-    const myOrders = all.filter(o => o.source_role === "station_a");
-    const nowReady = myOrders.filter(o => o.status === "listo" && !myReadyIds.has(o.id));
-    if (nowReady.length > 0 && !firstPoll) {
-      if (!playSoundFile(AUDIO.readySound)) beep(1320, 500);
-      nowReady.forEach(o => speakSpanish(`Pedido listo. ${formatItemsSpeech(o.items)}.`));
-    }
-    myReadyIds = new Set(myOrders.filter(o => o.status === "listo").map(o => o.id));
-
     firstPoll = false;
     renderKitchenInternal(kitchenOrders);
     fetchRecent();
+    pollReadyRecent();
+  } catch (e) {}
+}
+
+/* ─── Aviso "Pedido listo" (cuando cocina despacha una orden de salón) ──
+   Cocina despacha de un toque → la orden sale de "activos"; por eso lo
+   detectamos con un feed de despachadas recientes, no en la lista activa. */
+let readyAlerted = new Set();
+let firstReadyPoll = true;
+async function pollReadyRecent() {
+  try {
+    const res = await fetch("/api/orders/ready-recent?minutes=5");
+    const list = await res.json();
+    list.forEach(o => {
+      if (readyAlerted.has(o.id)) return;
+      readyAlerted.add(o.id);
+      if (firstReadyPoll) return;   // no avisar por las ya despachadas al cargar
+      if (!playSoundFile(AUDIO.readySound)) beep(1320, 500);
+      speakSpanish(`Pedido listo. ${formatItemsSpeech(o.items)}.`);
+    });
+    firstReadyPoll = false;
   } catch (e) {}
 }
 
