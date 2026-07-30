@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
+<div class="station-wrap">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
   <div>
     <div style="font-size:38px;font-weight:800;">SALON</div>
@@ -93,16 +94,21 @@
   .recent-toggle { margin-top:12px; width:100%; min-height:52px; border:1px solid var(--border); background:var(--muted); color:var(--text); border-radius:14px; font-size:18px; font-weight:700; cursor:pointer; }
   .recent-toggle:hover { border-color:var(--accent); }
 
-  /* Panel de resumen fijo (pegado) mientras los productos scrollean.
-     Solo en layout de 2 columnas; en móvil (≤760px) queda en flujo normal. */
+  /* Panel de resumen CLAVADO a la pantalla (position: fixed) en todo momento.
+     El contenido del salón reserva un canal a la derecha para no quedar debajo.
+     Solo en 2 columnas (≥761px); en móvil queda en flujo normal. */
   @media (min-width: 761px) {
-    .screen.two-panel { align-items: start; }
+    :root { --sp-w: clamp(320px, 32vw, 440px); }
+    .station-wrap { padding-right: calc(var(--sp-w) + 40px); }
+    .screen.two-panel { display: block; }
     .summary-panel {
-      position: sticky;
-      top: 12px;
-      align-self: start;
-      max-height: calc(100vh - 24px);
+      position: fixed;
+      top: 88px;
+      right: 24px;
+      bottom: 20px;
+      width: var(--sp-w);
       overflow-y: auto;
+      z-index: 50;
     }
   }
 </style>
@@ -113,6 +119,7 @@
     <div style="text-align:center;padding:30px;font-size:24px;color:#6c757d;">No hay pedidos de salón.</div>
   </div>
 </section>
+</div><!-- /.station-wrap -->
 <div class="modal-overlay" id="newProductModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;">
   <div style="background:var(--bg);border:1px solid var(--border);border-radius:24px;padding:32px;width:90%;max-width:520px;">
     <h2 style="margin:0 0 20px;">Nuevo producto</h2>
