@@ -1,6 +1,7 @@
 import logging
 import re
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 from ..database import get_db
 from ..schemas import OrderCreate, OrderUpdate, StatusUpdate, ProductCreate
@@ -292,6 +293,35 @@ def pos_create_sale(payload: PosSaleCreate, request: Request, db: Session = Depe
         "payment_method": sale.payment_method,
         "user_name": sale.user_name,
     }
+
+
+class PosProductCreate(BaseModel):
+    name: str
+    price: float = 0
+
+
+@router.post("/pos/products")
+def pos_create_product(payload: PosProductCreate, request: Request, db: Session = Depends(get_db)):
+    """Crear un producto (con precio) desde el POS. Requiere sesión de POS."""
+    uid = request.session.get("pos_user_id")
+    uname = request.session.get("pos_user_name")
+    if not uid or not uname:
+        raise HTTPException(401, "No autenticado en POS")
+    name = (payload.name or "").strip()
+    if not name:
+        raise HTTPException(400, "Escribe el nombre del producto")
+    name = name[:200]
+    price = float(payload.price or 0)
+    if price < 0:
+        raise HTTPException(400, "Precio inválido")
+    if db.query(Product.id).filter(func.lower(Product.name) == name.lower()).first():
+        raise HTTPException(400, "Ya existe un producto con ese nombre")
+    max_order = db.query(func.max(Product.display_order)).scalar() or 0
+    product = Product(name=name, price=round(price, 2), active=True, display_order=max_order + 1)
+    db.add(product)
+    db.commit()
+    db.refresh(product)
+    return {"id": product.id, "name": product.name, "price": product.price, "image_path": product.image_path}
 
 
 @router.get("/audio-settings")

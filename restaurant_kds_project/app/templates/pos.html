@@ -26,6 +26,20 @@
     .prod-name { font-weight:700; font-size:16px; }
     .prod-price { color:var(--accent); font-weight:800; font-size:18px; }
 
+    .prod-add { border:2px dashed var(--accent); background:transparent; color:var(--accent); align-items:center; justify-content:center; min-height:150px; gap:6px; }
+    .prod-add .plus { font-size:44px; font-weight:800; line-height:1; }
+    .prod-add .lbl { font-weight:800; font-size:15px; }
+
+    .np-field { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; text-align:left; }
+    .np-field label { font-size:13px; font-weight:700; color:#b7becd; }
+    .np-field input { background:#10141b; border:1px solid var(--border); border-radius:12px; padding:14px; font-size:18px; color:var(--text); font-family:inherit; outline:none; }
+    .np-field input:focus { border-color:var(--accent); }
+    .np-err { color:var(--red); font-weight:700; min-height:20px; font-size:14px; margin-bottom:6px; }
+    .np-actions { display:flex; gap:10px; }
+    .np-actions button { flex:1; border:none; border-radius:12px; padding:14px; font-size:17px; font-weight:800; cursor:pointer; }
+    .np-cancel { background:var(--muted); color:var(--text); }
+    .np-save { background:var(--accent); color:#111; }
+
     .cart { background:var(--card); border:1px solid var(--border); border-radius:20px; padding:20px; display:flex; flex-direction:column; gap:14px; position:sticky; top:20px; align-self:flex-start; max-height:calc(100vh - 110px); }
     .cart h2 { margin:0; }
     .cart-items { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; min-height:100px; }
@@ -73,6 +87,10 @@
   <main class="pos-main">
     <div>
       <div class="prod-grid" id="prodGrid">
+        <button class="prod-btn prod-add" id="btnAddProduct" type="button">
+          <div class="plus">＋</div>
+          <div class="lbl">Nuevo producto</div>
+        </button>
         {% for p in products %}
         <button class="prod-btn" data-id="{{ p.id }}" data-name="{{ p.name|e }}" data-price="{{ p.price or 0 }}">
           {% if p.image_path %}<img src="{{ p.image_path }}" alt="" />{% endif %}
@@ -118,6 +136,25 @@
     </div>
   </div>
 
+  <div class="receipt-overlay" id="addProdModal">
+    <div class="receipt" style="text-align:left;max-width:380px;">
+      <h2 style="color:var(--text);margin-bottom:16px;">Nuevo producto</h2>
+      <div class="np-field">
+        <label for="npName">Nombre</label>
+        <input id="npName" type="text" maxlength="200" autocomplete="off" placeholder="Ej: Refresco natural" />
+      </div>
+      <div class="np-field">
+        <label for="npPrice">Precio</label>
+        <input id="npPrice" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00" />
+      </div>
+      <div class="np-err" id="npErr"></div>
+      <div class="np-actions">
+        <button type="button" class="np-cancel" id="npCancel">Cancelar</button>
+        <button type="button" class="np-save" id="npSave">Guardar y vender</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/static/js/ui.js?v=1"></script>
   <script>
     const TAX_RATE = {{ tax_rate }} / 100;
@@ -153,16 +190,83 @@
       document.getElementById('btnCobrar').disabled = cart.size === 0;
     }
 
-    document.getElementById('prodGrid').addEventListener('click', e => {
-      const btn = e.target.closest('.prod-btn');
-      if (!btn) return;
-      const id = parseInt(btn.dataset.id);
-      const name = btn.dataset.name;
-      const price = parseFloat(btn.dataset.price) || 0;
+    function addToCart(id, name, price) {
       if (!cart.has(id)) cart.set(id, { id, name, price, qty: 0 });
       cart.get(id).qty += 1;
       renderCart();
+    }
+
+    document.getElementById('prodGrid').addEventListener('click', e => {
+      const btn = e.target.closest('.prod-btn');
+      if (!btn || btn.classList.contains('prod-add')) return;
+      const id = parseInt(btn.dataset.id);
+      const name = btn.dataset.name;
+      const price = parseFloat(btn.dataset.price) || 0;
+      addToCart(id, name, price);
     });
+
+    // ── Nuevo producto ────────────────────────────────────────────────────
+    const addModal = document.getElementById('addProdModal');
+    const npName = document.getElementById('npName');
+    const npPrice = document.getElementById('npPrice');
+    const npErr = document.getElementById('npErr');
+
+    function openAddProduct() {
+      npName.value = '';
+      npPrice.value = '';
+      npErr.textContent = '';
+      addModal.classList.add('open');
+      setTimeout(() => npName.focus(), 60);
+    }
+    function closeAddProduct() { addModal.classList.remove('open'); }
+
+    document.getElementById('btnAddProduct').addEventListener('click', openAddProduct);
+    document.getElementById('npCancel').addEventListener('click', closeAddProduct);
+    addModal.addEventListener('click', e => { if (e.target === addModal) closeAddProduct(); });
+
+    async function saveNewProduct() {
+      const name = npName.value.trim();
+      const price = parseFloat(npPrice.value);
+      npErr.textContent = '';
+      if (!name) { npErr.textContent = 'Escribe el nombre.'; npName.focus(); return; }
+      if (isNaN(price) || price < 0) { npErr.textContent = 'Escribe un precio válido.'; npPrice.focus(); return; }
+      const saveBtn = document.getElementById('npSave');
+      saveBtn.disabled = true;
+      try {
+        const res = await fetch('/api/pos/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, price })
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          npErr.textContent = err.detail || 'No se pudo crear.';
+          saveBtn.disabled = false;
+          return;
+        }
+        const p = await res.json();
+        // Agregar el botón a la parrilla
+        const btn = document.createElement('button');
+        btn.className = 'prod-btn';
+        btn.dataset.id = p.id;
+        btn.dataset.name = p.name;
+        btn.dataset.price = p.price;
+        btn.innerHTML = `<div class="prod-name">${p.name.replace(/</g, '&lt;')}</div>` +
+                        `<div class="prod-price">$${(p.price || 0).toFixed(2)}</div>`;
+        document.getElementById('prodGrid').appendChild(btn);
+        // Agregar 1 al carrito (creado para vender)
+        addToCart(p.id, p.name, p.price || 0);
+        closeAddProduct();
+        window.toast('Producto creado y agregado');
+        saveBtn.disabled = false;
+      } catch (e) {
+        npErr.textContent = 'Error de red.';
+        saveBtn.disabled = false;
+      }
+    }
+    document.getElementById('npSave').addEventListener('click', saveNewProduct);
+    npPrice.addEventListener('keydown', e => { if (e.key === 'Enter') saveNewProduct(); });
+    npName.addEventListener('keydown', e => { if (e.key === 'Enter') npPrice.focus(); });
 
     document.getElementById('cartItems').addEventListener('click', e => {
       const inc = e.target.dataset.inc;
