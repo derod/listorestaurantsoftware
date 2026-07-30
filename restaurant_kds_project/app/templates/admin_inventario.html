@@ -254,9 +254,14 @@
       <label>Insumo</label>
       <select name="ingredient_id" required data-ing-select></select>
     </div>
+    <div class="inv2-field" id="addStockModeWrap" style="display:none;">
+      <label>Unidad de ingreso</label>
+      <select name="entry_mode" id="addStockMode"></select>
+    </div>
     <div class="inv2-field">
       <label>Cantidad a ingresar</label>
       <input name="quantity" type="number" step="0.01" min="0.01" required>
+      <div class="inv2-cost-hint" id="addStockHint"></div>
     </div>
     <div class="inv2-field">
       <label>Referencia (opcional)</label>
@@ -567,6 +572,7 @@
       if (act === "add") {
         openModal("mAddStock");
         $("#fAddStock [name=ingredient_id]").value = id;
+        updateAddStockMode();
       } else if (act === "adjust") {
         openModal("mAdjust");
         $("#fAdjust [name=ingredient_id]").value = id;
@@ -703,10 +709,18 @@
       showResult(form, "Cantidad inválida", false);
       return;
     }
+    // If entering by presentation (e.g. bolsas), convert to base units.
+    let finalQty = qty;
+    const modeSel = form.querySelector("[name=entry_mode]");
+    if (modeSel && modeSel.value === "pres") {
+      const ing = ingredients.find(i => String(i.id) === String(form.ingredient_id.value));
+      const pc = (ing && ing.pack_content) ? ing.pack_content : 1;
+      finalQty = qty * pc;
+    }
     const data = {
       ingredient_id: parseInt(form.ingredient_id.value, 10),
       type: type,
-      quantity: qty,
+      quantity: finalQty,
       reference: (form.reference && form.reference.value.trim()) || null,
     };
     try {
@@ -719,6 +733,36 @@
   $("#fAddStock").addEventListener("submit", e => { e.preventDefault(); submitMovement(e.currentTarget, "in"); });
   $("#fAdjust").addEventListener("submit", e => { e.preventDefault(); submitMovement(e.currentTarget, "adjustment", true); });
   $("#fWaste").addEventListener("submit", e => { e.preventDefault(); submitMovement(e.currentTarget, "waste"); });
+
+  function updateAddStockHint() {
+    const form = $("#fAddStock");
+    const ing = ingredients.find(i => String(i.id) === String(form.ingredient_id.value));
+    const q = parseFloat(form.quantity.value || 0);
+    const mode = $("#addStockMode").value;
+    const hint = $("#addStockHint");
+    if (ing && ing.pack_content && mode === "pres" && q > 0) {
+      hint.textContent = "= " + formatNum(q * ing.pack_content) + " " + (ing.unit || "");
+    } else { hint.textContent = ""; }
+  }
+  function updateAddStockMode() {
+    const form = $("#fAddStock");
+    const ing = ingredients.find(i => String(i.id) === String(form.ingredient_id.value));
+    const sel = $("#addStockMode");
+    if (ing && ing.pack_content) {
+      const pres = ing.purchase_unit || "presentación";
+      sel.innerHTML =
+        `<option value="pres">Por ${escapeHtml(pres)} (= ${formatNum(ing.pack_content)} ${escapeHtml(ing.unit || "")} c/u)</option>` +
+        `<option value="base">Por ${escapeHtml(ing.unit || "unidad")}</option>`;
+      $("#addStockModeWrap").style.display = "";
+    } else {
+      sel.innerHTML = "";
+      $("#addStockModeWrap").style.display = "none";
+    }
+    updateAddStockHint();
+  }
+  $("#fAddStock [name=ingredient_id]").addEventListener("change", updateAddStockMode);
+  $("#addStockMode").addEventListener("change", updateAddStockHint);
+  $("#fAddStock [name=quantity]").addEventListener("input", updateAddStockHint);
 
   // ─── history modal ────────────────────────────────────────────────────
   async function openHistory(ingredientId, name) {
