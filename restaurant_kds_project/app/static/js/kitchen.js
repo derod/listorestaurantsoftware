@@ -409,17 +409,8 @@ function renderOrders(orders) {
     const badgeLabel = isStation ? "SALON" : "KITCHEN";
     const status = order.status;
 
-    /* Timer: only runs when preparando, from preparing_at */
-    let timerHtml = "";
-    if (status === "preparando" && order.preparing_at) {
-      const { text, seconds } = elapsedLabel(order.preparing_at);
-      const cls = seconds > 600 ? "timer-big danger" : seconds > 300 ? "timer-big warn" : "timer-big";
-      timerHtml = `<div class="${cls}">${text}</div>`;
-    } else if (status === "listo") {
-      timerHtml = `<div class="timer-big" style="color:var(--green);">LISTO</div>`;
-    } else if (status === "nuevo" || status === "aceptado") {
-      timerHtml = `<div class="timer-big" style="color:var(--yellow);">NUEVO</div>`;
-    }
+    /* Timer intentionally hidden on the kitchen card (kept in Admin only). */
+    const timerHtml = "";
 
     /* Status label */
     const statusLabel = status.toUpperCase();
@@ -462,7 +453,7 @@ function renderOrders(orders) {
       </div>
       <div class="order-items-big">
         ${order.items.map(item =>
-          `<div class="order-line-big"><span>${item.product_name}</span><span class="qty">x${item.quantity}</span></div>`
+          `<div class="order-line-big"><span class="qty"><span class="mult">×</span>${item.quantity}</span><span class="prod-name">${item.product_name}</span></div>`
         ).join("")}
       </div>
       <div class="order-actions-big">
