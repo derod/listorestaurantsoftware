@@ -92,6 +92,19 @@
   .recent-items { font-size:17px; color:#cfd5e1; }
   .recent-toggle { margin-top:12px; width:100%; min-height:52px; border:1px solid var(--border); background:var(--muted); color:var(--text); border-radius:14px; font-size:18px; font-weight:700; cursor:pointer; }
   .recent-toggle:hover { border-color:var(--accent); }
+
+  /* Panel de resumen fijo (pegado) mientras los productos scrollean.
+     Solo en layout de 2 columnas; en móvil (≤760px) queda en flujo normal. */
+  @media (min-width: 761px) {
+    .screen.two-panel { align-items: start; }
+    .summary-panel {
+      position: sticky;
+      top: 12px;
+      align-self: start;
+      max-height: calc(100vh - 24px);
+      overflow-y: auto;
+    }
+  }
 </style>
 
 <section style="margin-top:32px;">
