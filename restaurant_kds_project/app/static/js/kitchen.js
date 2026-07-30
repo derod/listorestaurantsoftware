@@ -446,7 +446,7 @@ function renderOrders(orders) {
         <div class="order-header-left">
           <div class="order-id-big">#${order.id}</div>
           <div class="order-badge-big ${badgeColor}">${badgeLabel}</div>
-          <div class="order-status-big">${statusLabel}</div>
+          <div class="order-status-big ${status === 'preparando' ? 'blink-prep' : ''}">${statusLabel}</div>
           ${waiterHtml}
         </div>
         ${timerHtml}

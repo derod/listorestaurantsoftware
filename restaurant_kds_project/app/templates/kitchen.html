@@ -17,6 +17,8 @@
   .order-id-big { font-size:52px; font-weight:900; }
   .order-badge-big { display:inline-block; padding:10px 18px; border-radius:999px; font-weight:700; font-size:24px; }
   .order-status-big { font-size:28px; font-weight:700; color:#b7becd; text-transform:uppercase; }
+  .order-status-big.blink-prep { color: var(--green); font-weight:900; animation: blinkPrep 1s ease-in-out infinite; }
+  @keyframes blinkPrep { 0%,100% { opacity:1; } 50% { opacity:0.25; } }
   .order-waiter-big { font-size:24px; color:#b7becd; }
   .order-waiter-big strong { color:var(--accent); }
   .timer-big { font-size:42px; font-weight:900; }
@@ -123,5 +125,5 @@ window.KITCHEN_AUDIO = {
 };
 window.INITIAL_ORDERS = {{ orders_json|safe }};
 </script>
-<script src="/static/js/kitchen.js?v=bignum1"></script>
+<script src="/static/js/kitchen.js?v=blink1"></script>
 {% endblock %}
