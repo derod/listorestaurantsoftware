@@ -154,9 +154,15 @@
         <label>Categoría</label>
         <select name="category">
           <option value="">— Sin categoría —</option>
-          <option value="Abarrotes">Abarrotes</option>
-          <option value="Salsas y condimentos">Salsas y condimentos</option>
-          <option value="Limpieza e higiene">Limpieza e higiene</option>
+          <option value="Proteínas">Proteínas</option>
+          <option value="Embutidos">Embutidos</option>
+          <option value="Granos">Granos</option>
+          <option value="Conservas">Conservas</option>
+          <option value="Condimentos y Salsas">Condimentos y Salsas</option>
+          <option value="Acompañamientos">Acompañamientos</option>
+          <option value="Bebidas">Bebidas</option>
+          <option value="Empaques">Empaques</option>
+          <option value="Limpieza">Limpieza</option>
           <option value="Otros">Otros</option>
         </select>
       </div>
@@ -451,7 +457,7 @@
   }
 
   // ─── render cards ─────────────────────────────────────────────────────
-  const CATEGORY_ORDER = ["Abarrotes", "Salsas y condimentos", "Limpieza e higiene", "Otros"];
+  const CATEGORY_ORDER = ["Proteínas", "Embutidos", "Granos", "Conservas", "Condimentos y Salsas", "Acompañamientos", "Bebidas", "Empaques", "Limpieza", "Abarrotes", "Salsas y condimentos", "Limpieza e higiene", "Otros"];
 
   function ingCardHtml(ing, cls) {
     const u = escapeHtml(ing.unit || "unidad");
