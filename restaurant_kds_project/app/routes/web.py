@@ -9,7 +9,7 @@ from pathlib import Path
 import shutil
 
 from ..database import get_db, DATA_DIR
-from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, ContactMessage, AccessLog, WorkSession, Ingredient, Recipe, RecipeItem, InventoryMovement, Expense, FixedExpense, cr_now
+from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, ContactMessage, AccessLog, WorkSession, Ingredient, Recipe, RecipeItem, InventoryMovement, Expense, FixedExpense, Purchase, PurchaseItem, cr_now
 from ..inventory_service import create_inventory_movement
 from pydantic import BaseModel
 from ..utils import duration_seconds
@@ -1013,6 +1013,105 @@ def export_gastos(request: Request, month: str = "", db: Session = Depends(get_d
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename=gastos-{start.strftime('%Y-%m')}.csv"},
     )
+
+
+# ─── admin compras (purchases / recepción) ────────────────────────────────────
+
+@router.get("/admin/compras")
+def admin_compras(request: Request, db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    ings = db.query(Ingredient).order_by(Ingredient.category.asc(), Ingredient.name.asc()).all()
+    ingredients = [{
+        "id": i.id, "name": i.name, "unit": i.unit or "unid",
+        "pack_content": i.pack_content, "purchase_price": i.purchase_price,
+        "purchase_unit": i.purchase_unit or "", "category": i.category or "",
+    } for i in ings]
+    purchases = db.query(Purchase).order_by(Purchase.date.desc(), Purchase.id.desc()).limit(50).all()
+    pv = []
+    for p in purchases:
+        pv.append({
+            "id": p.id,
+            "date": p.date.strftime("%d/%m/%Y") if p.date else "",
+            "supplier": p.supplier or "—",
+            "total": _colon(p.total or 0),
+            "lines": [{
+                "name": it.ingredient_name or "",
+                "qty": (int(it.qty) if it.qty == int(it.qty) else it.qty),
+                "unit_price": _colon(it.unit_price or 0),
+                "line_total": _colon(it.line_total or 0),
+            } for it in p.items],
+        })
+    return templates.TemplateResponse(
+        "admin_compras.html",
+        {"request": request, "ingredients": ingredients, "purchases": pv,
+         "today": cr_now().strftime("%Y-%m-%d"), "page_title": "Compras"},
+    )
+
+
+class PurchaseItemIn(BaseModel):
+    ingredient_id: int
+    qty: float
+    unit_price: float
+
+
+class PurchaseIn(BaseModel):
+    supplier: str | None = None
+    date: str | None = None
+    notes: str | None = None
+    items: list[PurchaseItemIn]
+
+
+@router.post("/admin/compras")
+def create_purchase(payload: PurchaseIn, request: Request, db: Session = Depends(get_db)):
+    if not require_admin(request):
+        raise HTTPException(401, "Admin session required")
+    valid = [it for it in payload.items if it.qty and it.qty > 0]
+    if not valid:
+        raise HTTPException(400, "Agrega al menos una línea con cantidad")
+    pdate = _parse_date(payload.date) if payload.date else cr_now()
+    supplier = (payload.supplier.strip() if payload.supplier else None) or None
+
+    purchase = Purchase(supplier=supplier, date=pdate,
+                        notes=(payload.notes.strip() if payload.notes else None), total=0)
+    db.add(purchase)
+    db.flush()  # get purchase.id
+
+    total = 0.0
+    for it in valid:
+        ing = db.query(Ingredient).filter(Ingredient.id == it.ingredient_id).first()
+        if not ing:
+            continue
+        qty = float(it.qty or 0)
+        unit_price = float(it.unit_price or 0)
+        pc = float(ing.pack_content) if ing.pack_content else 1.0
+        base_units = qty * pc
+        receipt_unit_cost = (unit_price / pc) if pc > 0 else unit_price
+        line_total = qty * unit_price
+        total += line_total
+
+        # Weighted-average cost BEFORE adding the received stock.
+        old_stock = float(ing.stock or 0)
+        old_cost = float(ing.cost_per_unit or 0)
+        denom = old_stock + base_units
+        new_cost = ((old_stock * old_cost + base_units * receipt_unit_cost) / denom) if denom > 0 else receipt_unit_cost
+
+        create_inventory_movement(db, ing.id, "in", base_units, reference=f"compra:{purchase.id}", commit=False)
+        ing.cost_per_unit = round(new_cost, 4)
+        ing.purchase_price = unit_price
+        ing.last_purchase_date = pdate
+        if supplier:
+            ing.supplier = supplier
+
+        db.add(PurchaseItem(
+            purchase_id=purchase.id, ingredient_id=ing.id, ingredient_name=ing.name,
+            qty=qty, unit_price=unit_price, pack_content=ing.pack_content,
+            base_units=base_units, line_total=line_total,
+        ))
+
+    purchase.total = total
+    db.commit()
+    return {"ok": True, "id": purchase.id}
 
 
 # ─── admin leads / contact inbox ──────────────────────────────────────────────

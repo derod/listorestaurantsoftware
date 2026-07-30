@@ -198,6 +198,34 @@ class InventoryMovement(Base):
     ingredient = relationship("Ingredient")
 
 
+class Purchase(Base):
+    """A received purchase from a supplier (recepción de mercadería)."""
+    __tablename__ = "purchases"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    supplier: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    date: Mapped[datetime] = mapped_column(DateTime, default=cr_now, index=True)
+    notes: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    total: Mapped[float] = mapped_column(Float, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
+
+    items = relationship("PurchaseItem", back_populates="purchase", cascade="all, delete-orphan")
+
+
+class PurchaseItem(Base):
+    __tablename__ = "purchase_items"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    purchase_id: Mapped[int] = mapped_column(ForeignKey("purchases.id"), nullable=False)
+    ingredient_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    ingredient_name: Mapped[str | None] = mapped_column(String(200), nullable=True)  # snapshot
+    qty: Mapped[float] = mapped_column(Float, default=0)             # presentations bought
+    unit_price: Mapped[float] = mapped_column(Float, default=0)      # price per presentation
+    pack_content: Mapped[float | None] = mapped_column(Float, nullable=True)  # base units per presentation (snapshot)
+    base_units: Mapped[float] = mapped_column(Float, default=0)      # total base units received
+    line_total: Mapped[float] = mapped_column(Float, default=0)
+
+    purchase = relationship("Purchase", back_populates="items")
+
+
 class ContactMessage(Base):
     """A lead submitted from the public landing 'Contact Us' form."""
     __tablename__ = "contact_messages"

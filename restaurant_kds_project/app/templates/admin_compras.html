@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .cmp-head { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:18px; }
+  .cmp-head h1 { margin:0; }
+  .cmp-btn { display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:12px; background:var(--card); border:1px solid var(--border); color:var(--text); text-decoration:none; font-weight:700; font-size:15px; cursor:pointer; }
+  .cmp-btn:hover { border-color:var(--accent); }
+  .cmp-btn.primary { background:var(--accent); border-color:var(--accent); color:#111; }
+
+  .cmp-card { background:var(--card); border:1px solid var(--border); border-radius:18px; padding:22px; margin-bottom:26px; }
+  .cmp-top { display:grid; grid-template-columns:1fr 180px; gap:14px; margin-bottom:16px; }
+  .cmp-field { display:flex; flex-direction:column; gap:6px; }
+  .cmp-field label { font-size:12px; font-weight:700; color:var(--muted); }
+  .cmp-field input { background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:11px 13px; font-size:15px; color:var(--text); font-family:inherit; }
+
+  .cmp-table-wrap { overflow-x:auto; }
+  table.cmp-table { width:100%; border-collapse:collapse; }
+  .cmp-table th { font-size:11px; text-transform:uppercase; letter-spacing:0.04em; color:var(--muted); text-align:left; padding:8px 10px; }
+  .cmp-table td { padding:8px 10px; vertical-align:top; }
+  .cmp-table select, .cmp-table input { background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:11px 12px; font-size:15px; color:var(--text); font-family:inherit; width:100%; }
+  .cmp-qty, .cmp-price { max-width:130px; }
+  .cmp-hint { font-size:12px; color:var(--muted); margin-top:5px; }
+  .cmp-line { font-weight:800; color:var(--accent); white-space:nowrap; font-size:16px; }
+  .cmp-del { background:rgba(228,91,91,0.15); color:var(--red); border:1px solid rgba(228,91,91,0.4); border-radius:10px; min-width:44px; min-height:44px; font-size:18px; font-weight:800; cursor:pointer; }
+  .cmp-foot { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-top:16px; }
+  .cmp-total { font-size:22px; font-weight:900; }
+  .cmp-total b { color:var(--accent); }
+  .cmp-result { font-size:14px; font-weight:700; min-height:18px; color:var(--red); }
+
+  .cmp-hist h2 { font-size:20px; margin:0 0 14px; }
+  .cmp-purchase { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px 18px; margin-bottom:12px; }
+  .cmp-purchase-top { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
+  .cmp-purchase-sup { font-weight:800; font-size:17px; }
+  .cmp-purchase-date { color:var(--muted); font-size:14px; }
+  .cmp-purchase-total { color:var(--accent); font-weight:900; font-size:18px; }
+  .cmp-purchase-items { font-size:14px; color:#cfd5e1; }
+  .cmp-empty { text-align:center; color:var(--muted); padding:30px; }
+</style>
+
+<div class="cmp-head">
+  <h1>Compras</h1>
+  <a class="cmp-btn" href="/admin">&#8592; Dashboard</a>
+</div>
+
+<div class="cmp-card">
+  <h2 style="margin:0 0 14px;font-size:20px;">Registrar compra</h2>
+  <div class="cmp-top">
+    <div class="cmp-field"><label>Proveedor</label><input id="cSupplier" maxlength="200" placeholder="Ej: Distribuidora X"></div>
+    <div class="cmp-field"><label>Fecha</label><input id="cDate" type="date" value="{{ today }}"></div>
+  </div>
+
+  <div class="cmp-table-wrap">
+    <table class="cmp-table">
+      <thead><tr><th>Insumo</th><th>Cantidad</th><th>Precio unit. ₡</th><th>Subtotal</th><th></th></tr></thead>
+      <tbody id="cRows"></tbody>
+    </table>
+  </div>
+
+  <div style="margin-top:12px;">
+    <button type="button" class="cmp-btn" id="cAddRow">&#43; Agregar línea</button>
+  </div>
+
+  <div class="cmp-foot">
+    <div class="cmp-total">Total: <b id="cTotal">₡0</b></div>
+    <div style="display:flex;gap:12px;align-items:center;">
+      <div class="cmp-result" id="cResult"></div>
+      <button type="button" class="cmp-btn primary" id="cSave">Guardar compra</button>
+    </div>
+  </div>
+</div>
+
+<div class="cmp-hist">
+  <h2>Compras recientes</h2>
+  {% if not purchases %}
+    <div class="cmp-empty">Aún no hay compras registradas.</div>
+  {% else %}
+    {% for p in purchases %}
+    <div class="cmp-purchase">
+      <div class="cmp-purchase-top">
+        <div><span class="cmp-purchase-sup">{{ p.supplier }}</span> <span class="cmp-purchase-date">· {{ p.date }}</span></div>
+        <div class="cmp-purchase-total">{{ p.total }}</div>
+      </div>
+      <div class="cmp-purchase-items">
+        {% for it in p.lines %}{{ it.qty }}× {{ it.name }} ({{ it.unit_price }}){% if not loop.last %} · {% endif %}{% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  {% endif %}
+</div>
+
+<script>
+  const INGREDIENTS = {{ ingredients|tojson }};
+  const byId = {};
+  INGREDIENTS.forEach(i => byId[i.id] = i);
+
+  function colon(n) { return "₡" + Math.round(Number(n || 0)).toLocaleString("es-CR"); }
+
+  function ingOptions() {
+    const groups = {};
+    INGREDIENTS.forEach(i => { const c = i.category || "Sin categoría"; (groups[c] = groups[c] || []).push(i); });
+    let html = '<option value="">— Selecciona insumo —</option>';
+    Object.keys(groups).sort().forEach(c => {
+      html += `<optgroup label="${c}">`;
+      groups[c].forEach(i => { html += `<option value="${i.id}">${i.name}</option>`; });
+      html += `</optgroup>`;
+    });
+    return html;
+  }
+
+  const rowsEl = document.getElementById("cRows");
+
+  function addRow() {
+    const tr = document.createElement("tr");
+    tr.className = "cmp-row";
+    tr.innerHTML = `
+      <td><select class="cmp-ing">${ingOptions()}</select><div class="cmp-hint"></div></td>
+      <td><input class="cmp-qty" type="number" step="0.01" min="0" value="1"></td>
+      <td><input class="cmp-price" type="number" step="0.01" min="0" value="0"></td>
+      <td class="cmp-line">₡0</td>
+      <td><button type="button" class="cmp-del">✕</button></td>`;
+    rowsEl.appendChild(tr);
+    const sel = tr.querySelector(".cmp-ing");
+    const qty = tr.querySelector(".cmp-qty");
+    const price = tr.querySelector(".cmp-price");
+    const hint = tr.querySelector(".cmp-hint");
+    sel.addEventListener("change", () => {
+      const ing = byId[sel.value];
+      if (ing) {
+        if (ing.purchase_price != null) price.value = ing.purchase_price;
+        const pres = ing.purchase_unit || "presentación";
+        hint.textContent = "1 " + pres + (ing.pack_content ? " = " + ing.pack_content + " " + ing.unit : "");
+      } else { hint.textContent = ""; }
+      recalc();
+    });
+    qty.addEventListener("input", recalc);
+    price.addEventListener("input", recalc);
+    tr.querySelector(".cmp-del").addEventListener("click", () => { tr.remove(); recalc(); });
+    recalc();
+  }
+
+  function recalc() {
+    let total = 0;
+    document.querySelectorAll(".cmp-row").forEach(tr => {
+      const q = parseFloat(tr.querySelector(".cmp-qty").value || 0);
+      const p = parseFloat(tr.querySelector(".cmp-price").value || 0);
+      const line = (q > 0 ? q * p : 0);
+      total += line;
+      tr.querySelector(".cmp-line").textContent = colon(line);
+    });
+    document.getElementById("cTotal").textContent = colon(total);
+  }
+
+  document.getElementById("cAddRow").addEventListener("click", addRow);
+
+  document.getElementById("cSave").addEventListener("click", async () => {
+    const items = [];
+    document.querySelectorAll(".cmp-row").forEach(tr => {
+      const id = parseInt(tr.querySelector(".cmp-ing").value, 10);
+      const qty = parseFloat(tr.querySelector(".cmp-qty").value || 0);
+      const unit_price = parseFloat(tr.querySelector(".cmp-price").value || 0);
+      if (id && qty > 0) items.push({ ingredient_id: id, qty, unit_price });
+    });
+    const res = document.getElementById("cResult");
+    res.textContent = "";
+    if (!items.length) { res.textContent = "Agrega al menos un insumo con cantidad."; return; }
+    const payload = {
+      supplier: document.getElementById("cSupplier").value.trim() || null,
+      date: document.getElementById("cDate").value || null,
+      items,
+    };
+    const btn = document.getElementById("cSave");
+    btn.disabled = true;
+    try {
+      const r = await fetch("/admin/compras", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        credentials: "same-origin", body: JSON.stringify(payload),
+      });
+      if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.detail || "Error"); }
+      window.toast("Compra registrada. Stock y costo actualizados.");
+      setTimeout(() => location.reload(), 700);
+    } catch (e) { res.textContent = e.message; btn.disabled = false; }
+  });
+
+  // start with 2 empty rows
+  addRow(); addRow();
+</script>
+{% endblock %}
