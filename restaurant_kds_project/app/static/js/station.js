@@ -644,8 +644,32 @@ function renderRecent() {
   }
 }
 
+function askConfirm(msg) {
+  return new Promise(resolve => {
+    const ov = document.getElementById("confirmOverlay");
+    if (!ov) { resolve(window.confirm(msg)); return; }
+    document.getElementById("confirmMsg").textContent = msg;
+    ov.classList.add("open");
+    const yes = document.getElementById("confirmYes");
+    const no = document.getElementById("confirmNo");
+    function done(val) {
+      ov.classList.remove("open");
+      yes.removeEventListener("click", onYes);
+      no.removeEventListener("click", onNo);
+      ov.removeEventListener("click", onBackdrop);
+      resolve(val);
+    }
+    const onYes = () => done(true);
+    const onNo = () => done(false);
+    const onBackdrop = (e) => { if (e.target === ov) done(false); };
+    yes.addEventListener("click", onYes);
+    no.addEventListener("click", onNo);
+    ov.addEventListener("click", onBackdrop);
+  });
+}
+
 async function cancelOrder(id) {
-  if (!confirm(`¿Cancelar la orden #${id}?`)) return;
+  if (!(await askConfirm(`¿Cancelar la orden #${id}?`))) return;
   try {
     const res = await fetch(`/api/orders/${id}/status`, {
       method: "POST",
