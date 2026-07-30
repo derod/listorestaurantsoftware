@@ -169,6 +169,7 @@
     </div>
   </section>
 
+  <script src="/static/js/ui.js?v=1"></script>
   <script>
     const INSUMOS = {{ insumos|tojson }};
     const PRODUCTOS = {{ productos|tojson }};
@@ -223,7 +224,7 @@
         items = (sel.target === "insumo" ? INSUMOS : PRODUCTOS).map(x => ({...x}));
       }
       idx = 0; updated = 0;
-      if (!items.length) { alert("No hay ítems para este objetivo."); return; }
+      if (!items.length) { window.toast("No hay ítems para este objetivo.", false); return; }
       document.getElementById("slideTitle").innerHTML =
         TARGET_LABEL[sel.target] + " · <span>" + (sel.target === "gasto" ? GASTOS_MONTH_LABEL : MODE_LABEL[sel.mode]) + "</span>";
       show("slideScreen");
@@ -318,7 +319,7 @@
           credentials: "same-origin",
           body: JSON.stringify({ category: it.category, month: GASTOS_MONTH, amount: val })
         });
-        if (!res.ok) { alert("No se pudo guardar. Intenta de nuevo."); throw new Error("save failed"); }
+        if (!res.ok) { window.toast("No se pudo guardar. Intenta de nuevo.", false); throw new Error("save failed"); }
         const data = await res.json();
         it.current = data.amount;
         updated++;
@@ -338,7 +339,7 @@
         credentials: "same-origin",
         body: JSON.stringify({ target: sel.target, id: it.id, mode: sel.mode, value: val })
       });
-      if (!res.ok) { alert("No se pudo guardar. Intenta de nuevo."); throw new Error("save failed"); }
+      if (!res.ok) { window.toast("No se pudo guardar. Intenta de nuevo.", false); throw new Error("save failed"); }
       const data = await res.json();
       it.stock = data.new_stock;
       updated++;

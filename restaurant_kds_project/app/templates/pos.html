@@ -118,6 +118,7 @@
     </div>
   </div>
 
+  <script src="/static/js/ui.js?v=1"></script>
   <script>
     const TAX_RATE = {{ tax_rate }} / 100;
     const cart = new Map();
@@ -202,7 +203,7 @@
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          alert(err.detail || 'Error al registrar venta');
+          window.toast(err.detail || 'Error al registrar venta', false);
           btn.disabled = false;
           return;
         }
@@ -214,7 +215,7 @@
         cart.clear();
         renderCart();
       } catch (e) {
-        alert('Error de red');
+        window.toast('Error de red', false);
         btn.disabled = false;
       }
     });
