@@ -34,6 +34,12 @@
   .inv2-cats { display:flex; flex-direction:column; gap:26px; }
   .inv2-cat-title { font-size:22px; font-weight:800; color:#cfd5e1; margin-bottom:14px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--border); padding-bottom:8px; }
   .inv2-cat-count { font-size:15px; font-weight:700; color:#8ea0c0; background:rgba(255,255,255,0.06); border-radius:999px; padding:2px 10px; }
+  .inv2-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .inv2-section-label { font-size:13px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:#8ea0c0; margin:16px 0 4px; border-top:1px solid var(--border); padding-top:12px; }
+  .inv2-cost-hint { font-size:14px; color:var(--green); font-weight:700; min-height:18px; }
+  .inv2-card-cost { color:#8ea0c0; font-size:13px; }
+  .inv2-card-cost b { color:#cfd5e1; }
+  @media (max-width:560px) { .inv2-grid2 { grid-template-columns:1fr; } }
   .inv2-badge { display:inline-flex; align-items:center; gap:8px; padding:6px 14px; border-radius:999px; font-weight:800; font-size:16px; width:fit-content; }
   .inv2-badge.ok { background:rgba(76,175,80,0.15); color:var(--green); }
   .inv2-badge.low { background:rgba(255,210,77,0.18); color:var(--yellow); }
@@ -137,38 +143,94 @@
 <!-- ─── Modal: Agregar insumo ─────────────────────────────────────────── -->
 <div class="inv2-overlay" id="mAddIng">
   <form class="inv2-modal" id="fAddIng" autocomplete="off">
-    <h2 class="inv2-modal-title">Agregar insumo</h2>
+    <h2 class="inv2-modal-title" id="ingModalTitle">Agregar insumo</h2>
+    <input type="hidden" name="id" value="">
     <div class="inv2-field">
       <label>Nombre</label>
-      <input name="name" required maxlength="200" placeholder="Ej: Tomate">
+      <input name="name" required maxlength="200" placeholder="Ej: Jamón">
+    </div>
+    <div class="inv2-grid2">
+      <div class="inv2-field">
+        <label>Categoría</label>
+        <select name="category">
+          <option value="">— Sin categoría —</option>
+          <option value="Abarrotes">Abarrotes</option>
+          <option value="Salsas y condimentos">Salsas y condimentos</option>
+          <option value="Limpieza e higiene">Limpieza e higiene</option>
+          <option value="Otros">Otros</option>
+        </select>
+      </div>
+      <div class="inv2-field">
+        <label>Unidad base (para recetas)</label>
+        <select name="unit" required>
+          <option value="g">Gramos (g)</option>
+          <option value="kg">Kilogramos (kg)</option>
+          <option value="ml">Mililitros (ml)</option>
+          <option value="l">Litros (l)</option>
+          <option value="unit" selected>Unidad</option>
+          <option value="pieza">Pieza</option>
+          <option value="porción">Porción</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="inv2-section-label">Compra y costeo</div>
+    <div class="inv2-grid2">
+      <div class="inv2-field">
+        <label>Presentación de compra</label>
+        <input name="purchase_unit" maxlength="40" placeholder="Ej: bolsa, caja, botella">
+      </div>
+      <div class="inv2-field">
+        <label>Contenido (en unidad base)</label>
+        <input name="pack_content" type="number" step="0.01" min="0" placeholder="Ej: 454">
+      </div>
     </div>
     <div class="inv2-field">
-      <label>Categoría</label>
-      <select name="category">
-        <option value="">— Sin categoría —</option>
-        <option value="Abarrotes">Abarrotes</option>
-        <option value="Salsas y condimentos">Salsas y condimentos</option>
-        <option value="Limpieza e higiene">Limpieza e higiene</option>
-        <option value="Otros">Otros</option>
-      </select>
+      <label>Precio de compra (₡ por presentación)</label>
+      <input name="purchase_price" type="number" step="0.01" min="0" placeholder="Ej: 2000">
+    </div>
+    <div class="inv2-cost-hint" id="ingCostHint"></div>
+
+    <div class="inv2-section-label">Rendimiento (opcional)</div>
+    <div class="inv2-grid2">
+      <div class="inv2-field">
+        <label>Rinde (cantidad)</label>
+        <input name="yield_qty" type="number" step="0.01" min="0" placeholder="Ej: 6">
+      </div>
+      <div class="inv2-field">
+        <label>Unidad del rendimiento</label>
+        <input name="yield_unit" maxlength="40" placeholder="Ej: porción, pieza">
+      </div>
+    </div>
+
+    <div class="inv2-section-label">Inventario y control</div>
+    <div class="inv2-grid2">
+      <div class="inv2-field">
+        <label>Stock actual</label>
+        <input name="stock" type="number" step="0.01" min="0" value="0">
+      </div>
+      <div class="inv2-field">
+        <label>Stock mínimo (alerta)</label>
+        <input name="min_stock" type="number" step="0.01" min="0" value="0">
+      </div>
+    </div>
+    <div class="inv2-grid2">
+      <div class="inv2-field">
+        <label>Proveedor</label>
+        <input name="supplier" maxlength="200" placeholder="Opcional">
+      </div>
+      <div class="inv2-field">
+        <label>Vencimiento</label>
+        <input name="expiry_date" type="date">
+      </div>
     </div>
     <div class="inv2-field">
-      <label>Unidad de medida</label>
-      <select name="unit" required>
-        <option value="g">Gramos (g)</option>
-        <option value="kg">Kilogramos (kg)</option>
-        <option value="ml">Mililitros (ml)</option>
-        <option value="l">Litros (l)</option>
-        <option value="unit" selected>Unidad</option>
-      </select>
+      <label>Costo por unidad base (manual, si no pones compra)</label>
+      <input name="cost_per_unit" type="number" step="0.0001" min="0" value="0">
     </div>
     <div class="inv2-field">
-      <label>Costo por unidad (opcional)</label>
-      <input name="cost_per_unit" type="number" step="0.01" min="0" value="0">
-    </div>
-    <div class="inv2-field">
-      <label>Stock inicial</label>
-      <input name="stock" type="number" step="0.01" min="0" value="0">
+      <label>Observaciones</label>
+      <input name="notes" maxlength="300" placeholder="Opcional">
     </div>
     <div class="inv2-result" data-result></div>
     <div class="inv2-modal-actions">
@@ -392,19 +454,30 @@
   const CATEGORY_ORDER = ["Abarrotes", "Salsas y condimentos", "Limpieza e higiene", "Otros"];
 
   function ingCardHtml(ing, cls) {
+    const u = escapeHtml(ing.unit || "unidad");
+    let costLines = `<div class="inv2-card-price">Costo: <b>${formatMoney(ing.cost_per_unit)}</b> / ${u}</div>`;
+    if (ing.cost_per_portion != null && ing.yield_unit) {
+      costLines += `<div class="inv2-card-cost">Costo x ${escapeHtml(ing.yield_unit)}: <b>${formatMoney(ing.cost_per_portion)}</b></div>`;
+    }
+    if (ing.purchase_unit && ing.purchase_price != null) {
+      costLines += `<div class="inv2-card-cost">Compra: ${formatMoney(ing.purchase_price)} / ${escapeHtml(ing.purchase_unit)}${ing.pack_content ? " (" + formatNum(ing.pack_content) + " " + u + ")" : ""}</div>`;
+    }
+    const lowNote = ing.low ? `<div class="inv2-card-cost" style="color:var(--yellow);font-weight:700;">⚠ Bajo el mínimo (${formatNum(ing.min_stock)} ${u})</div>` : "";
     return `
       <div class="inv2-card ${cls}">
         <div class="inv2-card-name">${escapeHtml(ing.name)}</div>
         <div>
           <span class="inv2-card-stock">${formatNum(ing.stock)}</span>
-          <span class="inv2-card-unit">${escapeHtml(ing.unit || "")}</span>
+          <span class="inv2-card-unit">${u}</span>
         </div>
-        <div class="inv2-card-price">Precio: <b>${formatMoney(ing.cost_per_unit)}</b> / ${escapeHtml(ing.unit || "unidad")}</div>
+        ${costLines}
+        ${lowNote}
         <span class="inv2-badge ${cls}">${statusLabel(cls)}</span>
         <div class="inv2-card-actions">
           <button class="inv2-btn blue sm" data-act="add" data-id="${ing.id}">➕ Agregar</button>
           <button class="inv2-btn yellow sm" data-act="adjust" data-id="${ing.id}">✏️ Ajustar</button>
-          <button class="inv2-btn ghost sm wide" data-act="history" data-id="${ing.id}" data-name="${escapeAttr(ing.name)}">📜 Historial</button>
+          <button class="inv2-btn ghost sm" data-act="edit" data-id="${ing.id}">⚙️ Editar</button>
+          <button class="inv2-btn ghost sm" data-act="history" data-id="${ing.id}" data-name="${escapeAttr(ing.name)}">📜 Historial</button>
           <button class="inv2-btn red sm wide" data-act="delete" data-id="${ing.id}" data-name="${escapeAttr(ing.name)}">🗑️ Eliminar</button>
         </div>
       </div>`;
@@ -495,11 +568,16 @@
         openHistory(id, t.dataset.name);
       } else if (act === "delete") {
         deleteIngredient(id, t.dataset.name);
+      } else if (act === "edit") {
+        openEditIng(id);
       }
       return;
     }
     const openBtn = e.target.closest("[data-open]");
-    if (openBtn) openModal(openBtn.dataset.open);
+    if (openBtn) {
+      if (openBtn.dataset.open === "mAddIng") resetIngForm();
+      openModal(openBtn.dataset.open);
+    }
     const closeBtn = e.target.closest("[data-close]");
     if (closeBtn) closeModal(closeBtn);
   });
@@ -523,23 +601,93 @@
     }
   }
 
-  // ─── form submits ─────────────────────────────────────────────────────
-  $("#fAddIng").addEventListener("submit", async e => {
+  // ─── ingredient add / edit ─────────────────────────────────────────────
+  const ingForm = $("#fAddIng");
+  const el = (n) => ingForm.elements[n];
+
+  function resetIngForm() {
+    ingForm.reset();
+    el("id").value = "";
+    $("#ingModalTitle").textContent = "Agregar insumo";
+    $("#ingCostHint").textContent = "";
+    ingForm.querySelector("[data-result]").textContent = "";
+  }
+
+  function fillIngForm(ing) {
+    resetIngForm();
+    el("id").value = ing.id;
+    $("#ingModalTitle").textContent = "Editar insumo";
+    el("name").value = ing.name || "";
+    el("category").value = ing.category || "";
+    el("unit").value = ing.unit || "unit";
+    el("purchase_unit").value = ing.purchase_unit || "";
+    el("pack_content").value = ing.pack_content != null ? ing.pack_content : "";
+    el("purchase_price").value = ing.purchase_price != null ? ing.purchase_price : "";
+    el("yield_qty").value = ing.yield_qty != null ? ing.yield_qty : "";
+    el("yield_unit").value = ing.yield_unit || "";
+    el("stock").value = ing.stock != null ? ing.stock : 0;
+    el("min_stock").value = ing.min_stock != null ? ing.min_stock : 0;
+    el("supplier").value = ing.supplier || "";
+    el("expiry_date").value = ing.expiry_date || "";
+    el("cost_per_unit").value = ing.cost_per_unit != null ? ing.cost_per_unit : 0;
+    el("notes").value = ing.notes || "";
+    updateCostHint();
+  }
+
+  function openEditIng(id) {
+    const ing = ingredients.find(i => String(i.id) === String(id));
+    if (!ing) return;
+    fillIngForm(ing);
+    openModal("mAddIng");
+  }
+
+  function updateCostHint() {
+    const pp = parseFloat(el("purchase_price").value || "0");
+    const pc = parseFloat(el("pack_content").value || "0");
+    const yq = parseFloat(el("yield_qty").value || "0");
+    const u = el("unit").value || "unidad";
+    let msg = "";
+    if (pp > 0 && pc > 0) msg += `Costo por ${u}: ${formatMoney(pp / pc)}`;
+    if (pp > 0 && yq > 0) msg += (msg ? " · " : "") + `Costo por ${el("yield_unit").value || "porción"}: ${formatMoney(pp / yq)}`;
+    $("#ingCostHint").textContent = msg;
+  }
+  ["purchase_price", "pack_content", "yield_qty", "yield_unit", "unit"].forEach(n => {
+    el(n).addEventListener("input", updateCostHint);
+    el(n).addEventListener("change", updateCostHint);
+  });
+
+  ingForm.addEventListener("submit", async e => {
     e.preventDefault();
-    const form = e.currentTarget;
+    const num = (n) => el(n).value !== "" ? parseFloat(el(n).value) : null;
+    const str = (n) => (el(n).value || "").trim() || null;
     const data = {
-      name: form.name.value.trim(),
-      unit: form.unit.value,
-      category: form.category.value || null,
-      cost_per_unit: parseFloat(form.cost_per_unit.value || "0"),
-      stock: parseFloat(form.stock.value || "0"),
+      name: el("name").value.trim(),
+      category: str("category"),
+      unit: el("unit").value,
+      purchase_unit: str("purchase_unit"),
+      pack_content: num("pack_content"),
+      purchase_price: num("purchase_price"),
+      yield_qty: num("yield_qty"),
+      yield_unit: str("yield_unit"),
+      stock: parseFloat(el("stock").value || "0"),
+      min_stock: parseFloat(el("min_stock").value || "0"),
+      supplier: str("supplier"),
+      expiry_date: el("expiry_date").value || null,
+      cost_per_unit: parseFloat(el("cost_per_unit").value || "0"),
+      notes: str("notes"),
     };
+    const id = el("id").value;
     try {
-      await api("/admin/inv/ingredients", { method: "POST", body: JSON.stringify(data) });
-      closeModal(form);
-      toast("Insumo creado");
+      if (id) {
+        await api("/admin/inv/ingredients/" + id, { method: "PUT", body: JSON.stringify(data) });
+        toast("Insumo actualizado");
+      } else {
+        await api("/admin/inv/ingredients", { method: "POST", body: JSON.stringify(data) });
+        toast("Insumo creado");
+      }
+      closeModal(ingForm);
       await loadIngredients();
-    } catch (err) { showResult(form, err.message, false); }
+    } catch (err) { showResult(ingForm, err.message, false); }
   });
 
   async function submitMovement(form, type, allowNegative = false) {

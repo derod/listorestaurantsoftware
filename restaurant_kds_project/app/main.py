@@ -71,6 +71,24 @@ def _ensure_schema():
         if "category" not in ing_cols:
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE ingredients ADD COLUMN category VARCHAR(80)"))
+        # Master-item fields (phase 1 inventory redesign)
+        _ing_new = {
+            "purchase_unit": "VARCHAR(40)",
+            "pack_content": "FLOAT",
+            "purchase_price": "FLOAT",
+            "yield_qty": "FLOAT",
+            "yield_unit": "VARCHAR(40)",
+            "min_stock": "FLOAT DEFAULT 0",
+            "supplier": "VARCHAR(200)",
+            "last_purchase_date": "DATETIME",
+            "expiry_date": "DATETIME",
+            "status": "VARCHAR(20)",
+            "notes": "TEXT",
+        }
+        for col, ddl in _ing_new.items():
+            if col not in ing_cols:
+                with engine.begin() as conn:
+                    conn.execute(text(f"ALTER TABLE ingredients ADD COLUMN {col} {ddl}"))
     if "expenses" in insp.get_table_names():
         exp_cols = {c["name"] for c in insp.get_columns("expenses")}
         if "source" not in exp_cols:

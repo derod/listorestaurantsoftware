@@ -139,13 +139,29 @@ class SaleItem(Base):
 # ─── Ingredient-level inventory (additive, optional) ─────────────────────────
 
 class Ingredient(Base):
+    """Master item: any ingredient, packaging, drink or supply. Single source
+    of truth referenced by recipes, purchases, production and inventory."""
     __tablename__ = "ingredients"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(200), unique=True, nullable=False)
-    unit: Mapped[str] = mapped_column(String(20), default="unit")
-    cost_per_unit: Mapped[float] = mapped_column(Float, default=0)
-    stock: Mapped[float] = mapped_column(Float, default=0)
+    unit: Mapped[str] = mapped_column(String(20), default="unit")   # base unit (g, kg, ml, L, unidad, pieza…)
+    cost_per_unit: Mapped[float] = mapped_column(Float, default=0)   # cost per BASE unit (auto when purchase info set)
+    stock: Mapped[float] = mapped_column(Float, default=0)           # in base unit
     category: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    # ── purchase presentation & costing ──────────────────────────────────
+    purchase_unit: Mapped[str | None] = mapped_column(String(40), nullable=True)   # bolsa, caja, botella…
+    pack_content: Mapped[float | None] = mapped_column(Float, nullable=True)        # base units per purchase unit (ej. 454 g)
+    purchase_price: Mapped[float | None] = mapped_column(Float, nullable=True)      # price of one purchase presentation
+    # ── yield / rendimiento (informational in phase 1) ───────────────────
+    yield_qty: Mapped[float | None] = mapped_column(Float, nullable=True)           # porciones/piezas por presentación
+    yield_unit: Mapped[str | None] = mapped_column(String(40), nullable=True)       # porción, pieza…
+    # ── stock control ────────────────────────────────────────────────────
+    min_stock: Mapped[float] = mapped_column(Float, default=0)
+    supplier: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    last_purchase_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    expiry_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    status: Mapped[str | None] = mapped_column(String(20), nullable=True, default="activo")
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
 
 

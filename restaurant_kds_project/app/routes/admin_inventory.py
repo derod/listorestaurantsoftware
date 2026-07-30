@@ -6,6 +6,7 @@ Mounted under /admin/inventory/* to keep the surface protected.
 """
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -29,9 +30,79 @@ def _require_admin(request: Request):
 class IngredientIn(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     unit: str = Field(default="unit", max_length=20)
-    cost_per_unit: float = 0
+    cost_per_unit: float = 0          # manual fallback when no purchase info
     stock: float = 0
     category: Optional[str] = Field(default=None, max_length=80)
+    # purchase presentation & costing
+    purchase_unit: Optional[str] = Field(default=None, max_length=40)
+    pack_content: Optional[float] = None
+    purchase_price: Optional[float] = None
+    # yield / rendimiento
+    yield_qty: Optional[float] = None
+    yield_unit: Optional[str] = Field(default=None, max_length=40)
+    # control
+    min_stock: float = 0
+    supplier: Optional[str] = Field(default=None, max_length=200)
+    expiry_date: Optional[str] = None   # YYYY-MM-DD
+    status: Optional[str] = Field(default="activo", max_length=20)
+    notes: Optional[str] = None
+
+
+def _parse_date_opt(s):
+    if not s:
+        return None
+    try:
+        return datetime.strptime(s.strip(), "%Y-%m-%d")
+    except Exception:
+        return None
+
+
+def _cost_per_base_unit(purchase_price, pack_content):
+    if purchase_price and pack_content and pack_content > 0:
+        return round(purchase_price / pack_content, 4)
+    return None
+
+
+def _cost_per_portion(purchase_price, yield_qty):
+    if purchase_price and yield_qty and yield_qty > 0:
+        return round(purchase_price / yield_qty, 4)
+    return None
+
+
+def _apply_ingredient_fields(ing: Ingredient, p: IngredientIn):
+    ing.unit = (p.unit or "unit").strip() or "unit"
+    ing.stock = float(p.stock or 0)
+    ing.category = (p.category.strip() if p.category else None) or None
+    ing.purchase_unit = (p.purchase_unit.strip() if p.purchase_unit else None) or None
+    ing.pack_content = float(p.pack_content) if p.pack_content else None
+    ing.purchase_price = float(p.purchase_price) if p.purchase_price else None
+    ing.yield_qty = float(p.yield_qty) if p.yield_qty else None
+    ing.yield_unit = (p.yield_unit.strip() if p.yield_unit else None) or None
+    ing.min_stock = float(p.min_stock or 0)
+    ing.supplier = (p.supplier.strip() if p.supplier else None) or None
+    ing.expiry_date = _parse_date_opt(p.expiry_date)
+    ing.status = (p.status or "activo").strip() or "activo"
+    ing.notes = (p.notes.strip() if p.notes else None) or None
+    # Auto cost per base unit when purchase info is present; else manual value.
+    cpb = _cost_per_base_unit(ing.purchase_price, ing.pack_content)
+    ing.cost_per_unit = cpb if cpb is not None else float(p.cost_per_unit or 0)
+
+
+def _serialize_ingredient(i: Ingredient):
+    return {
+        "id": i.id, "name": i.name, "unit": i.unit,
+        "cost_per_unit": i.cost_per_unit, "stock": i.stock, "category": i.category,
+        "purchase_unit": i.purchase_unit, "pack_content": i.pack_content,
+        "purchase_price": i.purchase_price,
+        "yield_qty": i.yield_qty, "yield_unit": i.yield_unit,
+        "min_stock": i.min_stock or 0, "supplier": i.supplier,
+        "expiry_date": i.expiry_date.strftime("%Y-%m-%d") if i.expiry_date else None,
+        "status": i.status or "activo", "notes": i.notes,
+        "cost_per_base_unit": _cost_per_base_unit(i.purchase_price, i.pack_content),
+        "cost_per_portion": _cost_per_portion(i.purchase_price, i.yield_qty),
+        "low": (i.min_stock or 0) > 0 and (i.stock or 0) <= (i.min_stock or 0),
+        "created_at": i.created_at.isoformat() if i.created_at else None,
+    }
 
 
 class MovementIn(BaseModel):
@@ -57,18 +128,7 @@ class RecipeIn(BaseModel):
 def list_ingredients(request: Request, db: Session = Depends(get_db)):
     _require_admin(request)
     rows = db.query(Ingredient).order_by(Ingredient.name.asc()).all()
-    return [
-        {
-            "id": i.id,
-            "name": i.name,
-            "unit": i.unit,
-            "cost_per_unit": i.cost_per_unit,
-            "stock": i.stock,
-            "category": i.category,
-            "created_at": i.created_at.isoformat() if i.created_at else None,
-        }
-        for i in rows
-    ]
+    return [_serialize_ingredient(i) for i in rows]
 
 
 @router.delete("/ingredients/{ingredient_id}")
@@ -121,17 +181,30 @@ def create_ingredient(payload: IngredientIn, request: Request, db: Session = Dep
     exists = db.query(Ingredient).filter(Ingredient.name == payload.name).first()
     if exists:
         raise HTTPException(400, "Ingredient name already exists")
-    ing = Ingredient(
-        name=payload.name.strip(),
-        unit=payload.unit.strip() or "unit",
-        cost_per_unit=float(payload.cost_per_unit or 0),
-        stock=float(payload.stock or 0),
-        category=(payload.category.strip() if payload.category else None) or None,
-    )
+    ing = Ingredient(name=payload.name.strip())
+    _apply_ingredient_fields(ing, payload)
     db.add(ing)
     db.commit()
     db.refresh(ing)
-    return {"id": ing.id, "name": ing.name}
+    return _serialize_ingredient(ing)
+
+
+@router.put("/ingredients/{ingredient_id}")
+def update_ingredient(ingredient_id: int, payload: IngredientIn, request: Request, db: Session = Depends(get_db)):
+    _require_admin(request)
+    ing = db.query(Ingredient).filter(Ingredient.id == ingredient_id).first()
+    if not ing:
+        raise HTTPException(404, "Insumo no encontrado")
+    new_name = payload.name.strip()
+    if new_name and new_name != ing.name:
+        clash = db.query(Ingredient).filter(Ingredient.name == new_name, Ingredient.id != ingredient_id).first()
+        if clash:
+            raise HTTPException(400, "Ya existe un insumo con ese nombre")
+        ing.name = new_name
+    _apply_ingredient_fields(ing, payload)
+    db.commit()
+    db.refresh(ing)
+    return _serialize_ingredient(ing)
 
 
 # ─── movements ───────────────────────────────────────────────────────────────
