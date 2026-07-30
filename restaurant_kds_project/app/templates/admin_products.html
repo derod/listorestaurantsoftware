@@ -11,8 +11,8 @@
 
   /* ── Shell ───────────────────────────────────────────────────────── */
   .ap-wrap {
-    padding: 32px 28px 80px;
-    max-width: 1100px;
+    padding: 32px 28px 90px;
+    max-width: 960px;
     margin: 0 auto;
     color: #e8edf8;
   }
@@ -22,78 +22,79 @@
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    gap: 20px;
-    margin-bottom: 32px;
+    gap: 24px;
+    margin-bottom: 34px;
     flex-wrap: wrap;
   }
 
   .ap-header-left .ap-eyebrow {
-    font-size: 11px;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 800;
     letter-spacing: 0.2em;
     text-transform: uppercase;
     color: #ff8c42;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
   }
 
   .ap-header-left h1 {
-    font-size: 26px;
+    font-size: 36px;
     font-weight: 800;
     letter-spacing: -0.4px;
     color: #e8edf8;
     margin: 0;
-    line-height: 1.15;
+    line-height: 1.1;
   }
 
   .ap-count {
-    font-size: 13px;
-    color: #4a5568;
-    margin-top: 4px;
-    font-weight: 400;
+    font-size: 17px;
+    color: #8393b0;
+    margin-top: 6px;
+    font-weight: 500;
   }
 
-  /* ── Add product form ────────────────────────────────────────────── */
+  /* ── Add product form (buscador + botón) ─────────────────────────── */
   .ap-add-form {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     align-items: center;
     flex-wrap: wrap;
   }
 
   .ap-input {
-    height: 42px;
-    padding: 0 14px;
-    border-radius: 10px;
+    height: 58px;
+    padding: 0 18px;
+    border-radius: 14px;
     border: 1px solid #1c2538;
     background: #12161f;
     color: #e8edf8;
-    font-size: 14px;
+    font-size: 19px;
     font-weight: 500;
-    width: 220px;
+    width: 320px;
     transition: border-color 0.15s;
     outline: none;
   }
 
   .ap-input:focus { border-color: #ff8c42; }
-  .ap-input::placeholder { color: #4a5568; }
+  .ap-input::placeholder { color: #5a6a88; }
 
+  /* Base button (used by modals too) */
   .ap-btn {
-    height: 42px;
-    padding: 0 18px;
-    border-radius: 10px;
+    height: 46px;
+    padding: 0 20px;
+    border-radius: 12px;
     border: none;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 700;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 7px;
+    gap: 8px;
     white-space: nowrap;
-    transition: background 0.15s, opacity 0.15s;
+    transition: background 0.15s, opacity 0.15s, border-color 0.15s, color 0.15s;
   }
 
   .ap-btn:active { opacity: 0.8; }
-  .ap-btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  .ap-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
 
   .ap-btn-primary { background: #ff8c42; color: #0b0f18; }
   .ap-btn-primary:hover { background: #ffaa6e; }
@@ -108,164 +109,231 @@
   .ap-btn-danger { background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.25); color: #f87171; }
   .ap-btn-danger:hover { background: rgba(248,113,113,0.2); }
 
-  .ap-btn-sm { height: 34px; padding: 0 12px; font-size: 12px; border-radius: 8px; }
+  /* Big header button */
+  .ap-add-form .ap-btn {
+    height: 58px;
+    padding: 0 26px;
+    font-size: 18px;
+    border-radius: 14px;
+  }
+  .ap-add-form .ap-btn svg { width: 22px; height: 22px; }
 
-  /* ── Table card ──────────────────────────────────────────────────── */
-  .ap-table-card {
+  /* ── Product cards ───────────────────────────────────────────────── */
+  .ap-list { display: flex; flex-direction: column; gap: 20px; }
+
+  .ap-card {
     background: #12161f;
     border: 1px solid #1c2538;
-    border-radius: 16px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    border-radius: 20px;
+    padding: 24px;
+    position: relative;
   }
 
-  .ap-table {
-    width: 100%;
-    border-collapse: collapse;
+  .ap-card-main {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    flex-wrap: wrap;
   }
 
-  .ap-table thead tr {
-    border-bottom: 1px solid #1c2538;
-  }
-
-  .ap-table th {
-    padding: 12px 16px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: #4a5568;
-    text-align: left;
-    white-space: nowrap;
-  }
-
-  .ap-table tbody tr {
-    border-bottom: 1px solid #1c2538;
-    transition: background 0.12s;
-  }
-
-  .ap-table tbody tr:last-child { border-bottom: none; }
-  .ap-table tbody tr:hover { background: #161d2d; }
-
-  .ap-table td {
-    padding: 14px 16px;
-    font-size: 14px;
-    color: #e8edf8;
-    vertical-align: middle;
-  }
-
-  /* Photo cell */
+  /* Photo */
   .ap-photo {
-    width: 52px;
-    height: 52px;
-    border-radius: 10px;
+    width: 130px;
+    height: 130px;
+    border-radius: 18px;
     object-fit: cover;
     border: 1px solid #1c2538;
     display: block;
+    flex-shrink: 0;
   }
 
   .ap-photo-placeholder {
-    width: 52px;
-    height: 52px;
-    border-radius: 10px;
+    width: 130px;
+    height: 130px;
+    border-radius: 18px;
     background: #0e1117;
-    border: 1px dashed #1c2538;
+    border: 2px dashed #2a3552;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
   }
 
   .ap-photo-placeholder svg {
-    width: 18px;
-    height: 18px;
+    width: 44px;
+    height: 44px;
     stroke: #2a3552;
     fill: none;
-    stroke-width: 1.5;
+    stroke-width: 1.4;
     stroke-linecap: round;
     stroke-linejoin: round;
   }
 
-  /* Name cell */
+  /* Info block */
+  .ap-info {
+    flex: 1;
+    min-width: 240px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
   .ap-name {
-    font-weight: 600;
-    font-size: 15px;
+    font-weight: 800;
+    font-size: 26px;
     color: #e8edf8;
+    line-height: 1.15;
   }
 
   .ap-id-badge {
-    font-size: 11px;
-    color: #4a5568;
-    font-family: "SF Mono", "Fira Code", monospace;
-    margin-top: 2px;
+    font-size: 16px;
+    color: #6b7a99;
+    font-weight: 600;
+    margin-top: 4px;
   }
 
-  /* Status badge */
-  .ap-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 3px 9px;
-    border-radius: 999px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    white-space: nowrap;
+  /* Price */
+  .ap-price-label {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #6b7a99;
+    margin-bottom: 8px;
   }
 
-  .ap-status-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
-  .ap-status.active { background: rgba(74,222,128,0.1); color: #4ade80; }
-  .ap-status.active .ap-status-dot { background: #4ade80; }
-  .ap-status.inactive { background: rgba(74,85,104,0.2); color: #4a5568; }
-  .ap-status.inactive .ap-status-dot { background: #4a5568; }
+  .ap-price-form { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
-  /* Price inline edit */
-  .ap-price-form { display: inline-flex; align-items: center; gap: 6px; }
   .ap-price-input {
-    width: 86px;
-    height: 34px;
-    padding: 0 10px;
-    border-radius: 8px;
+    width: 160px;
+    height: 58px;
+    padding: 0 18px;
+    border-radius: 14px;
     border: 1px solid #1c2538;
     background: #0e1117;
     color: #e8edf8;
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 24px;
+    font-weight: 800;
     outline: none;
     transition: border-color 0.15s;
   }
   .ap-price-input:focus { border-color: #ff8c42; }
 
-  /* Actions cell */
-  .ap-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-
-  /* Order buttons */
-  .ap-order-btn {
-    width: 30px;
-    height: 30px;
-    border-radius: 7px;
+  .ap-price-save {
+    height: 58px;
+    padding: 0 22px;
+    border-radius: 14px;
     border: 1px solid #1c2538;
-    background: transparent;
-    color: #4a5568;
+    background: #12161f;
+    color: #8393b0;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .ap-price-save:hover { border-color: #4a5568; color: #e8edf8; }
+  .ap-price-save svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* Status (toggle) */
+  .ap-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    align-self: flex-start;
+  }
+  .ap-status:active { opacity: 0.8; }
+  .ap-status svg { width: 22px; height: 22px; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; fill: none; flex-shrink: 0; }
+  .ap-status.active { background: rgba(74,222,128,0.14); color: #4ade80; }
+  .ap-status.active svg { stroke: #4ade80; }
+  .ap-status.inactive { background: rgba(131,147,176,0.16); color: #8393b0; }
+  .ap-status.inactive svg { stroke: #8393b0; }
+
+  /* Reorder buttons (top-right of card) */
+  .ap-reorder {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .ap-order-btn {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    border: 1px solid #1c2538;
+    background: #0e1117;
+    color: #6b7a99;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: border-color 0.15s, color 0.15s;
     padding: 0;
-    flex-shrink: 0;
   }
   .ap-order-btn:hover { border-color: #4a5568; color: #e8edf8; }
-  .ap-order-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+  .ap-order-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* Card action buttons (Foto, Editar, Eliminar) — big, separated below */
+  .ap-card-actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-top: 22px;
+    padding-top: 22px;
+    border-top: 1px solid #1c2538;
+  }
+
+  .ap-action-btn {
+    height: 62px;
+    border-radius: 14px;
+    border: 1px solid #1c2538;
+    background: #0e1117;
+    color: #e8edf8;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 11px;
+    width: 100%;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .ap-action-btn svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+  .ap-action-btn.photo:hover { border-color: #4a5568; }
+  .ap-action-btn.edit { color: #38bdf8; border-color: rgba(56,189,248,0.35); }
+  .ap-action-btn.edit:hover { background: rgba(56,189,248,0.1); }
+  .ap-action-btn.danger { color: #f87171; border-color: rgba(248,113,113,0.35); }
+  .ap-action-btn.danger:hover { background: rgba(248,113,113,0.14); }
+
+  .ap-action-cell { display: flex; }
 
   /* ── Empty state ─────────────────────────────────────────────────── */
   .ap-empty {
     text-align: center;
-    padding: 60px 20px;
-    color: #4a5568;
-    font-size: 14px;
+    padding: 70px 20px;
+    color: #6b7a99;
+    font-size: 18px;
+    background: #12161f;
+    border: 1px solid #1c2538;
+    border-radius: 20px;
   }
 
-  .ap-empty svg { width: 40px; height: 40px; stroke: #2a3552; fill: none; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; margin: 0 auto 14px; display: block; }
+  .ap-empty svg { width: 52px; height: 52px; stroke: #2a3552; fill: none; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; margin: 0 auto 18px; display: block; }
 
   /* ── Modal overlay ───────────────────────────────────────────────── */
   .ap-modal-overlay {
@@ -289,7 +357,7 @@
     border-radius: 18px;
     padding: 32px;
     width: 100%;
-    max-width: 440px;
+    max-width: 460px;
     animation: modalIn 0.18s ease;
   }
 
@@ -307,9 +375,9 @@
   }
 
   .ap-modal-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 11px;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -317,8 +385,8 @@
   }
 
   .ap-modal-icon svg {
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     fill: none;
     stroke-width: 1.75;
     stroke-linecap: round;
@@ -331,26 +399,26 @@
   .ap-modal-icon.danger svg { stroke: #f87171; }
 
   .ap-modal-title {
-    font-size: 18px;
+    font-size: 21px;
     font-weight: 800;
     color: #e8edf8;
-    margin-bottom: 4px;
+    margin-bottom: 5px;
     letter-spacing: -0.3px;
   }
 
   .ap-modal-subtitle {
-    font-size: 13px;
-    color: #4a5568;
+    font-size: 15px;
+    color: #8393b0;
     line-height: 1.5;
   }
 
   .ap-modal-close {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
     border: 1px solid #1c2538;
     background: transparent;
-    color: #4a5568;
+    color: #6b7a99;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -361,28 +429,28 @@
   }
 
   .ap-modal-close:hover { border-color: #4a5568; color: #e8edf8; }
-  .ap-modal-close svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+  .ap-modal-close svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
 
   .ap-modal-body { margin-bottom: 24px; }
 
   .ap-field-label {
-    font-size: 12px;
-    font-weight: 700;
+    font-size: 13px;
+    font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #4a5568;
+    color: #6b7a99;
     margin-bottom: 8px;
   }
 
   .ap-field-input {
     width: 100%;
-    height: 46px;
-    padding: 0 14px;
-    border-radius: 10px;
+    height: 52px;
+    padding: 0 16px;
+    border-radius: 12px;
     border: 1px solid #1c2538;
     background: #0e1117;
     color: #e8edf8;
-    font-size: 15px;
+    font-size: 18px;
     font-weight: 500;
     outline: none;
     transition: border-color 0.15s;
@@ -400,7 +468,7 @@
 
   .ap-step {
     flex: 1;
-    height: 3px;
+    height: 4px;
     border-radius: 2px;
     background: #1c2538;
     transition: background 0.3s;
@@ -411,10 +479,10 @@
   .ap-warning-box {
     background: rgba(248,113,113,0.07);
     border: 1px solid rgba(248,113,113,0.2);
-    border-radius: 10px;
-    padding: 14px;
+    border-radius: 12px;
+    padding: 16px;
     margin-bottom: 16px;
-    font-size: 13px;
+    font-size: 15px;
     color: #f87171;
     line-height: 1.55;
     display: none;
@@ -423,8 +491,8 @@
   .ap-warning-box.visible { display: block; }
 
   .ap-confirm-hint {
-    font-size: 12px;
-    color: #4a5568;
+    font-size: 14px;
+    color: #6b7a99;
     margin-top: 8px;
   }
 
@@ -432,9 +500,9 @@
     font-family: "SF Mono", "Fira Code", monospace;
     color: #f87171;
     background: rgba(248,113,113,0.1);
-    padding: 1px 5px;
+    padding: 2px 6px;
     border-radius: 4px;
-    font-size: 12px;
+    font-size: 13px;
   }
 
   /* Modal footer */
@@ -444,38 +512,16 @@
     justify-content: flex-end;
   }
 
-  /* ── Photo upload label ───────────────────────────────────────────── */
-  .ap-photo-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    height: 34px;
-    padding: 0 12px;
-    border-radius: 8px;
-    border: 1px solid #1c2538;
-    background: transparent;
-    color: #8393b0;
-    font-size: 12px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: border-color 0.15s, color 0.15s;
-    white-space: nowrap;
-  }
-
-  .ap-photo-label:hover { border-color: #4a5568; color: #e8edf8; }
-  .ap-photo-label svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-
   /* ── Responsive ──────────────────────────────────────────────────── */
-  @media (max-width: 860px) {
+  @media (max-width: 760px) {
     .ap-wrap { padding: 24px 16px 60px; }
-    .ap-header { flex-direction: column; align-items: flex-start; gap: 16px; }
-    .ap-table th:nth-child(3),
-    .ap-table td:nth-child(3) { display: none; } /* hide order col */
-  }
-
-  @media (max-width: 600px) {
-    .ap-table th:nth-child(4),
-    .ap-table td:nth-child(4) { display: none; } /* hide price col on small */
+    .ap-header { flex-direction: column; align-items: stretch; gap: 18px; }
+    .ap-add-form { flex-direction: column; align-items: stretch; }
+    .ap-input { width: 100%; }
+    .ap-add-form .ap-btn { justify-content: center; }
+    .ap-card-actions { grid-template-columns: 1fr; }
+    .ap-reorder { position: static; flex-direction: row; margin-bottom: 14px; }
+    .ap-card-main { padding-right: 0; }
   }
 </style>
 
@@ -498,121 +544,109 @@
     </form>
   </div>
 
-  <!-- Products table -->
-  <div class="ap-table-card">
-    {% if products %}
-    <table class="ap-table">
-      <thead>
-        <tr>
-          <th style="width:68px;">Foto</th>
-          <th>Nombre</th>
-          <th style="width:56px;">Orden</th>
-          <th style="width:160px;">Precio</th>
-          <th style="width:90px;">Estado</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for p in products %}
-        <tr>
-          <!-- Photo -->
-          <td>
-            {% if p.image_path %}
-            <img src="{{ p.image_path }}" alt="{{ p.name }}" class="ap-photo">
-            {% else %}
-            <div class="ap-photo-placeholder">
-              <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-            </div>
-            {% endif %}
-          </td>
+  <!-- Products as stacked cards -->
+  {% if products %}
+  <div class="ap-list">
+    {% for p in products %}
+    <div class="ap-card">
 
-          <!-- Name -->
-          <td>
+      <!-- Reorder (subir / bajar) -->
+      <div class="ap-reorder">
+        <form method="post" action="/admin/products/{{ p.id }}/move">
+          <input type="hidden" name="direction" value="up">
+          <button class="ap-order-btn" type="submit" title="Subir">
+            <svg viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></svg>
+          </button>
+        </form>
+        <form method="post" action="/admin/products/{{ p.id }}/move">
+          <input type="hidden" name="direction" value="down">
+          <button class="ap-order-btn" type="submit" title="Bajar">
+            <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+        </form>
+      </div>
+
+      <div class="ap-card-main">
+        <!-- Photo -->
+        {% if p.image_path %}
+        <img src="{{ p.image_path }}" alt="{{ p.name }}" class="ap-photo">
+        {% else %}
+        <div class="ap-photo-placeholder">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        </div>
+        {% endif %}
+
+        <!-- Info: name, number, price, status -->
+        <div class="ap-info">
+          <div>
             <div class="ap-name">{{ p.name }}</div>
-            <div class="ap-id-badge">#{{ p.id }}</div>
-          </td>
+            <div class="ap-id-badge">Producto #{{ p.id }}</div>
+          </div>
 
-          <!-- Order -->
-          <td>
-            <div style="display:flex;gap:4px;align-items:center;">
-              <form method="post" action="/admin/products/{{ p.id }}/move">
-                <input type="hidden" name="direction" value="up">
-                <button class="ap-order-btn" type="submit" title="Subir">
-                  <svg viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></svg>
-                </button>
-              </form>
-              <form method="post" action="/admin/products/{{ p.id }}/move">
-                <input type="hidden" name="direction" value="down">
-                <button class="ap-order-btn" type="submit" title="Bajar">
-                  <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
-                </button>
-              </form>
-            </div>
-          </td>
-
-          <!-- Price -->
-          <td>
+          <div>
+            <div class="ap-price-label">Precio</div>
             <form method="post" action="/admin/products/{{ p.id }}/price" class="ap-price-form">
               <input type="number" step="0.01" min="0" name="price"
                      value="{{ '%.2f'|format(p.price or 0) }}"
                      class="ap-price-input" />
-              <button class="ap-btn ap-btn-ghost ap-btn-sm" type="submit">
+              <button class="ap-price-save" type="submit">
                 <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                 Guardar
               </button>
             </form>
-          </td>
+          </div>
 
-          <!-- Status -->
-          <td>
-            <form method="post" action="/admin/products/{{ p.id }}/toggle" style="display:inline;">
-              <button type="submit" class="ap-status {{ 'active' if p.active else 'inactive' }}" style="border:none;cursor:pointer;background:inherit;" title="{{ 'Clic para desactivar' if p.active else 'Clic para activar' }}">
-                <span class="ap-status-dot"></span>
-                {{ 'Activo' if p.active else 'Inactivo' }}
-              </button>
-            </form>
-          </td>
+          <form method="post" action="/admin/products/{{ p.id }}/toggle">
+            <button type="submit" class="ap-status {{ 'active' if p.active else 'inactive' }}"
+                    title="{{ 'Clic para desactivar' if p.active else 'Clic para activar' }}">
+              {% if p.active %}
+              <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              Activo
+              {% else %}
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+              Inactivo
+              {% endif %}
+            </button>
+          </form>
+        </div>
+      </div>
 
-          <!-- Actions -->
-          <td>
-            <div class="ap-actions">
-              <!-- Upload photo -->
-              <form method="post" action="/admin/products/{{ p.id }}/photo" enctype="multipart/form-data" style="display:inline-flex;align-items:center;">
-                <label class="ap-photo-label" title="Subir foto">
-                  <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                  Foto
-                  <input type="file" name="photo" accept="image/*" required style="display:none;" onchange="this.closest('form').submit()">
-                </label>
-              </form>
+      <!-- Big, separated action buttons -->
+      <div class="ap-card-actions">
+        <!-- Foto -->
+        <form method="post" action="/admin/products/{{ p.id }}/photo" enctype="multipart/form-data" class="ap-action-cell">
+          <label class="ap-action-btn photo" title="Subir foto">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Foto
+            <input type="file" name="photo" accept="image/*" required style="display:none;" onchange="this.closest('form').submit()">
+          </label>
+        </form>
 
-              <!-- Edit name -->
-              <button class="ap-btn ap-btn-ghost ap-btn-sm ap-edit-btn"
-                      data-id="{{ p.id }}" data-name="{{ p.name }}"
-                      type="button">
-                <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                Editar
-              </button>
+        <!-- Editar -->
+        <button class="ap-action-btn edit ap-edit-btn"
+                data-id="{{ p.id }}" data-name="{{ p.name }}"
+                type="button">
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Editar
+        </button>
 
-              <!-- Delete -->
-              <button class="ap-btn ap-btn-danger ap-btn-sm ap-delete-btn"
-                      data-id="{{ p.id }}" data-name="{{ p.name }}"
-                      type="button">
-                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                Eliminar
-              </button>
-            </div>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-    <div class="ap-empty">
-      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v4M12 16h.01"/></svg>
-      No hay productos registrados aún. Agrega el primero usando el formulario de arriba.
+        <!-- Eliminar -->
+        <button class="ap-action-btn danger ap-delete-btn"
+                data-id="{{ p.id }}" data-name="{{ p.name }}"
+                type="button">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          Eliminar
+        </button>
+      </div>
     </div>
-    {% endif %}
+    {% endfor %}
   </div>
+  {% else %}
+  <div class="ap-empty">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v4M12 16h.01"/></svg>
+    No hay productos registrados aún. Agrega el primero usando el formulario de arriba.
+  </div>
+  {% endif %}
 
 </div>
 
@@ -645,7 +679,7 @@
       <div class="ap-modal-footer">
         <button type="button" class="ap-btn ap-btn-ghost" data-close="editModal">Cancelar</button>
         <button type="submit" class="ap-btn ap-btn-primary">
-          <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
           Guardar cambios
         </button>
       </div>
@@ -687,7 +721,7 @@
             Los pedidos históricos con este producto no se verán afectados, pero el producto
             dejará de estar disponible de inmediato.
           </div>
-          <div style="font-size:13px;color:#6b7a99;line-height:1.6;">
+          <div style="font-size:15px;color:#8393b0;line-height:1.6;">
             Para continuar, haz clic en <strong style="color:#e8edf8;">Continuar</strong>.
             Para cancelar, cierra esta ventana.
           </div>
@@ -707,12 +741,12 @@
         <button type="button" class="ap-btn ap-btn-ghost" data-close="deleteModal">Cancelar</button>
         <!-- Step 1 button -->
         <button type="button" class="ap-btn ap-btn-danger" id="delContinueBtn">
-          <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><path d="M9 18l6-6-6-6"/></svg>
+          <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><path d="M9 18l6-6-6-6"/></svg>
           Continuar
         </button>
         <!-- Step 2 button (hidden initially) -->
         <button type="submit" class="ap-btn ap-btn-danger" id="delConfirmBtn" style="display:none;">
-          <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
           Eliminar definitivamente
         </button>
       </div>
@@ -767,7 +801,7 @@
     setTimeout(function () { $("deleteConfirmInput").focus(); }, 80);
   }
 
-  // Wire up Editar / Eliminar buttons on each row
+  // Wire up Editar / Eliminar buttons on each card
   document.querySelectorAll(".ap-edit-btn").forEach(function (btn) {
     btn.addEventListener("click", function () {
       openEditModal(btn.dataset.id, btn.dataset.name);
