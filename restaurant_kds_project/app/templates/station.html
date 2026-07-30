@@ -111,6 +111,31 @@
       z-index: 50;
     }
   }
+
+  /* ── Móvil (≤760px): pedido ARRIBA de los productos y en tamaño grande ──
+     para que un usuario mayor lo lea sin esfuerzo. Solo afecta esta página. */
+  @media (max-width: 760px) {
+    /* B) Resumen del pedido primero */
+    .summary-panel { order: -1; }
+
+    /* A) Lectura grande dentro del panel del pedido */
+    .summary-panel h2 { font-size: 28px; margin-bottom: 10px; }
+    .summary-list { min-height: 120px; padding: 16px; }
+    .summary-item { padding: 16px 0; }
+    .summary-item span { font-size: 24px; font-weight: 700; }
+    .summary-item strong { font-size: 27px; }
+    .empty-state { font-size: 22px; }
+    .summary-total { font-size: 30px; }
+    .big-actions { grid-template-columns: 1fr; gap: 14px; }
+    .big-actions .action { min-height: 78px; font-size: 24px; }
+    .big-actions .action.primary { min-height: 90px; font-size: 28px; }
+    .recent-title { font-size: 24px; }
+    .recent-id { font-size: 22px; }
+    .recent-time { font-size: 18px; }
+    .recent-items { font-size: 20px; }
+    .recent-badge { font-size: 16px; }
+    .recent-cancel-last { min-height: 78px; font-size: 23px; }
+  }
 </style>
 
 <section style="margin-top:32px;">
