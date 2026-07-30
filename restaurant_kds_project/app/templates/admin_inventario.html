@@ -27,8 +27,15 @@
   .inv2-card.low { border-color:rgba(255,210,77,0.60); }
   .inv2-card.crit { border-color:rgba(228,91,91,0.65); background:rgba(228,91,91,0.06); }
   .inv2-card-name { font-size:24px; font-weight:800; }
-  .inv2-card-stock { font-size:32px; font-weight:800; }
-  .inv2-card-unit { color:#b7becd; font-size:18px; font-weight:600; }
+  .inv2-card-avail { background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:14px; padding:12px 16px; }
+  .inv2-card.ok .inv2-card-avail { border-color:rgba(76,175,80,0.35); }
+  .inv2-card.low .inv2-card-avail { border-color:rgba(255,210,77,0.40); }
+  .inv2-card.crit .inv2-card-avail { border-color:rgba(228,91,91,0.45); }
+  .inv2-card-avail-label { font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:#8ea0c0; font-weight:800; margin-bottom:2px; }
+  .inv2-card-stock { font-size:52px; font-weight:900; line-height:1; }
+  .inv2-card.crit .inv2-card-stock { color:var(--red); }
+  .inv2-card-unit { color:#b7becd; font-size:22px; font-weight:700; }
+  .inv2-card-pres { color:#cfd5e1; font-size:16px; font-weight:700; margin-top:6px; }
   .inv2-card-price { color:#8ea0c0; font-size:15px; font-weight:600; margin-top:2px; }
   .inv2-card-price b { color:#cfd5e1; font-weight:800; }
   .inv2-cats { display:flex; flex-direction:column; gap:26px; }
@@ -484,12 +491,22 @@
       costLines += `<div class="inv2-card-cost">Compra: ${formatMoney(ing.purchase_price)} / ${escapeHtml(ing.purchase_unit)}${ing.pack_content ? " (" + formatNum(ing.pack_content) + " " + u + ")" : ""}</div>`;
     }
     const lowNote = ing.low ? `<div class="inv2-card-cost" style="color:var(--yellow);font-weight:700;">⚠ Bajo el mínimo (${formatNum(ing.min_stock)} ${u})</div>` : "";
+    let presLine = "";
+    if (ing.pack_content && ing.pack_content > 0) {
+      const packs = ing.stock / ing.pack_content;
+      const packLabel = escapeHtml(ing.purchase_unit || "presentación");
+      presLine = `<div class="inv2-card-pres">≈ ${packs.toFixed(1)} ${packLabel}</div>`;
+    }
     return `
       <div class="inv2-card ${cls}">
         <div class="inv2-card-name">${escapeHtml(ing.name)}</div>
-        <div>
-          <span class="inv2-card-stock">${formatNum(ing.stock)}</span>
-          <span class="inv2-card-unit">${u}</span>
+        <div class="inv2-card-avail">
+          <div class="inv2-card-avail-label">Disponible</div>
+          <div>
+            <span class="inv2-card-stock">${formatNum(ing.stock)}</span>
+            <span class="inv2-card-unit">${u}</span>
+          </div>
+          ${presLine}
         </div>
         ${costLines}
         ${lowNote}
