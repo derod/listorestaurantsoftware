@@ -14,10 +14,17 @@ logger = logging.getLogger(__name__)
 class ConnectionManager:
     def __init__(self) -> None:
         self._connections: list[WebSocket] = []
+        self.loop: asyncio.AbstractEventLoop | None = None
 
     async def connect(self, websocket: WebSocket) -> None:
         await websocket.accept()
         self._connections.append(websocket)
+        # Capture the running event loop so sync (threadpool) endpoints can
+        # schedule broadcasts onto it via run_coroutine_threadsafe.
+        try:
+            self.loop = asyncio.get_running_loop()
+        except RuntimeError:
+            pass
         logger.info("WS client connected. Total: %d", len(self._connections))
 
     def disconnect(self, websocket: WebSocket) -> None:
@@ -45,6 +52,31 @@ class ConnectionManager:
 
 # Module-level singleton shared across the whole application.
 manager = ConnectionManager()
+
+
+def schedule_broadcast(coro) -> None:
+    """Run a broadcast coroutine from any context.
+
+    Los endpoints son funciones sync que corren en un threadpool (sin loop
+    asyncio corriendo en ese hilo), así que create_task no sirve. Programamos
+    la corrutina en el loop principal capturado al conectar un cliente WS.
+    """
+    loop = manager.loop
+    if loop is None or not manager._connections:
+        # Sin clientes conectados no hay a quién avisar; descartar la corrutina.
+        try:
+            coro.close()
+        except Exception:
+            pass
+        return
+    try:
+        asyncio.run_coroutine_threadsafe(coro, loop)
+    except Exception as exc:
+        logger.exception("schedule_broadcast failed: %s", exc)
+        try:
+            coro.close()
+        except Exception:
+            pass
 
 
 def _serialize_order(order) -> dict:
@@ -75,3 +107,18 @@ async def broadcast_new_order(order) -> None:
     except Exception as exc:
         # Never let a broadcast failure propagate into order-creation logic.
         logger.exception("broadcast_new_order failed: %s", exc)
+
+
+async def broadcast_order_ready(order) -> None:
+    """Push an 'order_ready' event (order marcado listo/despachado) to clients.
+
+    Lo escucha el Salón para avisar al instante que un pedido está listo,
+    en vez de esperar al sondeo de ready-recent.
+    """
+    if not manager._connections:
+        return
+    try:
+        payload = json.dumps({"event": "order_ready", "order": _serialize_order(order)})
+        await manager.broadcast(payload)
+    except Exception as exc:
+        logger.exception("broadcast_order_ready failed: %s", exc)

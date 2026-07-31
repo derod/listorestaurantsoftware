@@ -16,13 +16,10 @@ def create_order(db: Session, source_role: str, items: list[dict], waiter_id: in
     db.add(OrderEvent(order_id=order.id, event_type="created", actor_role=source_role, new_value=source_role))
     db.commit()
     full_order = get_order(db, order.id)
-    # Fire-and-forget: push to connected kitchen clients via WebSocket.
-    # Runs only when an async event loop is active (i.e. inside a FastAPI request).
+    # Fire-and-forget: push to connected clients (Cocina y Salón) via WebSocket.
     try:
-        from .websockets import broadcast_new_order
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            asyncio.create_task(broadcast_new_order(full_order))
+        from .websockets import schedule_broadcast, broadcast_new_order
+        schedule_broadcast(broadcast_new_order(full_order))
     except Exception:
         pass  # Never let WS failure affect order creation
     return full_order
@@ -74,7 +71,16 @@ def change_order_status(db: Session, order: Order, status: str, actor_role: str)
         order.was_cancelled = True
     db.add(OrderEvent(order_id=order.id, event_type="status_changed", actor_role=actor_role, old_value=old, new_value=status))
     db.commit()
-    return get_order(db, order.id)
+    full = get_order(db, order.id)
+    # Fire-and-forget: avisar al Salón al instante cuando un pedido de salón
+    # queda listo/despachado (mismo criterio que /orders/ready-recent).
+    if order.source_role == "station_a" and status in ("listo", "despachado") and old != status:
+        try:
+            from .websockets import schedule_broadcast, broadcast_order_ready
+            schedule_broadcast(broadcast_order_ready(full))
+        except Exception:
+            pass  # Never let WS failure affect status changes
+    return full
 
 
 def _decrement_inventory_for_order(db: Session, order: Order, actor_role: str):

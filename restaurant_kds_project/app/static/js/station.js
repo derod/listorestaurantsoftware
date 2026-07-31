@@ -691,6 +691,66 @@ pollKitchenInternal();
 setInterval(pollKitchenInternal, 4000);
 fetchRecent();
 
+/* ─── WebSocket en vivo (aditivo — el polling queda como respaldo) ──────
+   Da avisos INSTANTÁNEOS en el Salón: pedido de cocina entrante y pedido
+   listo, sin esperar el sondeo cada 4s. El dedup (stationKnownIds/readyAlerted)
+   evita doble alerta cuando WS y polling ven el mismo pedido. */
+(function initStationWS() {
+  let ws = null;
+  let retryTimer = null;
+  const RETRY_MS = 2000;
+
+  function connect() {
+    try {
+      const protocol = location.protocol === "https:" ? "wss://" : "ws://";
+      ws = new WebSocket(protocol + location.host + "/ws/kitchen");
+
+      ws.onopen = () => {
+        console.info("[KDS] Station WebSocket connected");
+        if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
+      };
+
+      ws.onmessage = (event) => {
+        let msg;
+        try { msg = JSON.parse(event.data); } catch { return; }
+        const order = msg.order;
+        if (!order) return;
+
+        // Pedido de cocina entrante → aviso del Salón
+        if (msg.event === "new_order" && order.source_role === "kitchen") {
+          if (stationKnownIds.has(order.id)) return;
+          stationKnownIds.add(order.id);
+          if (!playSoundFile(AUDIO.stationSound)) beep(880, 400);
+          speakSpanish(`Nuevo pedido de cocina. ${formatItemsSpeech(order.items)}.`);
+          pollKitchenInternal();   // refresca la lista (con candado; inocuo si está ocupado)
+          return;
+        }
+
+        // Pedido de salón marcado listo/despachado → aviso instantáneo
+        if (msg.event === "order_ready") {
+          if (readyAlerted.has(order.id)) return;
+          readyAlerted.add(order.id);
+          if (!playSoundFile(AUDIO.stationSound)) beep(1320, 500);
+          speakSpanish(`Pedido listo. ${formatItemsSpeech(order.items)}.`);
+          fetchRecent();
+          return;
+        }
+      };
+
+      ws.onerror = () => { /* onclose se encarga de reconectar */ };
+      ws.onclose = () => {
+        ws = null;
+        retryTimer = setTimeout(connect, RETRY_MS);
+      };
+    } catch (e) {
+      console.warn("[KDS] Station WebSocket init failed:", e);
+      retryTimer = setTimeout(connect, RETRY_MS);
+    }
+  }
+
+  connect();
+})();
+
 /* ─── On-screen audio diagnostic ────────────────────────────────────── */
 function _injectAudioTest() {
   if (document.getElementById("audioTestBtn")) return;
