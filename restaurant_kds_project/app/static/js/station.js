@@ -556,7 +556,7 @@ async function pollKitchenInternal() {
     const kitchenOrders = all.filter(o => o.source_role === "kitchen");
     const newKitchenIds = kitchenOrders.filter(o => !stationKnownIds.has(o.id));
     if (newKitchenIds.length > 0 && !firstPoll) {
-      if (!playSoundFile(AUDIO.kitchenSound)) beep(880, 400);
+      if (!playSoundFile(AUDIO.stationSound)) beep(880, 400);
       newKitchenIds.forEach(o => speakSpanish(`Nuevo pedido de cocina. ${formatItemsSpeech(o.items)}.`));
     }
     stationKnownIds = new Set(kitchenOrders.map(o => o.id));
@@ -581,7 +581,7 @@ async function pollReadyRecent() {
       if (readyAlerted.has(o.id)) return;
       readyAlerted.add(o.id);
       if (firstReadyPoll) return;   // no avisar por las ya despachadas al cargar
-      if (!playSoundFile(AUDIO.readySound)) beep(1320, 500);
+      if (!playSoundFile(AUDIO.stationSound)) beep(1320, 500);
       speakSpanish(`Pedido listo. ${formatItemsSpeech(o.items)}.`);
     });
     firstReadyPoll = false;

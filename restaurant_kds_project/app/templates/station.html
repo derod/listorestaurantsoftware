@@ -172,6 +172,7 @@
 <script>
 window.KDS_CONFIG = { sourceRole: "{{ source_role }}", waiterId: {{ waiter_id }}, waiterName: "{{ waiter_name }}" };
 window.STATION_AUDIO = {
+  stationSound: {{ settings.station_order_sound_path|tojson if settings else 'null' }},
   kitchenSound: {{ settings.kitchen_order_sound_path|tojson if settings else 'null' }},
   readySound: {{ settings.ready_sound_path|tojson if settings else 'null' }},
   cancelSound: {{ settings.cancel_sound_path|tojson if settings else 'null' }},
@@ -179,5 +180,5 @@ window.STATION_AUDIO = {
   volume: {{ settings.master_volume if settings else 1.0 }}
 };
 </script>
-<script src="/static/js/station.js?v=confirm2"></script>
+<script src="/static/js/station.js?v=sound-perscreen"></script>
 {% endblock %}

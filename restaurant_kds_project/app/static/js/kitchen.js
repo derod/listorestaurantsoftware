@@ -526,7 +526,7 @@ async function pollOrders() {
     knownOrderIds.add(order.id);
     flashPageTitle("🔔 NUEVO PEDIDO");
     if (order.source_role === "station_a") {
-      if (!playSound(window.KITCHEN_AUDIO.stationSound)) beep(880, 400);
+      if (!playSound(window.KITCHEN_AUDIO.kitchenSound)) beep(880, 400);
       speakSpanish(`Nuevo pedido. ${formatSpeech(order.items)}.`);
     } else {
       if (!playSound(window.KITCHEN_AUDIO.kitchenSound)) beep(660, 400);
@@ -640,7 +640,7 @@ setInterval(() => renderOrders(visibleOrders()), 1000);
         // Immediate audio alert — also flash the page title so the cook sees it
         flashPageTitle("🔔 NUEVO PEDIDO");
         if (order.source_role === "station_a") {
-          if (!playSound(window.KITCHEN_AUDIO.stationSound)) beep(880, 400);
+          if (!playSound(window.KITCHEN_AUDIO.kitchenSound)) beep(880, 400);
           speakSpanish(`Nuevo pedido. ${formatSpeech(order.items)}.`);
         } else {
           if (!playSound(window.KITCHEN_AUDIO.kitchenSound)) beep(660, 400);

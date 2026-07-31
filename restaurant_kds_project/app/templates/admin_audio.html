@@ -8,12 +8,12 @@
 {% endif %}
 <div class="panel form-panel">
   <form method="post" action="/admin/audio" enctype="multipart/form-data" class="audio-form">
-    <label>Sonido Salon <input type="file" name="station_sound" accept=".mp3,.wav,.m4a"></label>
-    <label>Sonido Kitchen <input type="file" name="kitchen_sound" accept=".mp3,.wav,.m4a"></label>
-    <label>Sonido Listo <input type="file" name="ready_sound" accept=".mp3,.wav,.m4a"></label>
-    <label>Sonido Cancelado <input type="file" name="cancel_sound" accept=".mp3,.wav,.m4a"></label>
+    <p style="margin:0 0 6px; color:#b7becd; font-size:15px;">Cada pantalla tiene su propio sonido de alerta.</p>
+    <label>🛎️ Sonido pantalla SALÓN <span style="color:#8a95a8;font-size:13px;">(suena en Salón: pedido de cocina entrante y pedido listo)</span> <input type="file" name="station_sound" accept=".mp3,.wav,.m4a"></label>
+    <label>🍳 Sonido pantalla COCINA <span style="color:#8a95a8;font-size:13px;">(suena en Cocina: cualquier pedido nuevo)</span> <input type="file" name="kitchen_sound" accept=".mp3,.wav,.m4a"></label>
+    <label>🚫 Sonido de cancelación <span style="color:#8a95a8;font-size:13px;">(al cancelar una orden)</span> <input type="file" name="cancel_sound" accept=".mp3,.wav,.m4a"></label>
     <label>Volumen <input type="range" min="0" max="1" step="0.1" name="master_volume" value="{{ settings.master_volume if settings else 1.0 }}"></label>
-    <label class="checkbox-row"><input type="checkbox" name="voice_enabled_for_station_orders" {% if settings and settings.voice_enabled_for_station_orders %}checked{% endif %}> Voz femenina para Salon</label>
+    <label class="checkbox-row"><input type="checkbox" name="voice_enabled_for_station_orders" {% if settings and settings.voice_enabled_for_station_orders %}checked{% endif %}> Leer los pedidos en voz alta</label>
     <button class="action primary" type="submit">Guardar audio</button>
   </form>
 </div>
@@ -37,10 +37,9 @@
       {% endif %}
     </div>
   {% endmacro %}
-  {{ row("Salon", settings.station_order_sound_path if settings else None, file_status.station) }}
-  {{ row("Kitchen", settings.kitchen_order_sound_path if settings else None, file_status.kitchen) }}
-  {{ row("Listo", settings.ready_sound_path if settings else None, file_status.ready) }}
-  {{ row("Cancelado", settings.cancel_sound_path if settings else None, file_status.cancel) }}
+  {{ row("Pantalla Salón", settings.station_order_sound_path if settings else None, file_status.station) }}
+  {{ row("Pantalla Cocina", settings.kitchen_order_sound_path if settings else None, file_status.kitchen) }}
+  {{ row("Cancelación", settings.cancel_sound_path if settings else None, file_status.cancel) }}
   <p style="margin-top:16px; font-size:13px; color:#6c757d;">
     Directorio en disco: <code>{{ upload_dir }}</code>
   </p>
