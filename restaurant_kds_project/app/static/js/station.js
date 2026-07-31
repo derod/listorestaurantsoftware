@@ -105,11 +105,21 @@ function currentProductOrder() {
   return list;
 }
 
+function flashTap(btn) {
+  btn.classList.remove("tapped");
+  void btn.offsetWidth;        // reinicia la animación si se toca rápido de nuevo
+  btn.classList.add("tapped");
+}
+
 function bindProductButtons() {
   document.querySelectorAll("#productsGrid .product-btn").forEach(btn => {
     if (btn.dataset.bound) return;
     btn.dataset.bound = "1";
-    btn.addEventListener("click", () => addProduct(btn.dataset.productId, btn.dataset.productName));
+    btn.addEventListener("click", () => {
+      flashTap(btn);
+      addProduct(btn.dataset.productId, btn.dataset.productName);
+    });
+    btn.addEventListener("animationend", () => btn.classList.remove("tapped"));
   });
 }
 

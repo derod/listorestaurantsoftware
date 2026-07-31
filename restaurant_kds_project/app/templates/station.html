@@ -64,6 +64,14 @@
 
 <style>
   .prod-controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+  /* Destello al tocar un producto: confirma visualmente el click. */
+  @keyframes prodTap {
+    0%   { box-shadow:0 0 0 0 rgba(104,211,145,0); }
+    25%  { box-shadow:0 0 0 4px var(--accent), 0 0 24px rgba(104,211,145,0.85); background:rgba(104,211,145,0.20); border-color:var(--accent); transform:scale(0.97); }
+    100% { box-shadow:0 0 0 0 rgba(104,211,145,0); }
+  }
+  .product-btn.tapped { animation:prodTap 0.4s ease; }
+
   .cat-tabs { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
   .cat-tab { background:var(--muted); color:var(--text); border:2px solid var(--border); border-radius:16px; padding:14px 28px; font-size:22px; font-weight:800; cursor:pointer; min-height:56px; }
   .cat-tab.active { background:var(--accent); color:#111; border-color:var(--accent); }
@@ -201,5 +209,5 @@ window.STATION_AUDIO = {
   volume: {{ settings.master_volume if settings else 1.0 }}
 };
 </script>
-<script src="/static/js/station.js?v=comanda-seq"></script>
+<script src="/static/js/station.js?v=tapflash"></script>
 {% endblock %}
