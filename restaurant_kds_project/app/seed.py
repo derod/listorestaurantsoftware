@@ -159,6 +159,35 @@ def seed_master_inventory(db: Session):
     db.commit()
 
 
+# Productos del menú de Desayuno. Se crean con categoría "Desayuno" y precio 0
+# (ajustable en Admin). Los huevos usan solo el código como nombre.
+BREAKFAST_PRODUCTS = [
+    "Pinto Pequeño", "Pinto Mediano", "Pinto Grande",
+    "Tortilla", "Pan", "Natilla", "Tostadas",
+    "HpC", "HpS", "HpCeb", "HF", "HFC", "HpCC",
+    "Salchicha", "Salchichón", "Jamón", "Queso", "Queso frito", "Queso blanco",
+    "Bistec sin cebolla", "Bistec con cebolla",
+    "Pollo a la plancha sin cebolla", "Pollo a la plancha con cebolla",
+    "Agua dulce", "Café negro", "Café con leche", "Jugo natural",
+]
+
+
+def seed_breakfast_products(db: Session):
+    """Crea los productos de Desayuno que falten (idempotente, por nombre).
+    Precio 0 (ajustable en Admin). No reclasifica productos ya existentes."""
+    existing = {n.lower() for (n,) in db.query(Product.name).all()}
+    max_order = db.query(func.max(Product.display_order)).scalar() or 0
+    added = False
+    for name in BREAKFAST_PRODUCTS:
+        if name.lower() in existing:
+            continue
+        max_order += 1
+        db.add(Product(name=name, category="Desayuno", price=0, display_order=max_order, active=True))
+        added = True
+    if added:
+        db.commit()
+
+
 def seed_initial_data(db: Session):
     if db.query(Product).count() == 0:
         for idx, name in enumerate(DEFAULT_PRODUCTS):
@@ -168,3 +197,4 @@ def seed_initial_data(db: Session):
     db.commit()
     seed_ingredient_catalog(db)
     seed_master_inventory(db)
+    seed_breakfast_products(db)
