@@ -532,11 +532,9 @@ function speakSpanish(text) {
     utterance.rate = 1;
     utterance.pitch = 1;
     utterance.onstart = () => { spoken = true; };
-    utterance.onerror = () => { beep(880, 400); };
     speechSynthesis.cancel();
     setTimeout(() => { speechSynthesis.speak(utterance); }, 100);
-    setTimeout(() => { if (!spoken) beep(880, 400); }, 600);
-  } catch (e) { beep(880, 400); }
+  } catch (e) {}
 }
 
 function formatItemsSpeech(items) {
@@ -548,7 +546,10 @@ function formatItemsSpeech(items) {
 let myReadyIds = new Set();
 let firstPoll = true;
 
+let _kitchenPolling = false;
 async function pollKitchenInternal() {
+  if (_kitchenPolling) return;   // evita sondeos solapados (doble alerta)
+  _kitchenPolling = true;
   try {
     const res = await fetch("/api/orders/active");
     const all = await res.json();
@@ -566,6 +567,7 @@ async function pollKitchenInternal() {
     fetchRecent();
     pollReadyRecent();
   } catch (e) {}
+  finally { _kitchenPolling = false; }
 }
 
 /* ─── Aviso "Pedido listo" (cuando cocina despacha una orden de salón) ──
@@ -573,7 +575,10 @@ async function pollKitchenInternal() {
    detectamos con un feed de despachadas recientes, no en la lista activa. */
 let readyAlerted = new Set();
 let firstReadyPoll = true;
+let _readyPolling = false;
 async function pollReadyRecent() {
+  if (_readyPolling) return;   // evita sondeos solapados (doble alerta)
+  _readyPolling = true;
   try {
     const res = await fetch("/api/orders/ready-recent?minutes=5");
     const list = await res.json();
@@ -586,6 +591,7 @@ async function pollReadyRecent() {
     });
     firstReadyPoll = false;
   } catch (e) {}
+  finally { _readyPolling = false; }
 }
 
 /* ─── Órdenes recientes (las que envió este agente) ─────────────────── */
