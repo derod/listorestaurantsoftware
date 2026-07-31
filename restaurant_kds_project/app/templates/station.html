@@ -111,6 +111,7 @@
   .rb-despachado { background:rgba(120,130,150,0.18); color:#9aa6bd; }
   .rb-cancelado { background:rgba(228,91,91,0.2); color:var(--red); }
   .recent-items { font-size:17px; color:#cfd5e1; }
+  .recent-uber { display:inline-block; align-self:flex-start; background:#ff7a1a; color:#111; font-weight:900; font-size:15px; padding:4px 12px; border-radius:999px; box-shadow:0 0 10px rgba(255,122,26,0.7); }
   .recent-toggle { margin-top:12px; width:100%; min-height:52px; border:1px solid var(--border); background:var(--muted); color:var(--text); border-radius:14px; font-size:18px; font-weight:700; cursor:pointer; }
   .recent-toggle:hover { border-color:var(--accent); }
 
@@ -200,5 +201,5 @@ window.STATION_AUDIO = {
   volume: {{ settings.master_volume if settings else 1.0 }}
 };
 </script>
-<script src="/static/js/station.js?v=uber"></script>
+<script src="/static/js/station.js?v=uber2"></script>
 {% endblock %}

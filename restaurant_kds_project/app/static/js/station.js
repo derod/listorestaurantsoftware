@@ -671,12 +671,16 @@ function renderRecent() {
     const items = o.items.map(i => `${i.quantity} ${i.product_name}`).join(", ");
     const cancelBtn = CANCELABLE.has(o.status)
       ? `<button class="recent-row-cancel" data-cancel-id="${o.id}">Cancelar</button>` : "";
+    const uberTag = o.order_label
+      ? `<div class="recent-uber">🛵 UBER · ${String(o.order_label).replace(/[<>]/g, "")}</div>`
+      : "";
     return `
       <div class="recent-row">
         <div class="recent-row-top">
           <span class="recent-id">#${o.id} <span class="recent-time">${time}</span></span>
           ${recentBadge(o.status)}
         </div>
+        ${uberTag}
         <div class="recent-items">${items}</div>
         ${cancelBtn}
       </div>`;
