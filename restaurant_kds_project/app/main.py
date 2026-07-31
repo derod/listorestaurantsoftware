@@ -56,6 +56,9 @@ def _ensure_schema():
     if "price" not in prod_cols:
         with engine.begin() as conn:
             conn.execute(text("ALTER TABLE products ADD COLUMN price FLOAT DEFAULT 0"))
+    if "category" not in prod_cols:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE products ADD COLUMN category VARCHAR(40) DEFAULT 'General'"))
     if "audio_settings" in insp.get_table_names():
         audio_cols = {c["name"] for c in insp.get_columns("audio_settings")}
         if "tax_rate" not in audio_cols:

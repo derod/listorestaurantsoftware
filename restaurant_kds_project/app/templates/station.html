@@ -22,9 +22,14 @@
       </div>
       <button type="button" class="action" id="reorderBtn" style="min-height:56px;font-size:22px;">↕ Ordenar</button>
     </div>
+    <div class="cat-tabs" id="catTabs">
+      {% for c in categories %}
+      <button type="button" class="cat-tab {{ 'active' if loop.first else '' }}" data-cat="{{ c }}">{{ c }}</button>
+      {% endfor %}
+    </div>
     <div class="products-grid" id="productsGrid">
       {% for product in products %}
-      <button class="product-btn" data-product-id="{{ product.id }}" data-product-name="{{ product.name }}">
+      <button class="product-btn" data-product-id="{{ product.id }}" data-product-name="{{ product.name }}" data-category="{{ product.category or 'General' }}">
         {% if product.image_path %}<img src="{{ product.image_path }}" alt="" style="width:100%;height:110px;object-fit:cover;border-radius:12px;margin-bottom:8px;">{% endif %}
         <span>{{ product.name }}</span>
       </button>
@@ -54,6 +59,11 @@
 
 <style>
   .prod-controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+  .cat-tabs { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+  .cat-tab { background:var(--muted); color:var(--text); border:2px solid var(--border); border-radius:16px; padding:14px 28px; font-size:22px; font-weight:800; cursor:pointer; min-height:56px; }
+  .cat-tab.active { background:var(--accent); color:#111; border-color:var(--accent); }
+  .cat-tab:active { transform:scale(0.98); }
+
   .sort-toggle { display:flex; gap:0; border:1px solid var(--border); border-radius:14px; overflow:hidden; }
   .sort-btn { background:var(--muted); color:var(--text); border:none; padding:12px 20px; font-size:20px; font-weight:800; cursor:pointer; }
   .sort-btn.active { background:var(--accent); color:#111; }
@@ -180,5 +190,5 @@ window.STATION_AUDIO = {
   volume: {{ settings.master_volume if settings else 1.0 }}
 };
 </script>
-<script src="/static/js/station.js?v=ws-instant"></script>
+<script src="/static/js/station.js?v=categorias"></script>
 {% endblock %}

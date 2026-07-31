@@ -48,7 +48,7 @@ def serialize_order(order: Order):
 @router.get("/products")
 def products(db: Session = Depends(get_db)):
     rows = db.query(Product).filter(Product.active == True).order_by(Product.display_order.asc()).all()
-    return [{"id": p.id, "name": p.name, "active": p.active, "image_path": p.image_path, "price": p.price or 0} for p in rows]
+    return [{"id": p.id, "name": p.name, "active": p.active, "image_path": p.image_path, "price": p.price or 0, "category": p.category or "General"} for p in rows]
 
 
 class MoveDir(BaseModel):

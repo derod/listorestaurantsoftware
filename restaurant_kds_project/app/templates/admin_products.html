@@ -219,6 +219,21 @@
   }
   .ap-price-input:focus { border-color: #ff8c42; }
 
+  .ap-cat-select {
+    height: 54px;
+    padding: 0 14px;
+    border-radius: 14px;
+    border: 1px solid #1c2538;
+    background: #0e1117;
+    color: #e8edf8;
+    font-size: 18px;
+    font-weight: 700;
+    outline: none;
+    cursor: pointer;
+    min-width: 200px;
+  }
+  .ap-cat-select:focus { border-color: #ff8c42; }
+
   .ap-price-save {
     height: 58px;
     padding: 0 22px;
@@ -593,6 +608,17 @@
                 <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                 Guardar
               </button>
+            </form>
+          </div>
+
+          <div>
+            <div class="ap-price-label">Categoría</div>
+            <form method="post" action="/admin/products/{{ p.id }}/category">
+              <select name="category" class="ap-cat-select" onchange="this.form.submit()">
+                {% for c in categories %}
+                <option value="{{ c }}" {{ 'selected' if (p.category or 'General') == c else '' }}>{{ c }}</option>
+                {% endfor %}
+              </select>
             </form>
           </div>
 

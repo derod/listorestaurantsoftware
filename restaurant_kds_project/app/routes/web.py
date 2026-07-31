@@ -222,6 +222,7 @@ def station_a(request: Request, db: Session = Depends(get_db)):
         {
             "request": request,
             "products": products,
+            "categories": PRODUCT_CATEGORIES,
             "source_role": "station_a",
             "page_title": "Salon",
             "waiter_name": waiter_name,
@@ -395,12 +396,16 @@ def admin_logs(request: Request, db: Session = Depends(get_db)):
     )
 
 
+# Categorías de producto (menús) mostradas como pestañas en el Salón.
+PRODUCT_CATEGORIES = ["General", "Desayuno"]
+
+
 @router.get("/admin/products")
 def admin_products(request: Request, db: Session = Depends(get_db)):
     if not require_admin(request):
         return RedirectResponse(url="/admin/login")
     products = db.query(Product).order_by(Product.display_order.asc(), Product.name.asc()).all()
-    return templates.TemplateResponse("admin_products.html", {"request": request, "products": products, "page_title": "Admin Products"})
+    return templates.TemplateResponse("admin_products.html", {"request": request, "products": products, "categories": PRODUCT_CATEGORIES, "page_title": "Admin Products"})
 
 
 @router.post("/admin/products")
@@ -479,6 +484,17 @@ def rename_product(product_id: int, request: Request, name: str = Form(...), db:
         if name:
             product.name = name
             db.commit()
+    return RedirectResponse(url="/admin/products", status_code=303)
+
+
+@router.post("/admin/products/{product_id}/category")
+def set_product_category(product_id: int, request: Request, category: str = Form(...), db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if product and category in PRODUCT_CATEGORIES:
+        product.category = category
+        db.commit()
     return RedirectResponse(url="/admin/products", status_code=303)
 
 

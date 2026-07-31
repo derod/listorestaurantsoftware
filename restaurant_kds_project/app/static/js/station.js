@@ -73,6 +73,7 @@ async function submitOrder() {
 let stationProducts = [];
 let stationSort = "manual";    // "manual" | "az"
 let stationReorder = false;
+let stationCategory = "General";  // pestaña de categoría activa
 
 function productImg(p) {
   return p.image_path ? `<img src="${p.image_path}" alt="" style="width:100%;height:110px;object-fit:cover;border-radius:12px;margin-bottom:8px;">` : "";
@@ -89,6 +90,17 @@ function bindProductButtons() {
     if (btn.dataset.bound) return;
     btn.dataset.bound = "1";
     btn.addEventListener("click", () => addProduct(btn.dataset.productId, btn.dataset.productName));
+  });
+}
+
+// Muestra solo los productos de la categoría (pestaña) activa. En modo
+// reordenar no se filtra (se ven todos para poder ordenarlos).
+function applyCategoryFilter() {
+  const grid = document.getElementById("productsGrid");
+  if (!grid || stationReorder) return;
+  grid.querySelectorAll(".product-btn").forEach(btn => {
+    const c = btn.dataset.category || "General";
+    btn.style.display = (c === stationCategory) ? "" : "none";
   });
 }
 
@@ -115,9 +127,10 @@ function renderProducts() {
   } else {
     grid.classList.remove("reorder-active");
     grid.innerHTML = list.map(p =>
-      `<button class="product-btn" data-product-id="${p.id}" data-product-name="${p.name}">${productImg(p)}<span>${p.name}</span></button>`
+      `<button class="product-btn" data-product-id="${p.id}" data-product-name="${p.name}" data-category="${p.category || 'General'}">${productImg(p)}<span>${p.name}</span></button>`
     ).join("");
     bindProductButtons();
+    applyCategoryFilter();
   }
 }
 
@@ -208,6 +221,18 @@ document.querySelectorAll(".sort-btn").forEach(b => {
     renderProducts();
   });
 });
+
+// Pestañas de categoría (General / Desayuno / …)
+document.querySelectorAll(".cat-tab").forEach(t => {
+  t.addEventListener("click", () => {
+    if (stationReorder) return;
+    stationCategory = t.dataset.cat;
+    document.querySelectorAll(".cat-tab").forEach(x => x.classList.toggle("active", x === t));
+    applyCategoryFilter();
+  });
+});
+// Filtro inicial sobre los botones renderizados por el servidor
+applyCategoryFilter();
 
 const _reorderBtn = document.getElementById("reorderBtn");
 if (_reorderBtn) {

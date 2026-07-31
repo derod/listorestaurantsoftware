@@ -17,6 +17,7 @@ class Product(Base):
     display_order: Mapped[int] = mapped_column(Integer, default=0)
     image_path: Mapped[str | None] = mapped_column(String(300), nullable=True)
     price: Mapped[float] = mapped_column(Float, default=0)
+    category: Mapped[str] = mapped_column(String(40), default="General")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
 
 
