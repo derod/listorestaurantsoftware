@@ -124,18 +124,21 @@ function renderProducts() {
   const list = currentProductOrder();
   if (stationReorder) {
     grid.classList.add("reorder-active");
+    // Reordenar SOLO los productos de la pestaña activa (Uber reutiliza Desayuno).
+    const shownCat = (stationCategory === "Uber") ? "Desayuno" : stationCategory;
+    const rlist = list.filter(p => (p.category || "General") === shownCat);
     grid.innerHTML =
-      '<div class="reorder-hint">Arrastra ⠿ para reordenar (o usa ▲▼). El orden se guarda solo.</div>' +
+      `<div class="reorder-hint">Reordenando <strong>${shownCat}</strong>. Arrastra ⠿ (o usa ▲▼). El orden se guarda solo.</div>` +
       '<div class="reorder-list">' +
-      list.map((p, i) => `
+      (rlist.length ? rlist.map((p, i) => `
         <div class="reorder-item" data-id="${p.id}">
           <span class="reorder-handle">⠿</span>
           <span class="reorder-name">${p.name}</span>
           <span class="reorder-item-arrows">
             <button class="reorder-arrow" data-move="up" data-id="${p.id}" ${i === 0 ? "disabled" : ""}>▲</button>
-            <button class="reorder-arrow" data-move="down" data-id="${p.id}" ${i === list.length - 1 ? "disabled" : ""}>▼</button>
+            <button class="reorder-arrow" data-move="down" data-id="${p.id}" ${i === rlist.length - 1 ? "disabled" : ""}>▼</button>
           </span>
-        </div>`).join("") +
+        </div>`).join("") : '<div class="recent-empty">No hay productos en esta categoría.</div>') +
       '</div>';
     setupDragSort();
   } else {
@@ -200,7 +203,12 @@ async function commitReorder(listEl) {
       body: JSON.stringify({ ids })
     });
     if (!res.ok) throw new Error();
-    stationProducts.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+    // Reordena en su lugar solo los productos de la categoría (los ids enviados),
+    // dejando el resto donde estaba.
+    const idSet = new Set(ids);
+    const reordered = ids.map(id => stationProducts.find(p => p.id === id)).filter(Boolean);
+    let ri = 0;
+    stationProducts = stationProducts.map(p => idSet.has(p.id) ? reordered[ri++] : p);
   } catch (e) {
     toast("No se pudo guardar el orden.", "error");
     await refreshProductsGrid();
@@ -265,9 +273,23 @@ if (_reorderBtn) {
 
 const _productsGridEl = document.getElementById("productsGrid");
 if (_productsGridEl) {
-  _productsGridEl.addEventListener("click", (e) => {
+  _productsGridEl.addEventListener("click", async (e) => {
     const arrow = e.target.closest("[data-move]");
-    if (arrow) { e.stopPropagation(); moveProduct(arrow.dataset.id, arrow.dataset.move); }
+    if (!arrow) return;
+    e.stopPropagation();
+    const item = arrow.closest(".reorder-item");
+    const listEl = document.querySelector("#productsGrid .reorder-list");
+    if (!item || !listEl) return;
+    // Mueve dentro de la lista visible (ya filtrada por categoría) y guarda.
+    if (arrow.dataset.move === "up" && item.previousElementSibling) {
+      listEl.insertBefore(item, item.previousElementSibling);
+    } else if (arrow.dataset.move === "down" && item.nextElementSibling) {
+      listEl.insertBefore(item.nextElementSibling, item);
+    } else {
+      return;
+    }
+    await commitReorder(listEl);
+    renderProducts();   // refresca los estados ▲▼ (primero/último) en el nuevo orden
   });
 }
 
