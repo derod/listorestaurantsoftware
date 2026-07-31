@@ -84,16 +84,22 @@ def change_order_status(db: Session, order: Order, status: str, actor_role: str)
 
 
 def _decrement_inventory_for_order(db: Session, order: Order, actor_role: str):
+    # Agregar por producto: una comanda secuencial (Desayuno/Uber) puede tener el
+    # mismo producto en varias líneas. Sin agregar, se intentaría crear dos filas
+    # Inventory con el mismo product_id (unique) -> IntegrityError al despachar.
+    totals: dict[int, int] = {}
     for item in order.items:
-        inv = db.query(Inventory).filter(Inventory.product_id == item.product_id).first()
+        totals[item.product_id] = totals.get(item.product_id, 0) + item.quantity
+    for product_id, qty in totals.items():
+        inv = db.query(Inventory).filter(Inventory.product_id == product_id).first()
         old_qty = inv.quantity if inv else 0
-        new_qty = max(0, old_qty - item.quantity)
+        new_qty = max(0, old_qty - qty)
         if inv:
             inv.quantity = new_qty
         else:
-            db.add(Inventory(product_id=item.product_id, quantity=new_qty))
+            db.add(Inventory(product_id=product_id, quantity=new_qty))
         db.add(InventoryLog(
-            product_id=item.product_id,
+            product_id=product_id,
             old_quantity=old_qty,
             new_quantity=new_qty,
             actor_name=f"auto:{actor_role}:order#{order.id}",
