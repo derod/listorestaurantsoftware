@@ -14,14 +14,6 @@
 <div class="screen two-panel">
   <section class="panel products-panel">
     <h1 style="display:none;">{{ page_title }}</h1>
-    <div class="prod-controls">
-      <button class="action" id="newProductBtn" style="background:rgba(77,163,255,0.18);color:var(--blue);min-height:56px;font-size:22px;">+ Nuevo producto</button>
-      <div class="sort-toggle">
-        <button type="button" class="sort-btn active" data-sort="manual">Manual</button>
-        <button type="button" class="sort-btn" data-sort="az">A–Z</button>
-      </div>
-      <button type="button" class="action" id="reorderBtn" style="min-height:56px;font-size:22px;">↕ Ordenar</button>
-    </div>
     <div class="cat-tabs" id="catTabs">
       {% for c in categories %}
       <button type="button" class="cat-tab {{ 'active' if loop.first else '' }}" data-cat="{{ c }}">{{ c }}</button>
@@ -39,6 +31,14 @@
         <span>{{ product.name }}</span>
       </button>
       {% endfor %}
+    </div>
+    <div class="prod-controls">
+      <button class="action" id="newProductBtn" style="background:rgba(77,163,255,0.18);color:var(--blue);min-height:56px;font-size:22px;">+ Nuevo producto</button>
+      <div class="sort-toggle">
+        <button type="button" class="sort-btn active" data-sort="manual">Manual</button>
+        <button type="button" class="sort-btn" data-sort="az">A–Z</button>
+      </div>
+      <button type="button" class="action" id="reorderBtn" style="min-height:56px;font-size:22px;">↕ Ordenar</button>
     </div>
   </section>
   <aside class="panel summary-panel">
@@ -63,7 +63,7 @@
 </div>
 
 <style>
-  .prod-controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+  .prod-controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:16px; padding-top:14px; border-top:1px solid var(--border); flex-shrink:0; }
   /* Destello al tocar un producto: confirma visualmente el click. */
   @keyframes prodTap {
     0%   { box-shadow:0 0 0 0 rgba(104,211,145,0); }
