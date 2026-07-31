@@ -26,6 +26,11 @@
       {% for c in categories %}
       <button type="button" class="cat-tab {{ 'active' if loop.first else '' }}" data-cat="{{ c }}">{{ c }}</button>
       {% endfor %}
+      <button type="button" class="cat-tab cat-tab-uber" data-cat="Uber">🛵 Uber</button>
+    </div>
+    <div class="uber-name-wrap" id="uberNameWrap" style="display:none;">
+      <label for="uberOrderName">Nombre de la orden (Uber)</label>
+      <input type="text" id="uberOrderName" maxlength="120" autocomplete="off" placeholder="Ej: Juan / #Uber123">
     </div>
     <div class="products-grid" id="productsGrid">
       {% for product in products %}
@@ -63,6 +68,11 @@
   .cat-tab { background:var(--muted); color:var(--text); border:2px solid var(--border); border-radius:16px; padding:14px 28px; font-size:22px; font-weight:800; cursor:pointer; min-height:56px; }
   .cat-tab.active { background:var(--accent); color:#111; border-color:var(--accent); }
   .cat-tab:active { transform:scale(0.98); }
+  .cat-tab-uber.active { background:#ff7a1a; border-color:#ff7a1a; color:#111; box-shadow:0 0 14px rgba(255,122,26,0.7); }
+  .uber-name-wrap { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; background:rgba(255,122,26,0.10); border:2px solid #ff7a1a; border-radius:16px; padding:16px; }
+  .uber-name-wrap label { font-size:18px; font-weight:800; color:#ff9a4d; }
+  .uber-name-wrap input { background:#10141b; border:1px solid var(--border); border-radius:12px; padding:16px; font-size:22px; color:#fff; font-family:inherit; outline:none; }
+  .uber-name-wrap input:focus { border-color:#ff7a1a; }
 
   .sort-toggle { display:flex; gap:0; border:1px solid var(--border); border-radius:14px; overflow:hidden; }
   .sort-btn { background:var(--muted); color:var(--text); border:none; padding:12px 20px; font-size:20px; font-weight:800; cursor:pointer; }
@@ -190,5 +200,5 @@ window.STATION_AUDIO = {
   volume: {{ settings.master_volume if settings else 1.0 }}
 };
 </script>
-<script src="/static/js/station.js?v=categorias"></script>
+<script src="/static/js/station.js?v=uber"></script>
 {% endblock %}

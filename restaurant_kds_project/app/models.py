@@ -38,6 +38,7 @@ class Order(Base):
     requires_acceptance: Mapped[bool] = mapped_column(Boolean, default=True)
     waiter_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("waiters.id"), nullable=True)
     waiter_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    order_label: Mapped[str | None] = mapped_column(String(120), nullable=True)  # nombre de la orden (ej. Uber)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now, index=True)
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     preparing_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

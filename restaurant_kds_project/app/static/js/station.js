@@ -57,15 +57,24 @@ function toast(message, type) {
 async function submitOrder() {
   const items = [...orderMap.values()].filter(x => x.quantity > 0).map(x => ({ product_id: x.product_id, quantity: x.quantity }));
   if (!items.length) return toast("Agrega productos primero.", "error");
+  // En modo Uber el nombre de la orden es obligatorio.
+  let orderLabel = null;
+  if (stationCategory === "Uber") {
+    const nameEl = document.getElementById("uberOrderName");
+    orderLabel = ((nameEl && nameEl.value) || "").trim();
+    if (!orderLabel) { toast("Escribe el nombre de la orden Uber.", "error"); if (nameEl) nameEl.focus(); return; }
+  }
   const res = await fetch("/api/orders", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ source_role: window.KDS_CONFIG.sourceRole, items, waiter_id: window.KDS_CONFIG.waiterId, waiter_name: window.KDS_CONFIG.waiterName })
+    body: JSON.stringify({ source_role: window.KDS_CONFIG.sourceRole, items, waiter_id: window.KDS_CONFIG.waiterId, waiter_name: window.KDS_CONFIG.waiterName, order_label: orderLabel })
   });
   if (!res.ok) return toast("No se pudo enviar.", "error");
   orderMap.clear();
   orderSequence.length = 0;
   renderSummary();
+  const nameEl = document.getElementById("uberOrderName");
+  if (nameEl) nameEl.value = "";
   toast("Pedido enviado.");
   fetchRecent();
 }
@@ -98,10 +107,15 @@ function bindProductButtons() {
 function applyCategoryFilter() {
   const grid = document.getElementById("productsGrid");
   if (!grid || stationReorder) return;
+  // "Uber" es un modo de delivery: reutiliza los productos de "Desayuno".
+  const shown = (stationCategory === "Uber") ? "Desayuno" : stationCategory;
   grid.querySelectorAll(".product-btn").forEach(btn => {
     const c = btn.dataset.category || "General";
-    btn.style.display = (c === stationCategory) ? "" : "none";
+    btn.style.display = (c === shown) ? "" : "none";
   });
+  // El campo "Nombre de la orden" solo aparece en modo Uber.
+  const wrap = document.getElementById("uberNameWrap");
+  if (wrap) wrap.style.display = (stationCategory === "Uber") ? "" : "none";
 }
 
 function renderProducts() {

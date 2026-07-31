@@ -420,6 +420,11 @@ function renderOrders(orders) {
       ? `<div class="order-waiter-big">Agente: <strong>${order.waiter_name}</strong></div>`
       : "";
 
+    /* Uber (pedido de delivery con nombre) — etiqueta naranja neón */
+    const uberHtml = order.order_label
+      ? `<div class="order-uber-big">🛵 UBER · ${String(order.order_label).replace(/[<>]/g, "")}</div>`
+      : "";
+
     /* Buttons depend on status */
     let buttonsHtml = "";
     if (status === "nuevo" || status === "aceptado") {
@@ -448,6 +453,7 @@ function renderOrders(orders) {
           <div class="order-badge-big ${badgeColor}">${badgeLabel}</div>
           <div class="order-status-big ${status === 'preparando' ? 'blink-prep' : ''}">${statusLabel}</div>
           ${waiterHtml}
+          ${uberHtml}
         </div>
         ${timerHtml}
       </div>

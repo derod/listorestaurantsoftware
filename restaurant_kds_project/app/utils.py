@@ -6,9 +6,9 @@ from .models import Order, OrderItem, OrderEvent, Inventory, InventoryLog, cr_no
 ALLOWED_STATUSES = ["nuevo", "aceptado", "preparando", "listo", "despachado", "cancelado"]
 
 
-def create_order(db: Session, source_role: str, items: list[dict], waiter_id: int | None = None, waiter_name: str | None = None):
+def create_order(db: Session, source_role: str, items: list[dict], waiter_id: int | None = None, waiter_name: str | None = None, order_label: str | None = None):
     requires_acceptance = source_role == "station_a"
-    order = Order(source_role=source_role, requires_acceptance=requires_acceptance, waiter_id=waiter_id, waiter_name=waiter_name)
+    order = Order(source_role=source_role, requires_acceptance=requires_acceptance, waiter_id=waiter_id, waiter_name=waiter_name, order_label=order_label)
     db.add(order)
     db.flush()
     for item in items:

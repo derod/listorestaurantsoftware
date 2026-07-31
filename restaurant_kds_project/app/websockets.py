@@ -87,6 +87,7 @@ def _serialize_order(order) -> dict:
         "status": order.status,
         "source_role": order.source_role,
         "waiter_name": order.waiter_name,
+        "order_label": order.order_label,
         "items": [
             {
                 "name": item.product.name if item.product else str(item.product_id),

@@ -12,6 +12,7 @@ class OrderCreate(BaseModel):
     items: List[OrderItemCreate]
     waiter_id: Optional[int] = None
     waiter_name: Optional[str] = None
+    order_label: Optional[str] = None
 
 
 class OrderUpdate(BaseModel):

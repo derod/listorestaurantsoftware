@@ -21,6 +21,7 @@ def serialize_order(order: Order):
         "id": order.id,
         "source_role": order.source_role,
         "status": order.status,
+        "order_label": order.order_label,
         "requires_acceptance": order.requires_acceptance,
         "created_at": order.created_at.isoformat() + "Z",
         "accepted_at": (order.accepted_at.isoformat() + "Z") if order.accepted_at else None,
@@ -121,7 +122,8 @@ def create_order_endpoint(payload: OrderCreate, db: Session = Depends(get_db)):
     for item in payload.items:
         if item.product_id not in valid_ids:
             raise HTTPException(400, f"Invalid product {item.product_id}")
-    order = create_order(db, payload.source_role, [item.model_dump() for item in payload.items if item.quantity > 0], waiter_id=payload.waiter_id, waiter_name=payload.waiter_name)
+    label = (payload.order_label or "").strip() or None
+    order = create_order(db, payload.source_role, [item.model_dump() for item in payload.items if item.quantity > 0], waiter_id=payload.waiter_id, waiter_name=payload.waiter_name, order_label=label)
     return serialize_order(order)
 
 

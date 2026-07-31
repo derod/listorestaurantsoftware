@@ -97,6 +97,11 @@ def _ensure_schema():
         if "source" not in exp_cols:
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE expenses ADD COLUMN source VARCHAR(40)"))
+    if "orders" in insp.get_table_names():
+        ord_cols = {c["name"] for c in insp.get_columns("orders")}
+        if "order_label" not in ord_cols:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE orders ADD COLUMN order_label VARCHAR(120)"))
     # Performance indexes for orders table
     existing_indexes = {idx["name"] for idx in insp.get_indexes("orders")} if "orders" in insp.get_table_names() else set()
     with engine.begin() as conn:
