@@ -94,11 +94,25 @@
   .recent-toggle { margin-top:12px; width:100%; min-height:52px; border:1px solid var(--border); background:var(--muted); color:var(--text); border-radius:14px; font-size:18px; font-weight:700; cursor:pointer; }
   .recent-toggle:hover { border-color:var(--accent); }
 
-  /* Panel de resumen CLAVADO a la pantalla (position: fixed) en todo momento.
-     El contenido del salón reserva un canal a la derecha para no quedar debajo.
-     Solo en 2 columnas (≥761px); en móvil queda en flujo normal. */
-  @media (min-width: 761px) {
-    :root { --sp-w: clamp(320px, 32vw, 440px); }
+  /* Tablet / iPad (761–1199px): panel PEGADO (sticky). Fluye en su columna al
+     ancho natural y se ve completo; evita el bug de iOS Safari con
+     position:fixed + bottom que corta la parte de abajo del panel. */
+  @media (min-width: 761px) and (max-width: 1199px) {
+    .screen.two-panel { align-items: start; }
+    .summary-panel {
+      position: sticky;
+      top: 12px;
+      align-self: start;
+      max-height: calc(100vh - 24px);
+      overflow-y: auto;
+    }
+  }
+
+  /* Desktop grande (≥1200px): panel CLAVADO a la pantalla (fixed). Hay ancho de
+     sobra y no existe la barra de Safari, así que el fixed se ve bien. El
+     contenido reserva un canal a la derecha para no quedar debajo. */
+  @media (min-width: 1200px) {
+    :root { --sp-w: clamp(340px, 30vw, 460px); }
     .station-wrap { padding-right: calc(var(--sp-w) + 40px); }
     .screen.two-panel { display: block; }
     .summary-panel {
