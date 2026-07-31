@@ -1,31 +1,42 @@
-const orderMap = new Map();
-const orderSequence = [];
+// Carrito como lista de LÍNEAS en secuencia. Dos modos según la pestaña:
+//  - General: agrupa por producto (tocar A, B, A → A ×2). "Pedir insumos".
+//  - Desayuno/Uber: comanda secuencial; agrupa solo toques CONSECUTIVOS del
+//    mismo producto; volver a un producto anterior crea una línea nueva.
+let lines = [];      // [{product_id, name, quantity}]
+let addStack = [];   // refs de línea, una por unidad agregada (para "Quitar último")
 
 function renderSummary() {
   const summary = document.getElementById("orderSummary");
   const total = document.getElementById("totalItems");
-  const entries = [...orderMap.values()];
-  if (!entries.length) {
+  if (!lines.length) {
     summary.innerHTML = "No hay productos.";
     summary.classList.add("empty-state");
     total.textContent = "0";
     return;
   }
   summary.classList.remove("empty-state");
-  summary.innerHTML = entries.map(item => `
+  summary.innerHTML = lines.map(item => `
     <div class="summary-item">
       <span>${item.name}</span>
       <strong>${item.quantity}</strong>
     </div>
   `).join("");
-  total.textContent = entries.reduce((acc, item) => acc + item.quantity, 0);
+  total.textContent = lines.reduce((acc, item) => acc + item.quantity, 0);
 }
 
 function addProduct(id, name) {
-  const key = String(id);
-  if (!orderMap.has(key)) orderMap.set(key, { product_id: id, name, quantity: 0 });
-  orderMap.get(key).quantity += 1;
-  orderSequence.push(key);
+  const pid = Number(id);
+  const sequential = (stationCategory === "Desayuno" || stationCategory === "Uber");
+  let line = null;
+  if (sequential) {
+    const last = lines[lines.length - 1];
+    if (last && last.product_id === pid) line = last;   // solo agrupa consecutivos
+  } else {
+    line = lines.find(l => l.product_id === pid);        // General: agrupa en cualquier lado
+  }
+  if (!line) { line = { product_id: pid, name, quantity: 0 }; lines.push(line); }
+  line.quantity += 1;
+  addStack.push(line);
   renderSummary();
 }
 
@@ -55,7 +66,7 @@ function toast(message, type) {
 }
 
 async function submitOrder() {
-  const items = [...orderMap.values()].filter(x => x.quantity > 0).map(x => ({ product_id: x.product_id, quantity: x.quantity }));
+  const items = lines.filter(x => x.quantity > 0).map(x => ({ product_id: x.product_id, quantity: x.quantity }));
   if (!items.length) return toast("Agrega productos primero.", "error");
   // En modo Uber el nombre de la orden es obligatorio.
   let orderLabel = null;
@@ -70,8 +81,8 @@ async function submitOrder() {
     body: JSON.stringify({ source_role: window.KDS_CONFIG.sourceRole, items, waiter_id: window.KDS_CONFIG.waiterId, waiter_name: window.KDS_CONFIG.waiterName, order_label: orderLabel })
   });
   if (!res.ok) return toast("No se pudo enviar.", "error");
-  orderMap.clear();
-  orderSequence.length = 0;
+  lines = [];
+  addStack = [];
   renderSummary();
   const nameEl = document.getElementById("uberOrderName");
   if (nameEl) nameEl.value = "";
@@ -323,12 +334,15 @@ document.getElementById("newProductCancelBtn").addEventListener("click", closeNe
 document.getElementById("newProductSaveBtn").addEventListener("click", saveNewProduct);
 newProductInput.addEventListener("keydown", (e) => { if (e.key === "Enter") saveNewProduct(); });
 document.getElementById("sendBtn").addEventListener("click", submitOrder);
-document.getElementById("clearBtn").addEventListener("click", () => { orderMap.clear(); orderSequence.length = 0; renderSummary(); });
+document.getElementById("clearBtn").addEventListener("click", () => { lines = []; addStack = []; renderSummary(); });
 document.getElementById("undoBtn").addEventListener("click", () => {
-  const last = orderSequence.pop();
-  if (!last || !orderMap.has(last)) return;
-  orderMap.get(last).quantity -= 1;
-  if (orderMap.get(last).quantity <= 0) orderMap.delete(last);
+  const line = addStack.pop();
+  if (!line) return;
+  line.quantity -= 1;
+  if (line.quantity <= 0) {
+    const idx = lines.indexOf(line);
+    if (idx !== -1) lines.splice(idx, 1);
+  }
   renderSummary();
 });
 renderSummary();
