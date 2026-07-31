@@ -13,6 +13,9 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font-family: Arial, sans-serif; }
+/* Evita el doble-tap-zoom de iOS Safari en elementos táctiles (mantiene el
+   pinch-zoom de dos dedos). Clave en el POS/KDS donde se toca rápido. */
+button, a, label, select, input { touch-action: manipulation; }
 .topbar { display:flex; justify-content:space-between; align-items:center; padding:16px 24px; background:#12151b; border-bottom:1px solid var(--border); }
 .brand { font-size: 28px; font-weight: 700; }
 .nav { display:flex; gap:16px; flex-wrap:wrap; }
