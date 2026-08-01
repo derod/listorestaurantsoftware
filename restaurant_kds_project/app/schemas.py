@@ -13,6 +13,7 @@ class OrderCreate(BaseModel):
     waiter_id: Optional[int] = None
     waiter_name: Optional[str] = None
     order_label: Optional[str] = None
+    table_id: Optional[int] = None
 
 
 class OrderUpdate(BaseModel):

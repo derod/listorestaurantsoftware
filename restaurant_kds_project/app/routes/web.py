@@ -9,7 +9,7 @@ from pathlib import Path
 import shutil
 
 from ..database import get_db, DATA_DIR
-from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, ContactMessage, AccessLog, WorkSession, Ingredient, Recipe, RecipeItem, InventoryMovement, Expense, FixedExpense, Purchase, PurchaseItem, cr_now
+from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, ContactMessage, AccessLog, WorkSession, Ingredient, Recipe, RecipeItem, InventoryMovement, Expense, FixedExpense, Purchase, PurchaseItem, Table, cr_now
 from ..inventory_service import create_inventory_movement
 from pydantic import BaseModel
 from ..utils import duration_seconds
@@ -217,12 +217,14 @@ def station_a(request: Request, db: Session = Depends(get_db)):
     waiter_id, waiter_name = w
     products = db.query(Product).filter(Product.active == True).order_by(Product.display_order.asc(), Product.name.asc()).all()
     settings = db.query(AudioSettings).first()
+    tables = db.query(Table).order_by(Table.number.asc()).all()
     return templates.TemplateResponse(
         "station.html",
         {
             "request": request,
             "products": products,
             "categories": PRODUCT_CATEGORIES,
+            "tables": tables,
             "source_role": "station_a",
             "page_title": "Salon",
             "waiter_name": waiter_name,
@@ -230,6 +232,13 @@ def station_a(request: Request, db: Session = Depends(get_db)):
             "settings": settings,
         },
     )
+
+
+# ─── mesas (vista de piso, accesible por todos) ───────────────────────────────
+
+@router.get("/mesas")
+def mesas_page(request: Request):
+    return templates.TemplateResponse("mesas.html", {"request": request, "page_title": "Mesas"})
 
 
 # ─── kitchen login ────────────────────────────────────────────────────────────

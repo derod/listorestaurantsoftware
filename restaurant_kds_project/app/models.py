@@ -39,6 +39,7 @@ class Order(Base):
     waiter_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("waiters.id"), nullable=True)
     waiter_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     order_label: Mapped[str | None] = mapped_column(String(120), nullable=True)  # nombre de la orden (ej. Uber)
+    table_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("tables.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now, index=True)
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     preparing_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
@@ -51,6 +52,7 @@ class Order(Base):
 
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
     events = relationship("OrderEvent", back_populates="order", cascade="all, delete-orphan")
+    table = relationship("Table")
 
 
 class OrderItem(Base):
@@ -292,3 +294,14 @@ class WorkSession(Base):
     clock_out: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     auto_closed: Mapped[bool] = mapped_column(Boolean, default=False)
     edited: Mapped[bool] = mapped_column(Boolean, default=False)  # manually added/edited by admin
+
+
+class Table(Base):
+    """Mesa del salón para la vista de piso. Estado libre/ocupada (cierre manual)."""
+    __tablename__ = "tables"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    number: Mapped[int] = mapped_column(Integer, unique=True, nullable=False)
+    name: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="libre")  # libre | ocupada
+    opened_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)  # inicio de la sesión actual
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)

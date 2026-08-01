@@ -425,6 +425,11 @@ function renderOrders(orders) {
       ? `<div class="order-uber-big">🛵 UBER · ${String(order.order_label).replace(/[<>]/g, "")}</div>`
       : "";
 
+    /* Mesa asignada */
+    const tableHtml = order.table_number
+      ? `<div class="order-table-big">🍽️ Mesa ${order.table_number}</div>`
+      : "";
+
     /* Buttons depend on status */
     let buttonsHtml = "";
     if (status === "nuevo" || status === "aceptado") {
@@ -453,6 +458,7 @@ function renderOrders(orders) {
           <div class="order-badge-big ${badgeColor}">${badgeLabel}</div>
           <div class="order-status-big ${status === 'preparando' ? 'blink-prep' : ''}">${statusLabel}</div>
           ${waiterHtml}
+          ${tableHtml}
           ${uberHtml}
         </div>
         ${timerHtml}

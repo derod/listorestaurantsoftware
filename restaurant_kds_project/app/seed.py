@@ -1,6 +1,6 @@
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from .models import Product, AudioSettings, Ingredient
+from .models import Product, AudioSettings, Ingredient, Table
 
 # Real master inventory data (loaded once). name, category, base unit, purchase
 # presentation, pack content (base units per presentation), purchase price,
@@ -188,6 +188,18 @@ def seed_breakfast_products(db: Session):
         db.commit()
 
 
+def seed_tables(db: Session, n: int = 12):
+    """Crea las mesas 1..n si faltan (idempotente)."""
+    existing = {t.number for t in db.query(Table.number).all()}
+    added = False
+    for i in range(1, n + 1):
+        if i not in existing:
+            db.add(Table(number=i, status="libre"))
+            added = True
+    if added:
+        db.commit()
+
+
 def seed_initial_data(db: Session):
     if db.query(Product).count() == 0:
         for idx, name in enumerate(DEFAULT_PRODUCTS):
@@ -198,3 +210,4 @@ def seed_initial_data(db: Session):
     seed_ingredient_catalog(db)
     seed_master_inventory(db)
     seed_breakfast_products(db)
+    seed_tables(db)

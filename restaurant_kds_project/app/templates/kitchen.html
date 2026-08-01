@@ -22,6 +22,7 @@
   .order-waiter-big { font-size:24px; color:#b7becd; }
   .order-waiter-big strong { color:var(--accent); }
   .order-uber-big { display:inline-block; background:#ff7a1a; color:#111; font-weight:900; font-size:24px; padding:8px 18px; border-radius:12px; box-shadow:0 0 16px rgba(255,122,26,0.85); text-shadow:0 0 2px rgba(255,255,255,0.4); }
+  .order-table-big { display:inline-block; background:rgba(56,163,255,0.22); color:#7cc0ff; font-weight:900; font-size:24px; padding:8px 18px; border-radius:12px; }
   .timer-big { font-size:42px; font-weight:900; }
   .timer-big.warn { color: var(--yellow); }
   .timer-big.danger { color: var(--red); }
@@ -126,5 +127,5 @@ window.KITCHEN_AUDIO = {
 };
 window.INITIAL_ORDERS = {{ orders_json|safe }};
 </script>
-<script src="/static/js/kitchen.js?v=uber"></script>
+<script src="/static/js/kitchen.js?v=mesas"></script>
 {% endblock %}

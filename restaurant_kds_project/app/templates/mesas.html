@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .mesas-head { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
+  .mesas-head h1 { margin:0; font-size:34px; }
+  .mesas-sub { color:#b7becd; font-size:16px; }
+  .mesas-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:18px; }
+  .mesa {
+    border-radius:22px; border:2px solid var(--border); background:var(--card);
+    min-height:170px; padding:18px; cursor:default; display:flex; flex-direction:column; gap:8px;
+    position:relative; transition:transform 0.1s;
+  }
+  .mesa.ocupada { cursor:pointer; }
+  .mesa.ocupada:active { transform:scale(0.98); }
+  .mesa-num { font-size:52px; font-weight:900; line-height:1; }
+  .mesa-name { font-size:15px; color:#8ea0c0; font-weight:700; }
+  .mesa-state { position:absolute; top:16px; right:16px; font-size:13px; font-weight:900; text-transform:uppercase; letter-spacing:0.05em; padding:5px 12px; border-radius:999px; }
+  .mesa-info { margin-top:auto; font-size:16px; color:#cfd5e1; font-weight:700; }
+  .mesa-time { font-size:14px; color:#8ea0c0; font-weight:600; }
+
+  /* Libre = verde, Ocupada = naranja */
+  .mesa.libre { border-color:rgba(76,175,80,0.5); }
+  .mesa.libre .mesa-num { color:#7bd88f; }
+  .mesa.libre .mesa-state { background:rgba(76,175,80,0.16); color:#7bd88f; }
+  .mesa.ocupada { border-color:rgba(255,140,66,0.7); background:rgba(255,140,66,0.08); }
+  .mesa.ocupada .mesa-num { color:#ff8c42; }
+  .mesa.ocupada .mesa-state { background:rgba(255,140,66,0.22); color:#ffb27a; }
+
+  .mesas-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+  .mesas-overlay.open { display:flex; }
+  .mesas-modal { background:var(--bg); border:1px solid var(--border); border-radius:22px; padding:26px; width:100%; max-width:480px; max-height:85vh; overflow-y:auto; }
+  .mesas-modal h2 { margin:0 0 6px; font-size:26px; }
+  .mesas-modal .sub { color:#8ea0c0; font-size:15px; margin-bottom:16px; }
+  .m-order { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px; margin-bottom:12px; }
+  .m-order-top { display:flex; justify-content:space-between; gap:10px; font-size:15px; color:#8ea0c0; font-weight:700; margin-bottom:6px; }
+  .m-order-items { font-size:18px; color:var(--text); }
+  .m-actions { display:flex; gap:12px; margin-top:8px; }
+  .m-actions button { flex:1; min-height:60px; border:none; border-radius:14px; font-size:18px; font-weight:800; cursor:pointer; }
+  .m-close { background:rgba(228,91,91,0.18); color:var(--red); border:2px solid rgba(228,91,91,0.55) !important; }
+  .m-cancel { background:var(--muted); color:var(--text); }
+  .mesas-empty { text-align:center; color:#8ea0c0; padding:20px; }
+</style>
+
+<div class="mesas-head">
+  <div>
+    <h1>Mesas</h1>
+    <div class="mesas-sub">Vista del salón · <span style="color:#7bd88f;">verde = libre</span> · <span style="color:#ffb27a;">naranja = ocupada</span></div>
+  </div>
+  <a href="/station-a/dashboard" class="btn-home" style="background:var(--muted);color:var(--text);border-radius:12px;padding:12px 18px;text-decoration:none;font-weight:700;">← Salón</a>
+</div>
+
+<div class="mesas-grid" id="mesasGrid"></div>
+
+<div class="mesas-overlay" id="mesaModal">
+  <div class="mesas-modal">
+    <h2 id="mModalTitle">Mesa</h2>
+    <div class="sub" id="mModalSub"></div>
+    <div id="mModalBody"></div>
+    <div class="m-actions">
+      <button class="m-cancel" type="button" id="mCancelBtn">Cerrar ventana</button>
+      <button class="m-close" type="button" id="mCloseTableBtn">Cerrar mesa</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const grid = document.getElementById("mesasGrid");
+  const modal = document.getElementById("mesaModal");
+  let tables = [];
+  let openId = null;
+
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c])); }
+
+  function sinceLabel(iso) {
+    if (!iso) return "";
+    const t = new Date(iso.replace("Z", "")); // guardado en hora local CR
+    const mins = Math.max(0, Math.round((Date.now() - t.getTime()) / 60000));
+    if (mins < 60) return "hace " + mins + " min";
+    return "hace " + Math.floor(mins / 60) + " h " + (mins % 60) + " min";
+  }
+
+  function renderGrid() {
+    grid.innerHTML = tables.map(t => {
+      const occ = t.status === "ocupada";
+      const info = occ
+        ? `<div class="mesa-info">${t.order_count} pedido${t.order_count !== 1 ? "s" : ""} · ${t.total_items} ítem${t.total_items !== 1 ? "s" : ""}</div>
+           <div class="mesa-time">${sinceLabel(t.opened_at)}</div>`
+        : `<div class="mesa-info" style="color:#7bd88f;">Disponible</div>`;
+      return `<div class="mesa ${t.status}" data-id="${t.id}">
+        <div class="mesa-state">${occ ? "Ocupada" : "Libre"}</div>
+        <div class="mesa-num">${t.number}</div>
+        ${t.name ? `<div class="mesa-name">${esc(t.name)}</div>` : ""}
+        ${info}
+      </div>`;
+    }).join("");
+  }
+
+  async function load() {
+    try {
+      const res = await fetch("/api/tables", { credentials: "same-origin" });
+      tables = await res.json();
+      renderGrid();
+      if (openId != null) refreshModal();
+    } catch (e) {}
+  }
+
+  function refreshModal() {
+    const t = tables.find(x => x.id === openId);
+    if (!t) { closeModal(); return; }
+    document.getElementById("mModalTitle").textContent = "Mesa " + t.number + (t.name ? " · " + t.name : "");
+    document.getElementById("mModalSub").textContent =
+      t.status === "ocupada" ? (t.order_count + " pedido(s) · abierta " + sinceLabel(t.opened_at)) : "Mesa libre";
+    const body = document.getElementById("mModalBody");
+    if (!t.orders || !t.orders.length) {
+      body.innerHTML = '<div class="mesas-empty">Sin pedidos en esta mesa.</div>';
+    } else {
+      body.innerHTML = t.orders.map(o => {
+        const time = (o.created_at || "").slice(11, 16);
+        const items = o.items.map(i => `${i.quantity}× ${esc(i.product_name)}`).join(", ");
+        return `<div class="m-order">
+          <div class="m-order-top"><span>#${o.id} · ${o.status}</span><span>${time}</span></div>
+          <div class="m-order-items">${items}</div>
+        </div>`;
+      }).join("");
+    }
+    document.getElementById("mCloseTableBtn").style.display = t.status === "ocupada" ? "" : "none";
+  }
+
+  function openModal(id) { openId = id; refreshModal(); modal.classList.add("open"); }
+  function closeModal() { openId = null; modal.classList.remove("open"); }
+
+  grid.addEventListener("click", e => {
+    const card = e.target.closest(".mesa.ocupada");
+    if (card) openModal(Number(card.dataset.id));
+  });
+  document.getElementById("mCancelBtn").addEventListener("click", closeModal);
+  modal.addEventListener("click", e => { if (e.target === modal) closeModal(); });
+
+  document.getElementById("mCloseTableBtn").addEventListener("click", async () => {
+    if (openId == null) return;
+    const t = tables.find(x => x.id === openId);
+    const ok = await window.askConfirm(`¿Cerrar la mesa ${t ? t.number : ""}? Quedará libre.`, { yes: "Cerrar mesa" });
+    if (!ok) return;
+    try {
+      const res = await fetch(`/api/tables/${openId}/close`, { method: "POST", credentials: "same-origin" });
+      if (!res.ok) throw new Error();
+      window.toast("Mesa cerrada.");
+      closeModal();
+      load();
+    } catch (e) { window.toast("No se pudo cerrar la mesa.", false); }
+  });
+
+  load();
+  setInterval(load, 4000);
+})();
+</script>
+{% endblock %}

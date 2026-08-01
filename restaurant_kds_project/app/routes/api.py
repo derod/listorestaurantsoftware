@@ -5,7 +5,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 from ..database import get_db
 from ..schemas import OrderCreate, OrderUpdate, StatusUpdate, ProductCreate
-from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, ContactMessage, cr_now
+from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, ContactMessage, Table, cr_now
 from datetime import timedelta
 from ..utils import create_order, get_order, update_order_items, change_order_status, duration_seconds
 from ..notifications import send_lead_notification
@@ -22,6 +22,8 @@ def serialize_order(order: Order):
         "source_role": order.source_role,
         "status": order.status,
         "order_label": order.order_label,
+        "table_id": order.table_id,
+        "table_number": order.table.number if order.table else None,
         "requires_acceptance": order.requires_acceptance,
         "created_at": order.created_at.isoformat() + "Z",
         "accepted_at": (order.accepted_at.isoformat() + "Z") if order.accepted_at else None,
@@ -123,7 +125,18 @@ def create_order_endpoint(payload: OrderCreate, db: Session = Depends(get_db)):
         if item.product_id not in valid_ids:
             raise HTTPException(400, f"Invalid product {item.product_id}")
     label = (payload.order_label or "").strip() or None
-    order = create_order(db, payload.source_role, [item.model_dump() for item in payload.items if item.quantity > 0], waiter_id=payload.waiter_id, waiter_name=payload.waiter_name, order_label=label)
+    table_id = payload.table_id
+    if table_id is not None and not db.query(Table.id).filter(Table.id == table_id).first():
+        raise HTTPException(400, "Mesa inválida")
+    order = create_order(db, payload.source_role, [item.model_dump() for item in payload.items if item.quantity > 0], waiter_id=payload.waiter_id, waiter_name=payload.waiter_name, order_label=label, table_id=table_id)
+    # Marcar la mesa como ocupada (inicia sesión si estaba libre). Usa el
+    # created_at de la orden como inicio para que quede incluida en la sesión.
+    if table_id is not None:
+        t = db.query(Table).filter(Table.id == table_id).first()
+        if t and t.status != "ocupada":
+            t.status = "ocupada"
+            t.opened_at = order.created_at
+            db.commit()
     return serialize_order(order)
 
 
@@ -146,7 +159,7 @@ def recent_orders(
     limit: int = 20,
     db: Session = Depends(get_db),
 ):
-    q = db.query(Order).options(joinedload(Order.items).joinedload(OrderItem.product))
+    q = db.query(Order).options(joinedload(Order.items).joinedload(OrderItem.product), joinedload(Order.table))
     if source_role:
         q = q.filter(Order.source_role == source_role)
     if waiter_id:
@@ -188,6 +201,49 @@ def cancelled_recent(minutes: int = 5, db: Session = Depends(get_db)):
         .all()
     )
     return [serialize_order(o) for o in rows]
+
+
+# ─── Mesas (vista de piso) ────────────────────────────────────────────────────
+
+@router.get("/tables")
+def list_tables(db: Session = Depends(get_db)):
+    """Estado de todas las mesas + los pedidos de la sesión actual de cada una."""
+    tables = db.query(Table).order_by(Table.number.asc()).all()
+    result = []
+    for t in tables:
+        orders = []
+        if t.status == "ocupada" and t.opened_at is not None:
+            rows = (
+                db.query(Order)
+                .options(joinedload(Order.items).joinedload(OrderItem.product), joinedload(Order.table))
+                .filter(Order.table_id == t.id, Order.created_at >= t.opened_at, Order.status != "cancelado")
+                .order_by(Order.created_at.asc())
+                .all()
+            )
+            orders = [serialize_order(o) for o in rows]
+        total_items = sum(sum(i["quantity"] for i in o["items"]) for o in orders)
+        result.append({
+            "id": t.id,
+            "number": t.number,
+            "name": t.name,
+            "status": t.status,
+            "opened_at": (t.opened_at.isoformat() + "Z") if t.opened_at else None,
+            "order_count": len(orders),
+            "total_items": total_items,
+            "orders": orders,
+        })
+    return result
+
+
+@router.post("/tables/{table_id}/close")
+def close_table(table_id: int, db: Session = Depends(get_db)):
+    t = db.query(Table).filter(Table.id == table_id).first()
+    if not t:
+        raise HTTPException(404, "Mesa no encontrada")
+    t.status = "libre"
+    t.opened_at = None
+    db.commit()
+    return {"ok": True, "id": t.id, "status": t.status}
 
 
 @router.put("/orders/{order_id}")

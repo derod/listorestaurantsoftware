@@ -6,9 +6,9 @@ from .models import Order, OrderItem, OrderEvent, Inventory, InventoryLog, cr_no
 ALLOWED_STATUSES = ["nuevo", "aceptado", "preparando", "listo", "despachado", "cancelado"]
 
 
-def create_order(db: Session, source_role: str, items: list[dict], waiter_id: int | None = None, waiter_name: str | None = None, order_label: str | None = None):
+def create_order(db: Session, source_role: str, items: list[dict], waiter_id: int | None = None, waiter_name: str | None = None, order_label: str | None = None, table_id: int | None = None):
     requires_acceptance = source_role == "station_a"
-    order = Order(source_role=source_role, requires_acceptance=requires_acceptance, waiter_id=waiter_id, waiter_name=waiter_name, order_label=order_label)
+    order = Order(source_role=source_role, requires_acceptance=requires_acceptance, waiter_id=waiter_id, waiter_name=waiter_name, order_label=order_label, table_id=table_id)
     db.add(order)
     db.flush()
     for item in items:
@@ -26,13 +26,13 @@ def create_order(db: Session, source_role: str, items: list[dict], waiter_id: in
 
 
 def get_order(db: Session, order_id: int):
-    return db.query(Order).options(joinedload(Order.items).joinedload(OrderItem.product), joinedload(Order.events)).filter(Order.id == order_id).first()
+    return db.query(Order).options(joinedload(Order.items).joinedload(OrderItem.product), joinedload(Order.events), joinedload(Order.table)).filter(Order.id == order_id).first()
 
 
 def list_active_orders(db: Session):
     return (
         db.query(Order)
-        .options(joinedload(Order.items).joinedload(OrderItem.product))
+        .options(joinedload(Order.items).joinedload(OrderItem.product), joinedload(Order.table))
         .filter(Order.status.in_(["nuevo", "aceptado", "preparando", "listo"]))
         .order_by(Order.created_at.asc())
         .all()

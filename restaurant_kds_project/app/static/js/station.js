@@ -75,10 +75,12 @@ async function submitOrder() {
     orderLabel = ((nameEl && nameEl.value) || "").trim();
     if (!orderLabel) { toast("Escribe el nombre de la orden Uber.", "error"); if (nameEl) nameEl.focus(); return; }
   }
+  const tableSel = document.getElementById("tableSelect");
+  const tableId = (tableSel && tableSel.value) ? parseInt(tableSel.value, 10) : null;
   const res = await fetch("/api/orders", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ source_role: window.KDS_CONFIG.sourceRole, items, waiter_id: window.KDS_CONFIG.waiterId, waiter_name: window.KDS_CONFIG.waiterName, order_label: orderLabel })
+    body: JSON.stringify({ source_role: window.KDS_CONFIG.sourceRole, items, waiter_id: window.KDS_CONFIG.waiterId, waiter_name: window.KDS_CONFIG.waiterName, order_label: orderLabel, table_id: tableId })
   });
   if (!res.ok) return toast("No se pudo enviar.", "error");
   lines = [];
@@ -276,6 +278,15 @@ document.querySelectorAll(".cat-tab").forEach(t => {
 });
 // Filtro inicial sobre los botones renderizados por el servidor
 applyCategoryFilter();
+
+// Resalta el selector cuando hay una mesa elegida
+const _tableSel = document.getElementById("tableSelect");
+const _tablePick = document.getElementById("tablePick");
+if (_tableSel && _tablePick) {
+  _tableSel.addEventListener("change", () => {
+    _tablePick.classList.toggle("mesa-set", !!_tableSel.value);
+  });
+}
 
 const _reorderBtn = document.getElementById("reorderBtn");
 if (_reorderBtn) {
