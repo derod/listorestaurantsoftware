@@ -9,17 +9,17 @@
   .em-back { background:var(--muted); color:var(--text); }
 
   .floor {
-    position:relative; width:100%; max-width:900px; margin:0 auto;
-    aspect-ratio: 3 / 2; background:
+    position:relative; width:100%; max-width:560px; margin:0 auto;
+    aspect-ratio: 3 / 4; background:
       linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px) 0 0 / 40px 40px,
       linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px) 0 0 / 40px 40px,
       var(--card);
     border:2px solid var(--border); border-radius:18px; overflow:hidden; touch-action:none;
   }
   .ftable {
-    position:absolute; width:72px; height:72px; margin:-36px 0 0 -36px;
+    position:absolute; width:62px; height:62px; margin:-31px 0 0 -31px;
     border-radius:16px; background:var(--muted); border:2px solid var(--accent);
-    color:var(--text); font-size:28px; font-weight:900;
+    color:var(--text); font-size:24px; font-weight:900;
     display:flex; align-items:center; justify-content:center; cursor:grab; user-select:none;
     box-shadow:0 6px 16px rgba(0,0,0,0.4);
   }
@@ -33,14 +33,15 @@
   <div style="display:flex;gap:10px;flex-wrap:wrap;">
     <a href="/mesas" class="em-btn em-back">Ver plano</a>
     <a href="/admin" class="em-btn em-back">← Dashboard</a>
+    <button type="button" class="em-btn em-back" id="resetBtn">↺ Plano en L</button>
     <button type="button" class="em-btn em-save" id="saveBtn">💾 Guardar plano</button>
   </div>
 </div>
-<div class="em-sub">Arrastrá las mesas para acomodarlas como en tu salón. Luego tocá <strong>Guardar plano</strong>.</div>
+<div class="em-sub">Arrastrá las mesas para acomodarlas como en tu salón. <strong>↺ Plano en L</strong> las acomoda en forma de L; luego tocá <strong>Guardar plano</strong>.</div>
 
 <div class="floor" id="floor">
   {% for t in tables %}
-  <div class="ftable" data-id="{{ t.id }}"
+  <div class="ftable" data-id="{{ t.id }}" data-number="{{ t.number }}"
        data-x="{{ t.pos_x if t.pos_x is not none else '' }}"
        data-y="{{ t.pos_y if t.pos_y is not none else '' }}">{{ t.number }}</div>
   {% endfor %}
@@ -51,18 +52,34 @@
   const floor = document.getElementById("floor");
   const tables = [...floor.querySelectorAll(".ftable")];
 
-  // Posición inicial: la guardada, o una grilla por defecto (4 col × 3 filas).
-  tables.forEach((el, i) => {
-    let x = parseFloat(el.dataset.x);
-    let y = parseFloat(el.dataset.y);
+  // Plano en L: brazo vertical (1-7) + pie (8-12).
+  const LAYOUT_L = {
+    1:{x:15,y:5}, 2:{x:15,y:14}, 3:{x:15,y:23}, 4:{x:15,y:32}, 5:{x:15,y:41}, 6:{x:15,y:50}, 7:{x:15,y:59},
+    8:{x:15,y:74}, 9:{x:15,y:88},
+    10:{x:45,y:74}, 11:{x:45,y:88},
+    12:{x:75,y:74}
+  };
+
+  function placeL() {
+    tables.forEach(el => {
+      const d = LAYOUT_L[Number(el.dataset.number)] || { x: 50, y: 50 };
+      el.style.left = d.x + "%";
+      el.style.top = d.y + "%";
+    });
+  }
+
+  // Posición inicial: la guardada, o el plano en L por defecto.
+  tables.forEach(el => {
+    const x = parseFloat(el.dataset.x), y = parseFloat(el.dataset.y);
     if (isNaN(x) || isNaN(y)) {
-      const col = i % 4, row = Math.floor(i / 4);
-      x = (col + 0.5) / 4 * 100;
-      y = (row + 0.5) / 3 * 100;
+      const d = LAYOUT_L[Number(el.dataset.number)] || { x: 50, y: 50 };
+      el.style.left = d.x + "%"; el.style.top = d.y + "%";
+    } else {
+      el.style.left = x + "%"; el.style.top = y + "%";
     }
-    el.style.left = x + "%";
-    el.style.top = y + "%";
   });
+
+  document.getElementById("resetBtn").addEventListener("click", placeL);
 
   let drag = null;
   tables.forEach(el => {

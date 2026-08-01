@@ -6,8 +6,8 @@
   .mesas-sub { color:#b7becd; font-size:16px; }
 
   .floor {
-    position:relative; width:100%; max-width:960px; margin:0 auto;
-    aspect-ratio: 3 / 2;
+    position:relative; width:100%; max-width:560px; margin:0 auto;
+    aspect-ratio: 3 / 4;
     background:
       linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px) 0 0 / 40px 40px,
       linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px) 0 0 / 40px 40px,
@@ -15,14 +15,14 @@
     border:2px solid var(--border); border-radius:20px; overflow:hidden;
   }
   .mesa {
-    position:absolute; width:84px; height:84px; margin:-42px 0 0 -42px;
+    position:absolute; width:62px; height:62px; margin:-31px 0 0 -31px;
     border-radius:18px; border:2px solid var(--border); background:var(--muted);
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
     box-shadow:0 6px 16px rgba(0,0,0,0.4); transition:transform 0.1s; cursor:pointer;
   }
   .mesa:active { transform:scale(0.96); }
-  .mesa-num { font-size:34px; font-weight:900; line-height:1; }
-  .mesa-info { font-size:12px; font-weight:800; }
+  .mesa-num { font-size:26px; font-weight:900; line-height:1; }
+  .mesa-info { font-size:11px; font-weight:800; }
   .mesa.libre { border-color:rgba(76,175,80,0.55); }
   .mesa.libre .mesa-num { color:#7bd88f; }
   .mesa.libre .mesa-info { color:#7bd88f; }
@@ -88,20 +88,22 @@
     return "hace " + Math.floor(mins / 60) + " h " + (mins % 60) + " min";
   }
 
-  // Posición: la guardada, o una grilla por defecto (4×3).
-  function posOf(t, i) {
-    let x = t.pos_x, y = t.pos_y;
-    if (x == null || y == null) {
-      const col = i % 4, row = Math.floor(i / 4);
-      x = (col + 0.5) / 4 * 100;
-      y = (row + 0.5) / 3 * 100;
-    }
-    return { x, y };
+  // Plano en L por defecto (brazo vertical 1-7 + pie 8-12). Se usa cuando la
+  // mesa no tiene posición guardada; el editor permite ajustarlo.
+  const LAYOUT_L = {
+    1:{x:15,y:5}, 2:{x:15,y:14}, 3:{x:15,y:23}, 4:{x:15,y:32}, 5:{x:15,y:41}, 6:{x:15,y:50}, 7:{x:15,y:59},
+    8:{x:15,y:74}, 9:{x:15,y:88},
+    10:{x:45,y:74}, 11:{x:45,y:88},
+    12:{x:75,y:74}
+  };
+  function posOf(t) {
+    if (t.pos_x != null && t.pos_y != null) return { x: t.pos_x, y: t.pos_y };
+    return LAYOUT_L[t.number] || { x: 50, y: 50 };
   }
 
   function renderFloor() {
-    floor.innerHTML = tables.map((t, i) => {
-      const p = posOf(t, i);
+    floor.innerHTML = tables.map((t) => {
+      const p = posOf(t);
       const occ = t.status === "ocupada";
       const info = occ ? `<div class="mesa-info">${t.total_items} ít.</div>` : `<div class="mesa-info">libre</div>`;
       return `<div class="mesa ${t.status}" data-id="${t.id}" style="left:${p.x}%;top:${p.y}%;">
