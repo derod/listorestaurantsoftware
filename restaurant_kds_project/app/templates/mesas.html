@@ -18,17 +18,17 @@
     position:absolute; width:84px; height:84px; margin:-42px 0 0 -42px;
     border-radius:18px; border:2px solid var(--border); background:var(--muted);
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
-    box-shadow:0 6px 16px rgba(0,0,0,0.4); transition:transform 0.1s;
+    box-shadow:0 6px 16px rgba(0,0,0,0.4); transition:transform 0.1s; cursor:pointer;
   }
+  .mesa:active { transform:scale(0.96); }
   .mesa-num { font-size:34px; font-weight:900; line-height:1; }
   .mesa-info { font-size:12px; font-weight:800; }
   .mesa.libre { border-color:rgba(76,175,80,0.55); }
   .mesa.libre .mesa-num { color:#7bd88f; }
   .mesa.libre .mesa-info { color:#7bd88f; }
-  .mesa.ocupada { border-color:#ff8c42; background:rgba(255,140,66,0.14); cursor:pointer; box-shadow:0 0 16px rgba(255,140,66,0.5); }
+  .mesa.ocupada { border-color:#ff8c42; background:rgba(255,140,66,0.14); box-shadow:0 0 16px rgba(255,140,66,0.5); }
   .mesa.ocupada .mesa-num { color:#ff8c42; }
   .mesa.ocupada .mesa-info { color:#ffb27a; }
-  .mesa.ocupada:active { transform:scale(0.96); }
 
   .mesas-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:1000; align-items:center; justify-content:center; padding:20px; }
   .mesas-overlay.open { display:flex; }
@@ -42,6 +42,7 @@
   .m-actions button { flex:1; min-height:60px; border:none; border-radius:14px; font-size:18px; font-weight:800; cursor:pointer; }
   .m-close { background:rgba(228,91,91,0.18); color:var(--red); border:2px solid rgba(228,91,91,0.55) !important; }
   .m-cancel { background:var(--muted); color:var(--text); }
+  .m-take { background:var(--accent); color:#111; }
   .mesas-empty { text-align:center; color:#8ea0c0; padding:20px; }
 </style>
 
@@ -63,6 +64,9 @@
     <div class="m-actions">
       <button class="m-cancel" type="button" id="mCancelBtn">Cerrar ventana</button>
       <button class="m-close" type="button" id="mCloseTableBtn">Cerrar mesa</button>
+    </div>
+    <div class="m-actions" style="margin-top:12px;">
+      <button class="m-take" type="button" id="mTakeBtn">➕ Tomar pedido para esta mesa</button>
     </div>
   </div>
 </div>
@@ -140,10 +144,17 @@
   function openModal(id) { openId = id; refreshModal(); modal.classList.add("open"); }
   function closeModal() { openId = null; modal.classList.remove("open"); }
 
+  function goToOrder(id) { location.href = "/station-a/dashboard?mesa=" + id; }
+
   floor.addEventListener("click", e => {
-    const card = e.target.closest(".mesa.ocupada");
-    if (card) openModal(Number(card.dataset.id));
+    const card = e.target.closest(".mesa");
+    if (!card) return;
+    const id = Number(card.dataset.id);
+    const t = tables.find(x => x.id === id);
+    if (t && t.status === "ocupada") openModal(id);  // ver pedidos / cerrar / agregar
+    else goToOrder(id);                               // libre -> tomar pedido directo
   });
+  document.getElementById("mTakeBtn").addEventListener("click", () => { if (openId != null) goToOrder(openId); });
   document.getElementById("mCancelBtn").addEventListener("click", closeModal);
   modal.addEventListener("click", e => { if (e.target === modal) closeModal(); });
 

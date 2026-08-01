@@ -286,6 +286,13 @@ if (_tableSel && _tablePick) {
   _tableSel.addEventListener("change", () => {
     _tablePick.classList.toggle("mesa-set", !!_tableSel.value);
   });
+  // Preselección desde el plano (/mesas → ?mesa=id)
+  const _mesaParam = new URLSearchParams(location.search).get("mesa");
+  if (_mesaParam && _tableSel.querySelector(`option[value="${_mesaParam}"]`)) {
+    _tableSel.value = _mesaParam;
+    _tablePick.classList.add("mesa-set");
+    _tableSel.scrollIntoView({ block: "nearest" });
+  }
 }
 
 const _reorderBtn = document.getElementById("reorderBtn");
