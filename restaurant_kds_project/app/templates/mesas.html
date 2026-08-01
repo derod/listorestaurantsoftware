@@ -1,30 +1,34 @@
 {% extends 'base.html' %}
 {% block content %}
 <style>
-  .mesas-head { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
+  .mesas-head { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
   .mesas-head h1 { margin:0; font-size:34px; }
   .mesas-sub { color:#b7becd; font-size:16px; }
-  .mesas-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:18px; }
-  .mesa {
-    border-radius:22px; border:2px solid var(--border); background:var(--card);
-    min-height:170px; padding:18px; cursor:default; display:flex; flex-direction:column; gap:8px;
-    position:relative; transition:transform 0.1s;
-  }
-  .mesa.ocupada { cursor:pointer; }
-  .mesa.ocupada:active { transform:scale(0.98); }
-  .mesa-num { font-size:52px; font-weight:900; line-height:1; }
-  .mesa-name { font-size:15px; color:#8ea0c0; font-weight:700; }
-  .mesa-state { position:absolute; top:16px; right:16px; font-size:13px; font-weight:900; text-transform:uppercase; letter-spacing:0.05em; padding:5px 12px; border-radius:999px; }
-  .mesa-info { margin-top:auto; font-size:16px; color:#cfd5e1; font-weight:700; }
-  .mesa-time { font-size:14px; color:#8ea0c0; font-weight:600; }
 
-  /* Libre = verde, Ocupada = naranja */
-  .mesa.libre { border-color:rgba(76,175,80,0.5); }
+  .floor {
+    position:relative; width:100%; max-width:960px; margin:0 auto;
+    aspect-ratio: 3 / 2;
+    background:
+      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px) 0 0 / 40px 40px,
+      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px) 0 0 / 40px 40px,
+      var(--card);
+    border:2px solid var(--border); border-radius:20px; overflow:hidden;
+  }
+  .mesa {
+    position:absolute; width:84px; height:84px; margin:-42px 0 0 -42px;
+    border-radius:18px; border:2px solid var(--border); background:var(--muted);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    box-shadow:0 6px 16px rgba(0,0,0,0.4); transition:transform 0.1s;
+  }
+  .mesa-num { font-size:34px; font-weight:900; line-height:1; }
+  .mesa-info { font-size:12px; font-weight:800; }
+  .mesa.libre { border-color:rgba(76,175,80,0.55); }
   .mesa.libre .mesa-num { color:#7bd88f; }
-  .mesa.libre .mesa-state { background:rgba(76,175,80,0.16); color:#7bd88f; }
-  .mesa.ocupada { border-color:rgba(255,140,66,0.7); background:rgba(255,140,66,0.08); }
+  .mesa.libre .mesa-info { color:#7bd88f; }
+  .mesa.ocupada { border-color:#ff8c42; background:rgba(255,140,66,0.14); cursor:pointer; box-shadow:0 0 16px rgba(255,140,66,0.5); }
   .mesa.ocupada .mesa-num { color:#ff8c42; }
-  .mesa.ocupada .mesa-state { background:rgba(255,140,66,0.22); color:#ffb27a; }
+  .mesa.ocupada .mesa-info { color:#ffb27a; }
+  .mesa.ocupada:active { transform:scale(0.96); }
 
   .mesas-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:1000; align-items:center; justify-content:center; padding:20px; }
   .mesas-overlay.open { display:flex; }
@@ -44,12 +48,12 @@
 <div class="mesas-head">
   <div>
     <h1>Mesas</h1>
-    <div class="mesas-sub">Vista del salón · <span style="color:#7bd88f;">verde = libre</span> · <span style="color:#ffb27a;">naranja = ocupada</span></div>
+    <div class="mesas-sub">Plano del salón · <span style="color:#7bd88f;">verde = libre</span> · <span style="color:#ffb27a;">naranja = ocupada</span></div>
   </div>
   <a href="/station-a/dashboard" class="btn-home" style="background:var(--muted);color:var(--text);border-radius:12px;padding:12px 18px;text-decoration:none;font-weight:700;">← Salón</a>
 </div>
 
-<div class="mesas-grid" id="mesasGrid"></div>
+<div class="floor" id="floor"></div>
 
 <div class="mesas-overlay" id="mesaModal">
   <div class="mesas-modal">
@@ -65,7 +69,7 @@
 
 <script>
 (function () {
-  const grid = document.getElementById("mesasGrid");
+  const floor = document.getElementById("floor");
   const modal = document.getElementById("mesaModal");
   let tables = [];
   let openId = null;
@@ -74,24 +78,30 @@
 
   function sinceLabel(iso) {
     if (!iso) return "";
-    const t = new Date(iso.replace("Z", "")); // guardado en hora local CR
+    const t = new Date(iso.replace("Z", ""));
     const mins = Math.max(0, Math.round((Date.now() - t.getTime()) / 60000));
     if (mins < 60) return "hace " + mins + " min";
     return "hace " + Math.floor(mins / 60) + " h " + (mins % 60) + " min";
   }
 
-  function renderGrid() {
-    grid.innerHTML = tables.map(t => {
+  // Posición: la guardada, o una grilla por defecto (4×3).
+  function posOf(t, i) {
+    let x = t.pos_x, y = t.pos_y;
+    if (x == null || y == null) {
+      const col = i % 4, row = Math.floor(i / 4);
+      x = (col + 0.5) / 4 * 100;
+      y = (row + 0.5) / 3 * 100;
+    }
+    return { x, y };
+  }
+
+  function renderFloor() {
+    floor.innerHTML = tables.map((t, i) => {
+      const p = posOf(t, i);
       const occ = t.status === "ocupada";
-      const info = occ
-        ? `<div class="mesa-info">${t.order_count} pedido${t.order_count !== 1 ? "s" : ""} · ${t.total_items} ítem${t.total_items !== 1 ? "s" : ""}</div>
-           <div class="mesa-time">${sinceLabel(t.opened_at)}</div>`
-        : `<div class="mesa-info" style="color:#7bd88f;">Disponible</div>`;
-      return `<div class="mesa ${t.status}" data-id="${t.id}">
-        <div class="mesa-state">${occ ? "Ocupada" : "Libre"}</div>
-        <div class="mesa-num">${t.number}</div>
-        ${t.name ? `<div class="mesa-name">${esc(t.name)}</div>` : ""}
-        ${info}
+      const info = occ ? `<div class="mesa-info">${t.total_items} ít.</div>` : `<div class="mesa-info">libre</div>`;
+      return `<div class="mesa ${t.status}" data-id="${t.id}" style="left:${p.x}%;top:${p.y}%;">
+        <div class="mesa-num">${t.number}</div>${info}
       </div>`;
     }).join("");
   }
@@ -100,7 +110,7 @@
     try {
       const res = await fetch("/api/tables", { credentials: "same-origin" });
       tables = await res.json();
-      renderGrid();
+      renderFloor();
       if (openId != null) refreshModal();
     } catch (e) {}
   }
@@ -130,7 +140,7 @@
   function openModal(id) { openId = id; refreshModal(); modal.classList.add("open"); }
   function closeModal() { openId = null; modal.classList.remove("open"); }
 
-  grid.addEventListener("click", e => {
+  floor.addEventListener("click", e => {
     const card = e.target.closest(".mesa.ocupada");
     if (card) openModal(Number(card.dataset.id));
   });

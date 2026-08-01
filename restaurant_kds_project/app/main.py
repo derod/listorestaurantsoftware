@@ -97,6 +97,12 @@ def _ensure_schema():
         if "source" not in exp_cols:
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE expenses ADD COLUMN source VARCHAR(40)"))
+    if "tables" in insp.get_table_names():
+        tbl_cols = {c["name"] for c in insp.get_columns("tables")}
+        for col in ("pos_x", "pos_y"):
+            if col not in tbl_cols:
+                with engine.begin() as conn:
+                    conn.execute(text(f"ALTER TABLE tables ADD COLUMN {col} FLOAT"))
     if "orders" in insp.get_table_names():
         ord_cols = {c["name"] for c in insp.get_columns("orders")}
         if "order_label" not in ord_cols:

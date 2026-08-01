@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .em-head { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:14px; }
+  .em-head h1 { margin:0; font-size:30px; }
+  .em-sub { color:#b7becd; font-size:15px; margin-bottom:16px; }
+  .em-btn { border:none; border-radius:12px; padding:12px 18px; font-weight:800; font-size:16px; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:8px; }
+  .em-save { background:var(--accent); color:#111; }
+  .em-back { background:var(--muted); color:var(--text); }
+
+  .floor {
+    position:relative; width:100%; max-width:900px; margin:0 auto;
+    aspect-ratio: 3 / 2; background:
+      linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px) 0 0 / 40px 40px,
+      linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px) 0 0 / 40px 40px,
+      var(--card);
+    border:2px solid var(--border); border-radius:18px; overflow:hidden; touch-action:none;
+  }
+  .ftable {
+    position:absolute; width:72px; height:72px; margin:-36px 0 0 -36px;
+    border-radius:16px; background:var(--muted); border:2px solid var(--accent);
+    color:var(--text); font-size:28px; font-weight:900;
+    display:flex; align-items:center; justify-content:center; cursor:grab; user-select:none;
+    box-shadow:0 6px 16px rgba(0,0,0,0.4);
+  }
+  .ftable.dragging { cursor:grabbing; border-color:#ff8c42; box-shadow:0 10px 26px rgba(0,0,0,0.6); transform:scale(1.06); }
+</style>
+
+<div class="em-head">
+  <div>
+    <h1>Editar plano de mesas</h1>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <a href="/mesas" class="em-btn em-back">Ver plano</a>
+    <a href="/admin" class="em-btn em-back">← Dashboard</a>
+    <button type="button" class="em-btn em-save" id="saveBtn">💾 Guardar plano</button>
+  </div>
+</div>
+<div class="em-sub">Arrastrá las mesas para acomodarlas como en tu salón. Luego tocá <strong>Guardar plano</strong>.</div>
+
+<div class="floor" id="floor">
+  {% for t in tables %}
+  <div class="ftable" data-id="{{ t.id }}"
+       data-x="{{ t.pos_x if t.pos_x is not none else '' }}"
+       data-y="{{ t.pos_y if t.pos_y is not none else '' }}">{{ t.number }}</div>
+  {% endfor %}
+</div>
+
+<script>
+(function () {
+  const floor = document.getElementById("floor");
+  const tables = [...floor.querySelectorAll(".ftable")];
+
+  // Posición inicial: la guardada, o una grilla por defecto (4 col × 3 filas).
+  tables.forEach((el, i) => {
+    let x = parseFloat(el.dataset.x);
+    let y = parseFloat(el.dataset.y);
+    if (isNaN(x) || isNaN(y)) {
+      const col = i % 4, row = Math.floor(i / 4);
+      x = (col + 0.5) / 4 * 100;
+      y = (row + 0.5) / 3 * 100;
+    }
+    el.style.left = x + "%";
+    el.style.top = y + "%";
+  });
+
+  let drag = null;
+  tables.forEach(el => {
+    el.addEventListener("pointerdown", e => {
+      drag = el; el.classList.add("dragging");
+      try { el.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+    el.addEventListener("pointermove", e => {
+      if (drag !== el) return;
+      e.preventDefault();
+      const r = floor.getBoundingClientRect();
+      let x = (e.clientX - r.left) / r.width * 100;
+      let y = (e.clientY - r.top) / r.height * 100;
+      x = Math.max(0, Math.min(100, x));
+      y = Math.max(0, Math.min(100, y));
+      el.style.left = x + "%";
+      el.style.top = y + "%";
+    });
+    const end = () => { if (drag === el) { el.classList.remove("dragging"); drag = null; } };
+    el.addEventListener("pointerup", end);
+    el.addEventListener("pointercancel", end);
+  });
+
+  document.getElementById("saveBtn").addEventListener("click", async () => {
+    const positions = tables.map(el => ({
+      id: Number(el.dataset.id),
+      pos_x: parseFloat(el.style.left),
+      pos_y: parseFloat(el.style.top),
+    }));
+    try {
+      const res = await fetch("/admin/mesas/layout", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        credentials: "same-origin", body: JSON.stringify({ positions }),
+      });
+      if (!res.ok) throw new Error();
+      window.toast("Plano guardado.");
+    } catch (e) { window.toast("No se pudo guardar.", false); }
+  });
+})();
+</script>
+{% endblock %}

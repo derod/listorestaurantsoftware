@@ -241,6 +241,34 @@ def mesas_page(request: Request):
     return templates.TemplateResponse("mesas.html", {"request": request, "page_title": "Mesas"})
 
 
+@router.get("/admin/mesas")
+def admin_mesas(request: Request, db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    tables = db.query(Table).order_by(Table.number.asc()).all()
+    return templates.TemplateResponse("admin_mesas.html", {"request": request, "tables": tables, "page_title": "Editar plano"})
+
+
+@router.post("/admin/mesas/layout")
+async def save_mesas_layout(request: Request, db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return JSONResponse(status_code=403, content={"detail": "No autorizado"})
+    data = await request.json()
+    positions = data.get("positions", [])
+    by_id = {t.id: t for t in db.query(Table).all()}
+    for p in positions:
+        t = by_id.get(p.get("id"))
+        if not t:
+            continue
+        try:
+            t.pos_x = max(0.0, min(100.0, float(p["pos_x"])))
+            t.pos_y = max(0.0, min(100.0, float(p["pos_y"])))
+        except (KeyError, TypeError, ValueError):
+            continue
+    db.commit()
+    return {"ok": True}
+
+
 # ─── kitchen login ────────────────────────────────────────────────────────────
 
 @router.get("/kitchen/login")

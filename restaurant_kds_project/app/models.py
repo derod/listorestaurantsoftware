@@ -304,4 +304,6 @@ class Table(Base):
     name: Mapped[str | None] = mapped_column(String(60), nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="libre")  # libre | ocupada
     opened_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)  # inicio de la sesión actual
+    pos_x: Mapped[float | None] = mapped_column(Float, nullable=True)  # posición en el plano (0-100 %)
+    pos_y: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
