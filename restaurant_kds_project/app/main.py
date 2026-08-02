@@ -103,6 +103,9 @@ def _ensure_schema():
             if col not in tbl_cols:
                 with engine.begin() as conn:
                     conn.execute(text(f"ALTER TABLE tables ADD COLUMN {col} FLOAT"))
+        if "capacity" not in tbl_cols:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE tables ADD COLUMN capacity INTEGER DEFAULT 4"))
     if "orders" in insp.get_table_names():
         ord_cols = {c["name"] for c in insp.get_columns("orders")}
         if "order_label" not in ord_cols:

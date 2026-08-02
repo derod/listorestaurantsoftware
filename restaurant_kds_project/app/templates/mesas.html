@@ -1,35 +1,19 @@
 {% extends 'base.html' %}
 {% block content %}
 <style>
-  .mesas-head { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
+  .mesas-head { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:14px; }
   .mesas-head h1 { margin:0; font-size:34px; }
-  .mesas-sub { color:#b7becd; font-size:16px; }
 
-  .floor {
-    position:relative; width:100%; max-width:560px; margin:0 auto;
-    aspect-ratio: 3 / 4;
-    background:
-      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px) 0 0 / 40px 40px,
-      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px) 0 0 / 40px 40px,
-      var(--card);
-    border:2px solid var(--border); border-radius:20px; overflow:hidden;
-  }
-  .mesa {
-    position:absolute; width:62px; height:62px; margin:-31px 0 0 -31px;
-    border-radius:18px; border:2px solid var(--border); background:var(--muted);
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
-    box-shadow:0 6px 16px rgba(0,0,0,0.4); transition:transform 0.1s; cursor:pointer;
-  }
-  .mesa:active { transform:scale(0.96); }
-  .floor-divider { position:absolute; height:0; border-top:3px dashed rgba(255,255,255,0.45); transform:translateY(-1.5px); pointer-events:none; }
-  .mesa-num { font-size:26px; font-weight:900; line-height:1; }
-  .mesa-info { font-size:11px; font-weight:800; }
-  .mesa.libre { border-color:rgba(76,175,80,0.55); }
-  .mesa.libre .mesa-num { color:#7bd88f; }
-  .mesa.libre .mesa-info { color:#7bd88f; }
-  .mesa.ocupada { border-color:#ff8c42; background:rgba(255,140,66,0.14); box-shadow:0 0 16px rgba(255,140,66,0.5); }
-  .mesa.ocupada .mesa-num { color:#ff8c42; }
-  .mesa.ocupada .mesa-info { color:#ffb27a; }
+  .floor-wrap { width:100%; max-width:560px; margin:0 auto; }
+  #floorSvg { width:100%; height:auto; display:block; border-radius:20px; border:2px solid var(--border); background:#241a12; }
+  #floorSvg .mesa { cursor:pointer; }
+  #floorSvg .mesa:active { opacity:0.85; }
+
+  .legend { display:flex; gap:18px; flex-wrap:wrap; justify-content:center; margin:16px auto 0; max-width:560px; font-size:16px; color:#cfd5e1; font-weight:700; }
+  .legend .lg { display:inline-flex; align-items:center; gap:8px; }
+  .legend .swatch { width:20px; height:20px; border-radius:6px; border:2px solid; }
+  .legend .swatch.free { background:#3aa564; border-color:#7bd88f; }
+  .legend .swatch.occ { background:#e07a1f; border-color:#ffb27a; }
 
   .mesas-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:1000; align-items:center; justify-content:center; padding:20px; }
   .mesas-overlay.open { display:flex; }
@@ -48,14 +32,21 @@
 </style>
 
 <div class="mesas-head">
-  <div>
-    <h1>Mesas</h1>
-    <div class="mesas-sub">Plano del salón · <span style="color:#7bd88f;">verde = libre</span> · <span style="color:#ffb27a;">naranja = ocupada</span></div>
-  </div>
+  <h1>Mesas</h1>
   <a href="/station-a/dashboard" class="btn-home" style="background:var(--muted);color:var(--text);border-radius:12px;padding:12px 18px;text-decoration:none;font-weight:700;">← Salón</a>
 </div>
 
-<div class="floor" id="floor"></div>
+<div class="floor-wrap">
+  <svg id="floorSvg" viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg>
+</div>
+
+<div class="legend">
+  <span class="lg"><span class="swatch free"></span> Libre</span>
+  <span class="lg"><span class="swatch occ"></span> Ocupada</span>
+  <span class="lg">🚪 Entrada</span>
+  <span class="lg">🪟 Ventanas</span>
+  <span class="lg">🪑 Sillas = capacidad</span>
+</div>
 
 <div class="mesas-overlay" id="mesaModal">
   <div class="mesas-modal">
@@ -74,13 +65,12 @@
 
 <script>
 (function () {
-  const floor = document.getElementById("floor");
+  const svg = document.getElementById("floorSvg");
   const modal = document.getElementById("mesaModal");
   let tables = [];
   let openId = null;
 
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c])); }
-
   function sinceLabel(iso) {
     if (!iso) return "";
     const t = new Date(iso.replace("Z", ""));
@@ -89,29 +79,102 @@
     return "hace " + Math.floor(mins / 60) + " h " + (mins % 60) + " min";
   }
 
-  // Plano en L por defecto (brazo vertical 1-7 + pie 8-12). Se usa cuando la
-  // mesa no tiene posición guardada; el editor permite ajustarlo.
+  // Plano en L por defecto (si la mesa no tiene posición guardada).
   const LAYOUT_L = {
-    1:{x:15,y:5}, 2:{x:15,y:14}, 3:{x:15,y:23}, 4:{x:15,y:32}, 5:{x:15,y:41}, 6:{x:15,y:50}, 7:{x:15,y:59},
-    8:{x:15,y:74},
-    12:{x:45,y:74}, 11:{x:75,y:74},   // par superior
-    14:{x:45,y:88}, 13:{x:75,y:88}    // par inferior
+    1:{x:15,y:8}, 2:{x:15,y:17}, 3:{x:15,y:26}, 4:{x:15,y:35}, 5:{x:15,y:44}, 6:{x:15,y:53}, 7:{x:15,y:62},
+    8:{x:15,y:74}, 12:{x:45,y:74}, 11:{x:75,y:74}, 14:{x:45,y:88}, 13:{x:75,y:88}
   };
-  const DIVIDER_HTML = '<div class="floor-divider" style="left:33%;width:56%;top:81%;"></div>';
-  function posOf(t) {
+  function posPct(t) {
     if (t.pos_x != null && t.pos_y != null) return { x: t.pos_x, y: t.pos_y };
     return LAYOUT_L[t.number] || { x: 50, y: 50 };
   }
 
+  // ── Escena fija: piso de madera, paredes en L, puerta, ventanas, plantas ──
+  const SCENE = `
+    <defs>
+      <pattern id="wood" width="64" height="26" patternUnits="userSpaceOnUse">
+        <rect width="64" height="26" fill="#6d4d30"/>
+        <rect width="64" height="13" fill="#775636"/>
+        <line x1="0" y1="0"  x2="64" y2="0"  stroke="#4d341e" stroke-width="1.5"/>
+        <line x1="0" y1="13" x2="64" y2="13" stroke="#4d341e" stroke-width="1.5"/>
+        <line x1="32" y1="0"  x2="32" y2="13" stroke="#553b23" stroke-width="1"/>
+        <line x1="0"  y1="13" x2="0"  y2="26" stroke="#553b23" stroke-width="1"/>
+        <line x1="48" y1="13" x2="48" y2="26" stroke="#553b23" stroke-width="1"/>
+      </pattern>
+    </defs>
+    <!-- Piso + paredes (contorno en L) -->
+    <polygon points="15,12 110,12 110,250 285,250 285,386 15,386"
+             fill="url(#wood)" stroke="#cbb89a" stroke-width="5" stroke-linejoin="round"/>
+    <!-- Ventanas (pared izquierda) -->
+    <g>
+      <rect x="9" y="70"  width="12" height="52" fill="#bfe0ef" stroke="#cbb89a" stroke-width="1.5"/>
+      <line x1="9" y1="96" x2="21" y2="96" stroke="#cbb89a" stroke-width="1"/>
+      <rect x="9" y="150" width="12" height="52" fill="#bfe0ef" stroke="#cbb89a" stroke-width="1.5"/>
+      <line x1="9" y1="176" x2="21" y2="176" stroke="#cbb89a" stroke-width="1"/>
+    </g>
+    <!-- Puerta de entrada (pared inferior) -->
+    <g>
+      <rect x="150" y="382" width="46" height="8" fill="#3d2a18"/>
+      <line x1="150" y1="386" x2="150" y2="344" stroke="#e0c9a6" stroke-width="3"/>
+      <path d="M150,344 A42,42 0 0 1 192,386" fill="none" stroke="#e0c9a6" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <text x="173" y="378" text-anchor="middle" font-size="9" font-weight="700" fill="#3d2a18">ENTRADA</text>
+    </g>
+    <!-- Plantas y columna en el rincón vacío (arriba-derecha) -->
+    <g>
+      <rect x="205" y="150" width="18" height="15" rx="2" fill="#7a4a2c"/>
+      <circle cx="214" cy="142" r="14" fill="#3f7d4a"/>
+      <circle cx="205" cy="150" r="9"  fill="#4a8f56"/>
+      <circle cx="223" cy="150" r="9"  fill="#356b40"/>
+      <rect x="250" y="60" width="20" height="15" rx="2" fill="#7a4a2c"/>
+      <circle cx="260" cy="54" r="12" fill="#3f7d4a"/>
+      <circle cx="252" cy="60" r="8"  fill="#4a8f56"/>
+      <circle cx="268" cy="60" r="8"  fill="#356b40"/>
+      <rect x="256" y="120" width="16" height="16" rx="3" fill="#9a8f7a" stroke="#cbb89a" stroke-width="1.5"/>
+    </g>
+    <!-- Divisoria entre el par 12–11 y el par 14–13 -->
+    <line x1="99" y1="324" x2="267" y2="324" stroke="rgba(255,255,255,0.5)" stroke-width="3" stroke-dasharray="7 5"/>
+  `;
+
+  function chair(cx, cy) {
+    return `<rect x="${(cx-5.5).toFixed(1)}" y="${(cy-4.5).toFixed(1)}" width="11" height="9" rx="3" fill="#3a2a19" stroke="#5a4326" stroke-width="0.8"/>`;
+  }
+  function rowChairs(cx, cy, span, n) {
+    let s = "";
+    for (let i = 0; i < n; i++) s += chair(cx - span/2 + span*(i+0.5)/n, cy);
+    return s;
+  }
+
+  function tableGroup(t) {
+    const p = posPct(t);
+    const sx = p.x * 3, sy = p.y * 4;
+    const cap = t.capacity || 4;
+    const occ = t.status === "ocupada";
+    const fill = occ ? "#e07a1f" : "#3aa564";
+    const stroke = occ ? "#ffb27a" : "#7bd88f";
+    let chairs = "", shape = "";
+    if (cap <= 2) {
+      // Mesa redonda 2 personas — sillas a los lados (contra pared).
+      chairs = chair(sx - 21, sy) + chair(sx + 21, sy);
+      shape = `<circle cx="${sx}" cy="${sy}" r="14" fill="${fill}" stroke="${stroke}" stroke-width="2"/>`;
+    } else {
+      // Mesa rectangular 4-6 — sillas arriba/abajo.
+      const w = 46, h = 30, n1 = Math.ceil(cap/2), n2 = Math.floor(cap/2);
+      chairs = rowChairs(sx, sy - h/2 - 9, w - 6, n1) + rowChairs(sx, sy + h/2 + 9, w - 6, n2);
+      shape = `<rect x="${sx-w/2}" y="${sy-h/2}" width="${w}" height="${h}" rx="6" fill="${fill}" stroke="${stroke}" stroke-width="2"/>`;
+    }
+    const badge = occ
+      ? `<circle cx="${sx + (cap<=2?12:24)}" cy="${sy - (cap<=2?12:16)}" r="8" fill="#111" stroke="#ffb27a" stroke-width="1.5"/>
+         <text x="${sx + (cap<=2?12:24)}" y="${sy - (cap<=2?12:16)}" text-anchor="middle" dominant-baseline="central" font-size="9" font-weight="900" fill="#ffb27a">${t.order_count||0}</text>`
+      : "";
+    return `<g class="mesa" data-id="${t.id}">
+      ${chairs}${shape}
+      <text x="${sx}" y="${sy}" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="900" fill="#0b0f18">${t.number}</text>
+      ${badge}
+    </g>`;
+  }
+
   function renderFloor() {
-    floor.innerHTML = tables.map((t) => {
-      const p = posOf(t);
-      const occ = t.status === "ocupada";
-      const info = occ ? `<div class="mesa-info">${t.total_items} ít.</div>` : `<div class="mesa-info">libre</div>`;
-      return `<div class="mesa ${t.status}" data-id="${t.id}" style="left:${p.x}%;top:${p.y}%;">
-        <div class="mesa-num">${t.number}</div>${info}
-      </div>`;
-    }).join("") + DIVIDER_HTML;
+    svg.innerHTML = SCENE + tables.map(tableGroup).join("");
   }
 
   async function load() {
@@ -128,7 +191,7 @@
     if (!t) { closeModal(); return; }
     document.getElementById("mModalTitle").textContent = "Mesa " + t.number + (t.name ? " · " + t.name : "");
     document.getElementById("mModalSub").textContent =
-      t.status === "ocupada" ? (t.order_count + " pedido(s) · abierta " + sinceLabel(t.opened_at)) : "Mesa libre";
+      t.status === "ocupada" ? (t.order_count + " pedido(s) · abierta " + sinceLabel(t.opened_at)) : "Mesa libre · " + (t.capacity || 4) + " personas";
     const body = document.getElementById("mModalBody");
     if (!t.orders || !t.orders.length) {
       body.innerHTML = '<div class="mesas-empty">Sin pedidos en esta mesa.</div>';
@@ -147,16 +210,15 @@
 
   function openModal(id) { openId = id; refreshModal(); modal.classList.add("open"); }
   function closeModal() { openId = null; modal.classList.remove("open"); }
-
   function goToOrder(id) { location.href = "/station-a/dashboard?mesa=" + id; }
 
-  floor.addEventListener("click", e => {
-    const card = e.target.closest(".mesa");
-    if (!card) return;
-    const id = Number(card.dataset.id);
+  svg.addEventListener("click", e => {
+    const g = e.target.closest(".mesa");
+    if (!g) return;
+    const id = Number(g.dataset.id);
     const t = tables.find(x => x.id === id);
-    if (t && t.status === "ocupada") openModal(id);  // ver pedidos / cerrar / agregar
-    else goToOrder(id);                               // libre -> tomar pedido directo
+    if (t && t.status === "ocupada") openModal(id);
+    else goToOrder(id);
   });
   document.getElementById("mTakeBtn").addEventListener("click", () => { if (openId != null) goToOrder(openId); });
   document.getElementById("mCancelBtn").addEventListener("click", closeModal);

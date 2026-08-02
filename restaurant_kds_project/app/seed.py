@@ -233,6 +233,17 @@ def reconfigure_tables_v2(db: Session):
     db.commit()
 
 
+def seed_table_capacities(db: Session):
+    """Asigna capacidades iniciales una sola vez (brazo 1-7 = 2 personas / redonda;
+    el resto = 4 / rectangular). Guarda: se aplica si todas están en el default 4."""
+    caps = [c for (c,) in db.query(Table.capacity).all()]
+    if not caps or any((c or 4) != 4 for c in caps):
+        return  # ya configurado a mano
+    for t in db.query(Table).all():
+        t.capacity = 2 if t.number in (1, 2, 3, 4, 5, 6, 7) else 4
+    db.commit()
+
+
 def seed_initial_data(db: Session):
     if db.query(Product).count() == 0:
         for idx, name in enumerate(DEFAULT_PRODUCTS):
@@ -245,3 +256,4 @@ def seed_initial_data(db: Session):
     seed_breakfast_products(db)
     seed_tables(db)
     reconfigure_tables_v2(db)
+    seed_table_capacities(db)

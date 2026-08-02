@@ -303,6 +303,7 @@ class Table(Base):
     number: Mapped[int] = mapped_column(Integer, unique=True, nullable=False)
     name: Mapped[str | None] = mapped_column(String(60), nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="libre")  # libre | ocupada
+    capacity: Mapped[int] = mapped_column(Integer, default=4)  # sillas: forma redonda (<=2) o rect (>=3)
     opened_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)  # inicio de la sesión actual
     pos_x: Mapped[float | None] = mapped_column(Float, nullable=True)  # posición en el plano (0-100 %)
     pos_y: Mapped[float | None] = mapped_column(Float, nullable=True)

@@ -227,6 +227,7 @@ def list_tables(db: Session = Depends(get_db)):
             "number": t.number,
             "name": t.name,
             "status": t.status,
+            "capacity": t.capacity or 4,
             "pos_x": t.pos_x,
             "pos_y": t.pos_y,
             "opened_at": (t.opened_at.isoformat() + "Z") if t.opened_at else None,
