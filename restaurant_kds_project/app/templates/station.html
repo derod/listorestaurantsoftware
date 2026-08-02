@@ -47,6 +47,11 @@
     <h2>Pedido actual</h2>
     <div id="orderSummary" class="summary-list empty-state">No hay productos.</div>
     <div class="summary-total">Total productos: <span id="totalItems">0</span></div>
+    <div class="big-actions">
+      <button class="action primary" id="sendBtn">Enviar</button>
+      <button class="action" id="clearBtn">Borrar</button>
+      <button class="action" id="undoBtn">Quitar último producto</button>
+    </div>
     <div class="table-pick" id="tablePick">
       <label for="tableSelect">Mesa</label>
       <select id="tableSelect">
@@ -55,11 +60,6 @@
         <option value="{{ t.id }}">Mesa {{ t.number }}{% if t.name %} · {{ t.name }}{% endif %}</option>
         {% endfor %}
       </select>
-    </div>
-    <div class="big-actions">
-      <button class="action primary" id="sendBtn">Enviar</button>
-      <button class="action" id="clearBtn">Borrar</button>
-      <button class="action" id="undoBtn">Quitar último producto</button>
     </div>
 
     <div class="recent-card">
