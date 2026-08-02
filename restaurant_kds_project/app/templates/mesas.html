@@ -21,6 +21,7 @@
     box-shadow:0 6px 16px rgba(0,0,0,0.4); transition:transform 0.1s; cursor:pointer;
   }
   .mesa:active { transform:scale(0.96); }
+  .floor-divider { position:absolute; height:0; border-top:3px dashed rgba(255,255,255,0.45); transform:translateY(-1.5px); pointer-events:none; }
   .mesa-num { font-size:26px; font-weight:900; line-height:1; }
   .mesa-info { font-size:11px; font-weight:800; }
   .mesa.libre { border-color:rgba(76,175,80,0.55); }
@@ -92,10 +93,11 @@
   // mesa no tiene posición guardada; el editor permite ajustarlo.
   const LAYOUT_L = {
     1:{x:15,y:5}, 2:{x:15,y:14}, 3:{x:15,y:23}, 4:{x:15,y:32}, 5:{x:15,y:41}, 6:{x:15,y:50}, 7:{x:15,y:59},
-    8:{x:15,y:74}, 9:{x:15,y:88},
-    10:{x:45,y:74}, 11:{x:45,y:88},
-    12:{x:75,y:74}
+    8:{x:15,y:74},
+    12:{x:45,y:74}, 11:{x:75,y:74},   // par superior
+    14:{x:45,y:88}, 13:{x:75,y:88}    // par inferior
   };
+  const DIVIDER_HTML = '<div class="floor-divider" style="left:33%;width:56%;top:81%;"></div>';
   function posOf(t) {
     if (t.pos_x != null && t.pos_y != null) return { x: t.pos_x, y: t.pos_y };
     return LAYOUT_L[t.number] || { x: 50, y: 50 };
@@ -109,7 +111,7 @@
       return `<div class="mesa ${t.status}" data-id="${t.id}" style="left:${p.x}%;top:${p.y}%;">
         <div class="mesa-num">${t.number}</div>${info}
       </div>`;
-    }).join("");
+    }).join("") + DIVIDER_HTML;
   }
 
   async function load() {

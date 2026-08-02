@@ -1,6 +1,6 @@
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from .models import Product, AudioSettings, Ingredient, Table
+from .models import Product, AudioSettings, Ingredient, Table, Order
 
 # Real master inventory data (loaded once). name, category, base unit, purchase
 # presentation, pack content (base units per presentation), purchase price,
@@ -189,15 +189,48 @@ def seed_breakfast_products(db: Session):
 
 
 def seed_tables(db: Session, n: int = 12):
-    """Crea las mesas 1..n si faltan (idempotente)."""
-    existing = {t.number for t in db.query(Table.number).all()}
-    added = False
+    """Crea las mesas 1..n solo en una base nueva (sin mesas). No rellena huecos
+    para no recrear mesas eliminadas a propósito."""
+    if db.query(Table.id).first():
+        return
     for i in range(1, n + 1):
-        if i not in existing:
-            db.add(Table(number=i, status="libre"))
-            added = True
-    if added:
-        db.commit()
+        db.add(Table(number=i, status="libre"))
+    db.commit()
+
+
+def reconfigure_tables_v2(db: Session):
+    """Ajuste puntual del salón (una sola vez, guardado por: existe la 9 y no
+    existe la 13): elimina la Mesa 9, renumera 11→14, 12→11, 10→12, agrega la
+    Mesa 13 y fija posiciones del pie. Los pedidos de la mesa borrada se
+    desligan (table_id → NULL); referencian por id, no por número."""
+    t9 = db.query(Table).filter(Table.number == 9).first()
+    if not t9 or db.query(Table).filter(Table.number == 13).first():
+        return
+
+    def renum(old, new):
+        t = db.query(Table).filter(Table.number == old).first()
+        if t:
+            t.number = new
+            db.flush()
+
+    # Orden seguro para no chocar con el índice único de number.
+    renum(11, 14)
+    renum(12, 11)
+    renum(10, 12)
+    # Eliminar Mesa 9 (desligar sus pedidos primero).
+    db.query(Order).filter(Order.table_id == t9.id).update({"table_id": None})
+    db.delete(t9)
+    db.flush()
+    # Agregar Mesa 13.
+    db.add(Table(number=13, status="libre"))
+    db.flush()
+    # Posiciones del pie (dos pares con la divisoria en el medio).
+    foot = {8: (15, 74), 12: (45, 74), 11: (75, 74), 14: (45, 88), 13: (75, 88)}
+    for num, (x, y) in foot.items():
+        t = db.query(Table).filter(Table.number == num).first()
+        if t:
+            t.pos_x, t.pos_y = float(x), float(y)
+    db.commit()
 
 
 def seed_initial_data(db: Session):
@@ -211,3 +244,4 @@ def seed_initial_data(db: Session):
     seed_master_inventory(db)
     seed_breakfast_products(db)
     seed_tables(db)
+    reconfigure_tables_v2(db)
