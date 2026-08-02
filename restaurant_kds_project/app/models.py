@@ -296,6 +296,19 @@ class WorkSession(Base):
     edited: Mapped[bool] = mapped_column(Boolean, default=False)  # manually added/edited by admin
 
 
+class InvoiceClient(Base):
+    """Cliente (receptor) para factura electrónica de Hacienda (v4.4)."""
+    __tablename__ = "invoice_clients"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    nombre: Mapped[str] = mapped_column(String(100), nullable=False)
+    id_tipo: Mapped[str] = mapped_column(String(2), default="01")  # 01 Física, 02 Jurídica, 03 DIMEX, 04 NITE, 05 Extranjero, 06 No Contribuyente
+    id_numero: Mapped[str] = mapped_column(String(20), nullable=False)
+    correo: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    telefono: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    notas: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
+
+
 class Table(Base):
     """Mesa del salón para la vista de piso. Estado libre/ocupada (cierre manual)."""
     __tablename__ = "tables"

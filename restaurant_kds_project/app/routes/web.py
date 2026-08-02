@@ -9,7 +9,7 @@ from pathlib import Path
 import shutil
 
 from ..database import get_db, DATA_DIR
-from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, ContactMessage, AccessLog, WorkSession, Ingredient, Recipe, RecipeItem, InventoryMovement, Expense, FixedExpense, Purchase, PurchaseItem, Table, cr_now
+from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, ContactMessage, AccessLog, WorkSession, Ingredient, Recipe, RecipeItem, InventoryMovement, Expense, FixedExpense, Purchase, PurchaseItem, Table, InvoiceClient, cr_now
 from ..inventory_service import create_inventory_movement
 from pydantic import BaseModel
 from ..utils import duration_seconds
@@ -232,6 +232,68 @@ def station_a(request: Request, db: Session = Depends(get_db)):
             "settings": settings,
         },
     )
+
+
+# ─── factura electrónica (Fase 1: clientes / receptores) ──────────────────────
+
+# Tipos de identificación de Hacienda (Comprobantes Electrónicos v4.4).
+FACTURA_ID_TYPES = [
+    ("01", "Cédula Física"),
+    ("02", "Cédula Jurídica"),
+    ("03", "DIMEX"),
+    ("04", "NITE"),
+    ("05", "Extranjero No Domiciliado"),
+    ("06", "No Contribuyente"),
+]
+
+
+@router.get("/admin/factura")
+def admin_factura(request: Request, db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    clients = db.query(InvoiceClient).order_by(InvoiceClient.created_at.desc()).all()
+    return templates.TemplateResponse(
+        "admin_factura.html",
+        {"request": request, "clients": clients, "id_types": FACTURA_ID_TYPES, "page_title": "Factura Electrónica"},
+    )
+
+
+@router.post("/admin/factura")
+def create_invoice_client(
+    request: Request,
+    nombre: str = Form(...),
+    id_tipo: str = Form(...),
+    id_numero: str = Form(...),
+    correo: str = Form(""),
+    telefono: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    valid = {c for c, _ in FACTURA_ID_TYPES}
+    nombre = nombre.strip()
+    id_numero = "".join(ch for ch in id_numero if ch.isdigit())
+    if nombre and id_numero and id_tipo in valid:
+        db.add(InvoiceClient(
+            nombre=nombre[:100],
+            id_tipo=id_tipo,
+            id_numero=id_numero[:20],
+            correo=(correo.strip()[:160] or None),
+            telefono=("".join(ch for ch in telefono if ch.isdigit())[:20] or None),
+        ))
+        db.commit()
+    return RedirectResponse(url="/admin/factura", status_code=303)
+
+
+@router.post("/admin/factura/{client_id}/delete")
+def delete_invoice_client(client_id: int, request: Request, db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    c = db.query(InvoiceClient).filter(InvoiceClient.id == client_id).first()
+    if c:
+        db.delete(c)
+        db.commit()
+    return RedirectResponse(url="/admin/factura", status_code=303)
 
 
 # ─── mesas (vista de piso, accesible por todos) ───────────────────────────────

@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .fe-head { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:8px; }
+  .fe-head h1 { margin:0; font-size:30px; }
+  .fe-note { background:rgba(77,163,255,0.10); border:1px solid rgba(77,163,255,0.3); border-radius:14px; padding:14px 18px; color:#b7becd; font-size:15px; margin-bottom:22px; }
+  .fe-card { background:var(--card); border:1px solid var(--border); border-radius:18px; padding:22px; margin-bottom:26px; }
+  .fe-card h2 { margin:0 0 16px; font-size:20px; }
+  .fe-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; }
+  .fe-field { display:flex; flex-direction:column; gap:6px; }
+  .fe-field label { font-size:13px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; }
+  .fe-field input, .fe-field select { background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:13px 14px; font-size:16px; color:var(--text); font-family:inherit; outline:none; }
+  .fe-field input:focus, .fe-field select:focus { border-color:var(--accent); }
+  .fe-actions { margin-top:16px; display:flex; justify-content:flex-end; }
+  .fe-btn { border:none; border-radius:12px; padding:13px 22px; font-weight:800; font-size:16px; cursor:pointer; }
+  .fe-btn.primary { background:var(--accent); color:#111; }
+  .fe-btn.ghost { background:var(--muted); color:var(--text); text-decoration:none; display:inline-flex; align-items:center; gap:8px; }
+
+  .fe-table-wrap { overflow-x:auto; }
+  table.fe-table { width:100%; border-collapse:collapse; }
+  .fe-table th { font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--muted); text-align:left; padding:10px 12px; white-space:nowrap; }
+  .fe-table td { padding:12px; border-top:1px solid var(--border); font-size:15px; color:var(--text); vertical-align:middle; }
+  .fe-tag { font-size:12px; font-weight:800; padding:3px 10px; border-radius:999px; background:rgba(77,163,255,0.16); color:var(--blue); white-space:nowrap; }
+  .fe-del { background:rgba(228,91,91,0.15); color:var(--red); border:1px solid rgba(228,91,91,0.4); border-radius:10px; min-height:40px; padding:0 14px; font-weight:800; cursor:pointer; }
+  .fe-empty { text-align:center; color:var(--muted); padding:26px; }
+</style>
+
+<div class="fe-head">
+  <h1>Factura Electrónica</h1>
+  <a href="/admin" class="fe-btn ghost">← Dashboard</a>
+</div>
+<div class="fe-note">
+  <strong>Fase 1 — Clientes.</strong> Registrá acá los datos del cliente (receptor) que necesita factura electrónica.
+  El envío a Hacienda (firma del XML + API) es la siguiente fase y requiere tu certificado (.p12) y credenciales del ATV.
+</div>
+
+<div class="fe-card">
+  <h2>Agregar cliente</h2>
+  <form method="post" action="/admin/factura" autocomplete="off">
+    <div class="fe-grid">
+      <div class="fe-field" style="grid-column:1/-1;">
+        <label>Nombre / Razón social</label>
+        <input name="nombre" maxlength="100" required placeholder="Ej: Juan Pérez / Empresa S.A.">
+      </div>
+      <div class="fe-field">
+        <label>Tipo de identificación</label>
+        <select name="id_tipo">
+          {% for code, label in id_types %}
+          <option value="{{ code }}">{{ code }} — {{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="fe-field">
+        <label>Número de identificación</label>
+        <input name="id_numero" maxlength="20" required inputmode="numeric" placeholder="Solo números">
+      </div>
+      <div class="fe-field">
+        <label>Correo electrónico</label>
+        <input name="correo" type="email" maxlength="160" placeholder="Para enviarle la factura">
+      </div>
+      <div class="fe-field">
+        <label>Teléfono</label>
+        <input name="telefono" maxlength="20" inputmode="numeric" placeholder="Opcional">
+      </div>
+    </div>
+    <div class="fe-actions">
+      <button class="fe-btn primary" type="submit">Guardar cliente</button>
+    </div>
+  </form>
+</div>
+
+<div class="fe-card">
+  <h2>Clientes registrados ({{ clients|length }})</h2>
+  {% if not clients %}
+    <div class="fe-empty">Aún no hay clientes. Agregá el primero arriba.</div>
+  {% else %}
+  <div class="fe-table-wrap">
+    <table class="fe-table">
+      <thead>
+        <tr><th>Nombre</th><th>Identificación</th><th>Correo</th><th>Teléfono</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for c in clients %}
+        <tr>
+          <td>{{ c.nombre }}</td>
+          <td><span class="fe-tag">{{ c.id_tipo }}</span> {{ c.id_numero }}</td>
+          <td>{{ c.correo or '—' }}</td>
+          <td>{{ c.telefono or '—' }}</td>
+          <td style="text-align:right;">
+            <form method="post" action="/admin/factura/{{ c.id }}/delete" onsubmit="return confirm('¿Eliminar este cliente?');" style="display:inline;">
+              <button class="fe-del" type="submit">Eliminar</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
