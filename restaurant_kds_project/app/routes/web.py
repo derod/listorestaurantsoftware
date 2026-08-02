@@ -313,6 +313,7 @@ def factura_config_page(request: Request, db: Session = Depends(get_db)):
             "has_pin": bool(cfg and cfg.cert_pin_enc),
             "saved": request.query_params.get("saved"),
             "cert_status": request.query_params.get("cert"),
+            "conexion": request.query_params.get("conexion"),
             "page_title": "Config Factura",
         },
     )
@@ -343,6 +344,8 @@ async def save_factura_config(request: Request, db: Session = Depends(get_db)):
     cfg.emisor_otras_senas = g("emisor_otras_senas")[:160] or None
     cfg.emisor_telefono = _digits(g("emisor_telefono"), 20) or None
     cfg.emisor_correo = g("emisor_correo")[:160] or None
+    cfg.sucursal = _digits(g("sucursal"), 3) or "001"
+    cfg.terminal = _digits(g("terminal"), 5) or "00001"
     cfg.atv_usuario = g("atv_usuario")[:160] or None
     # Secretos: solo se actualizan si el campo trae algo (write-only).
     if g("atv_clave"):
@@ -367,6 +370,23 @@ async def save_factura_config(request: Request, db: Session = Depends(get_db)):
         cert = "ok" if ok else "bad"
     url = "/admin/factura/config?saved=1" + (f"&cert={cert}" if cert else "")
     return RedirectResponse(url=url, status_code=303)
+
+
+@router.post("/admin/factura/config/test")
+def test_factura_conexion(request: Request, db: Session = Depends(get_db)):
+    """Prueba real de autenticación con el IdP de Hacienda (ambiente configurado)."""
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    from ..factura import get_idp_token
+    cfg = db.query(FacturaConfig).first()
+    payload, err = get_idp_token(cfg)
+    if payload and payload.get("access_token"):
+        result = "ok"
+    else:
+        result = "fail"
+        import logging
+        logging.getLogger("factura").warning("Prueba IdP falló: %s", err)
+    return RedirectResponse(url=f"/admin/factura/config?conexion={result}", status_code=303)
 
 
 # ─── mesas (vista de piso, accesible por todos) ───────────────────────────────

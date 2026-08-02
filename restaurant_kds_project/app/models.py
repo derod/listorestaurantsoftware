@@ -325,6 +325,9 @@ class FacturaConfig(Base):
     emisor_otras_senas: Mapped[str | None] = mapped_column(String(160), nullable=True)
     emisor_telefono: Mapped[str | None] = mapped_column(String(20), nullable=True)
     emisor_correo: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    sucursal: Mapped[str] = mapped_column(String(3), default="001")
+    terminal: Mapped[str] = mapped_column(String(5), default="00001")
+    consecutivo_num: Mapped[int] = mapped_column(Integer, default=0)  # último consecutivo de factura usado
     atv_usuario: Mapped[str | None] = mapped_column(String(160), nullable=True)
     atv_clave_enc: Mapped[str | None] = mapped_column(Text, nullable=True)      # cifrado
     cert_filename: Mapped[str | None] = mapped_column(String(200), nullable=True)

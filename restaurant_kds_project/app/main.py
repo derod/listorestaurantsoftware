@@ -106,6 +106,12 @@ def _ensure_schema():
         if "capacity" not in tbl_cols:
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE tables ADD COLUMN capacity INTEGER DEFAULT 4"))
+    if "factura_config" in insp.get_table_names():
+        fc_cols = {c["name"] for c in insp.get_columns("factura_config")}
+        for col, ddl in {"sucursal": "VARCHAR(3) DEFAULT '001'", "terminal": "VARCHAR(5) DEFAULT '00001'", "consecutivo_num": "INTEGER DEFAULT 0"}.items():
+            if col not in fc_cols:
+                with engine.begin() as conn:
+                    conn.execute(text(f"ALTER TABLE factura_config ADD COLUMN {col} {ddl}"))
     if "orders" in insp.get_table_names():
         ord_cols = {c["name"] for c in insp.get_columns("orders")}
         if "order_label" not in ord_cols:
