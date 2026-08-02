@@ -89,6 +89,7 @@ def _serialize_order(order) -> dict:
         "waiter_name": order.waiter_name,
         "order_label": order.order_label,
         "table_number": order.table.number if getattr(order, "table", None) else None,
+        "table_label": ((order.table.name or "").strip() or str(order.table.number)) if getattr(order, "table", None) else None,
         "items": [
             {
                 "name": item.product.name if item.product else str(item.product_id),

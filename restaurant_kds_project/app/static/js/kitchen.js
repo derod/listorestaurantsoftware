@@ -426,8 +426,9 @@ function renderOrders(orders) {
       : "";
 
     /* Mesa asignada */
-    const tableHtml = order.table_number
-      ? `<div class="order-table-big">🍽️ Mesa ${order.table_number}</div>`
+    const _tlabel = order.table_label || order.table_number;
+    const tableHtml = _tlabel
+      ? `<div class="order-table-big">🍽️ Mesa ${String(_tlabel).replace(/[<>]/g, "")}</div>`
       : "";
 
     /* Buttons depend on status */

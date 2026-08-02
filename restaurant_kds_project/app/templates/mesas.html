@@ -33,7 +33,10 @@
 
 <div class="mesas-head">
   <h1>Mesas</h1>
-  <a href="/station-a/dashboard" class="btn-home" style="background:var(--muted);color:var(--text);border-radius:12px;padding:12px 18px;text-decoration:none;font-weight:700;">← Salón</a>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <a href="/admin/mesas" style="background:rgba(255,140,66,0.2);color:#ff8c42;border-radius:12px;padding:12px 18px;text-decoration:none;font-weight:800;">✏️ Editar plano</a>
+    <a href="/station-a/dashboard" style="background:var(--muted);color:var(--text);border-radius:12px;padding:12px 18px;text-decoration:none;font-weight:700;">← Salón</a>
+  </div>
 </div>
 
 <div class="floor-wrap">
@@ -71,6 +74,7 @@
   let openId = null;
 
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c])); }
+  function labelOf(t) { return (t.name && String(t.name).trim()) ? String(t.name).trim() : String(t.number); }
   function sinceLabel(iso) {
     if (!iso) return "";
     const t = new Date(iso.replace("Z", ""));
@@ -166,9 +170,11 @@
       ? `<circle cx="${sx + (cap<=2?12:24)}" cy="${sy - (cap<=2?12:16)}" r="8" fill="#111" stroke="#ffb27a" stroke-width="1.5"/>
          <text x="${sx + (cap<=2?12:24)}" y="${sy - (cap<=2?12:16)}" text-anchor="middle" dominant-baseline="central" font-size="9" font-weight="900" fill="#ffb27a">${t.order_count||0}</text>`
       : "";
+    const lbl = esc(labelOf(t));
+    const fs = lbl.length > 3 ? 10 : 15;
     return `<g class="mesa" data-id="${t.id}">
       ${chairs}${shape}
-      <text x="${sx}" y="${sy}" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="900" fill="#0b0f18">${t.number}</text>
+      <text x="${sx}" y="${sy}" text-anchor="middle" dominant-baseline="central" font-size="${fs}" font-weight="900" fill="#0b0f18">${lbl}</text>
       ${badge}
     </g>`;
   }
@@ -189,7 +195,7 @@
   function refreshModal() {
     const t = tables.find(x => x.id === openId);
     if (!t) { closeModal(); return; }
-    document.getElementById("mModalTitle").textContent = "Mesa " + t.number + (t.name ? " · " + t.name : "");
+    document.getElementById("mModalTitle").textContent = "Mesa " + labelOf(t);
     document.getElementById("mModalSub").textContent =
       t.status === "ocupada" ? (t.order_count + " pedido(s) · abierta " + sinceLabel(t.opened_at)) : "Mesa libre · " + (t.capacity || 4) + " personas";
     const body = document.getElementById("mModalBody");

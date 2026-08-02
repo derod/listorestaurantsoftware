@@ -269,6 +269,60 @@ async def save_mesas_layout(request: Request, db: Session = Depends(get_db)):
     return {"ok": True}
 
 
+@router.post("/admin/mesas/save")
+async def save_mesas(request: Request, db: Session = Depends(get_db)):
+    """Guardado completo del editor: crea/actualiza/elimina mesas con su etiqueta,
+    capacidad y posición. Los pedidos de una mesa eliminada se desligan."""
+    if not require_admin(request):
+        return JSONResponse(status_code=403, content={"detail": "No autorizado"})
+    data = await request.json()
+    rows = data.get("tables", [])
+    deleted = []
+    for x in data.get("deleted_ids", []):
+        try:
+            deleted.append(int(x))
+        except (TypeError, ValueError):
+            pass
+    # Validar números únicos entre las filas.
+    try:
+        nums = [int(r["number"]) for r in rows]
+    except (KeyError, TypeError, ValueError):
+        return JSONResponse(status_code=400, content={"detail": "Datos inválidos"})
+    if len(nums) != len(set(nums)):
+        return JSONResponse(status_code=400, content={"detail": "Hay números de mesa repetidos"})
+    # Eliminaciones (desligar pedidos primero).
+    for did in deleted:
+        t = db.query(Table).filter(Table.id == did).first()
+        if t:
+            db.query(Order).filter(Order.table_id == t.id).update({"table_id": None})
+            db.delete(t)
+    db.flush()
+    existing = {t.id: t for t in db.query(Table).all()}
+    # Fase 1: números temporales para no chocar con el índice único al renumerar.
+    for t in existing.values():
+        t.number = -(abs(t.id) + 1000)
+    db.flush()
+    # Fase 2: aplicar / crear.
+    for r in rows:
+        t = existing.get(r.get("id"))
+        if not t:
+            t = Table(status="libre")
+            db.add(t)
+        t.number = int(r["number"])
+        t.name = (str(r.get("name") or "").strip() or None)
+        try:
+            t.capacity = max(1, min(12, int(r.get("capacity") or 4)))
+        except (TypeError, ValueError):
+            t.capacity = 4
+        try:
+            t.pos_x = max(0.0, min(100.0, float(r["pos_x"])))
+            t.pos_y = max(0.0, min(100.0, float(r["pos_y"])))
+        except (KeyError, TypeError, ValueError):
+            pass
+    db.commit()
+    return {"ok": True}
+
+
 # ─── kitchen login ────────────────────────────────────────────────────────────
 
 @router.get("/kitchen/login")

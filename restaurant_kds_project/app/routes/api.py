@@ -24,6 +24,7 @@ def serialize_order(order: Order):
         "order_label": order.order_label,
         "table_id": order.table_id,
         "table_number": order.table.number if order.table else None,
+        "table_label": ((order.table.name or "").strip() or str(order.table.number)) if order.table else None,
         "requires_acceptance": order.requires_acceptance,
         "created_at": order.created_at.isoformat() + "Z",
         "accepted_at": (order.accepted_at.isoformat() + "Z") if order.accepted_at else None,
