@@ -9,7 +9,7 @@ from pathlib import Path
 import shutil
 
 from ..database import get_db, DATA_DIR
-from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, ContactMessage, AccessLog, WorkSession, Ingredient, Recipe, RecipeItem, InventoryMovement, Expense, FixedExpense, Purchase, PurchaseItem, Table, InvoiceClient, cr_now
+from ..models import Product, Order, OrderItem, AudioSettings, Waiter, Inventory, InventoryLog, Sale, SaleItem, ContactMessage, AccessLog, WorkSession, Ingredient, Recipe, RecipeItem, InventoryMovement, Expense, FixedExpense, Purchase, PurchaseItem, Table, InvoiceClient, FacturaConfig, cr_now
 from ..inventory_service import create_inventory_movement
 from pydantic import BaseModel
 from ..utils import duration_seconds
@@ -294,6 +294,79 @@ def delete_invoice_client(client_id: int, request: Request, db: Session = Depend
         db.delete(c)
         db.commit()
     return RedirectResponse(url="/admin/factura", status_code=303)
+
+
+def _digits(s, n):
+    return "".join(ch for ch in (s or "") if ch.isdigit())[:n]
+
+
+@router.get("/admin/factura/config")
+def factura_config_page(request: Request, db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    cfg = db.query(FacturaConfig).first()
+    return templates.TemplateResponse(
+        "admin_factura_config.html",
+        {
+            "request": request, "cfg": cfg, "id_types": FACTURA_ID_TYPES,
+            "has_clave": bool(cfg and cfg.atv_clave_enc),
+            "has_pin": bool(cfg and cfg.cert_pin_enc),
+            "saved": request.query_params.get("saved"),
+            "cert_status": request.query_params.get("cert"),
+            "page_title": "Config Factura",
+        },
+    )
+
+
+@router.post("/admin/factura/config")
+async def save_factura_config(request: Request, db: Session = Depends(get_db)):
+    if not require_admin(request):
+        return RedirectResponse(url="/admin/login")
+    from ..factura import CERTS_DIR, encrypt, decrypt, validate_cert
+    cfg = db.query(FacturaConfig).first()
+    if not cfg:
+        cfg = FacturaConfig()
+        db.add(cfg)
+    form = await request.form()
+
+    def g(k):
+        return (form.get(k) or "").strip()
+
+    cfg.ambiente = "produccion" if g("ambiente") == "produccion" else "sandbox"
+    cfg.emisor_nombre = g("emisor_nombre")[:100] or None
+    cfg.emisor_id_tipo = g("emisor_id_tipo") or "02"
+    cfg.emisor_id_numero = _digits(g("emisor_id_numero"), 20) or None
+    cfg.emisor_actividad = _digits(g("emisor_actividad"), 6) or None
+    cfg.emisor_provincia = _digits(g("emisor_provincia"), 1) or None
+    cfg.emisor_canton = _digits(g("emisor_canton"), 2) or None
+    cfg.emisor_distrito = _digits(g("emisor_distrito"), 2) or None
+    cfg.emisor_otras_senas = g("emisor_otras_senas")[:160] or None
+    cfg.emisor_telefono = _digits(g("emisor_telefono"), 20) or None
+    cfg.emisor_correo = g("emisor_correo")[:160] or None
+    cfg.atv_usuario = g("atv_usuario")[:160] or None
+    # Secretos: solo se actualizan si el campo trae algo (write-only).
+    if g("atv_clave"):
+        cfg.atv_clave_enc = encrypt(g("atv_clave"))
+    if g("cert_pin"):
+        cfg.cert_pin_enc = encrypt(g("cert_pin"))
+    # Certificado .p12/.pfx en carpeta privada.
+    up = form.get("cert_file")
+    if up is not None and hasattr(up, "filename") and up.filename:
+        ext = Path(up.filename).suffix.lower()
+        if ext in (".p12", ".pfx"):
+            dest = CERTS_DIR / f"cert_emisor{ext}"
+            with dest.open("wb") as fh:
+                shutil.copyfileobj(up.file, fh)
+            cfg.cert_filename = dest.name
+    db.commit()
+
+    # Validación opcional del certificado con el PIN guardado.
+    cert = None
+    if cfg.cert_filename and cfg.cert_pin_enc:
+        ok, _detail = validate_cert(CERTS_DIR / cfg.cert_filename, decrypt(cfg.cert_pin_enc))
+        cert = "ok" if ok else "bad"
+    url = "/admin/factura/config?saved=1" + (f"&cert={cert}" if cert else "")
+    return RedirectResponse(url=url, status_code=303)
 
 
 # ─── mesas (vista de piso, accesible por todos) ───────────────────────────────

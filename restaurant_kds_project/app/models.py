@@ -309,6 +309,29 @@ class InvoiceClient(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
 
 
+class FacturaConfig(Base):
+    """Configuración del emisor + credenciales de Hacienda (fila única).
+    Los secretos (clave ATV, PIN del certificado) se guardan cifrados."""
+    __tablename__ = "factura_config"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ambiente: Mapped[str] = mapped_column(String(20), default="sandbox")  # sandbox | produccion
+    emisor_nombre: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    emisor_id_tipo: Mapped[str] = mapped_column(String(2), default="02")
+    emisor_id_numero: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    emisor_actividad: Mapped[str | None] = mapped_column(String(6), nullable=True)  # código actividad económica
+    emisor_provincia: Mapped[str | None] = mapped_column(String(1), nullable=True)
+    emisor_canton: Mapped[str | None] = mapped_column(String(2), nullable=True)
+    emisor_distrito: Mapped[str | None] = mapped_column(String(2), nullable=True)
+    emisor_otras_senas: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    emisor_telefono: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    emisor_correo: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    atv_usuario: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    atv_clave_enc: Mapped[str | None] = mapped_column(Text, nullable=True)      # cifrado
+    cert_filename: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    cert_pin_enc: Mapped[str | None] = mapped_column(Text, nullable=True)       # cifrado
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now, onupdate=cr_now)
+
+
 class Table(Base):
     """Mesa del salón para la vista de piso. Estado libre/ocupada (cierre manual)."""
     __tablename__ = "tables"

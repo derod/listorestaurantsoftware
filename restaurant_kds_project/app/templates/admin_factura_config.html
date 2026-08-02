@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .fc-head { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
+  .fc-head h1 { margin:0; font-size:28px; }
+  .fc-btn { border:none; border-radius:12px; padding:12px 20px; font-weight:800; font-size:16px; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:8px; }
+  .fc-btn.primary { background:var(--accent); color:#111; }
+  .fc-btn.ghost { background:var(--muted); color:var(--text); }
+  .fc-banner { border-radius:12px; padding:12px 16px; margin-bottom:18px; font-weight:700; font-size:15px; }
+  .fc-banner.ok { background:rgba(76,175,80,0.15); border:1px solid rgba(76,175,80,0.5); color:var(--green); }
+  .fc-banner.bad { background:rgba(228,91,91,0.15); border:1px solid rgba(228,91,91,0.5); color:var(--red); }
+  .fc-card { background:var(--card); border:1px solid var(--border); border-radius:18px; padding:22px; margin-bottom:22px; }
+  .fc-card h2 { margin:0 0 4px; font-size:19px; }
+  .fc-card .hint { color:var(--muted); font-size:13px; margin-bottom:16px; }
+  .fc-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; }
+  .fc-field { display:flex; flex-direction:column; gap:6px; }
+  .fc-field.full { grid-column:1/-1; }
+  .fc-field label { font-size:12px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; }
+  .fc-field input, .fc-field select { background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:13px 14px; font-size:16px; color:var(--text); font-family:inherit; outline:none; }
+  .fc-field input:focus, .fc-field select:focus { border-color:var(--accent); }
+  .fc-secret { font-size:12px; color:var(--muted); }
+  .fc-actions { display:flex; justify-content:flex-end; gap:10px; }
+</style>
+
+<div class="fc-head">
+  <h1>Configuración — Factura Electrónica</h1>
+  <a href="/admin/factura" class="fc-btn ghost">← Clientes</a>
+</div>
+
+{% if saved %}
+  <div class="fc-banner ok">Configuración guardada.
+    {% if cert_status == 'ok' %} Certificado válido con el PIN. ✓{% elif cert_status == 'bad' %} <span style="color:var(--red)">Ojo: el certificado o el PIN no son válidos. ✗</span>{% endif %}
+  </div>
+{% endif %}
+
+<form method="post" action="/admin/factura/config" enctype="multipart/form-data" autocomplete="off">
+
+  <div class="fc-card">
+    <h2>Ambiente</h2>
+    <div class="hint">Sandbox para pruebas, Producción para facturas reales. (client_id se ajusta solo.)</div>
+    <div class="fc-field" style="max-width:320px;">
+      <label>Ambiente de Hacienda</label>
+      <select name="ambiente">
+        <option value="sandbox" {{ 'selected' if not cfg or cfg.ambiente != 'produccion' else '' }}>Sandbox (pruebas)</option>
+        <option value="produccion" {{ 'selected' if cfg and cfg.ambiente == 'produccion' else '' }}>Producción</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="fc-card">
+    <h2>Datos del emisor</h2>
+    <div class="hint">Los datos de tu negocio tal como están en Hacienda.</div>
+    <div class="fc-grid">
+      <div class="fc-field full">
+        <label>Nombre / Razón social</label>
+        <input name="emisor_nombre" maxlength="100" value="{{ cfg.emisor_nombre or '' }}" placeholder="Ej: Mi Restaurante S.A.">
+      </div>
+      <div class="fc-field">
+        <label>Tipo de identificación</label>
+        <select name="emisor_id_tipo">
+          {% for code, label in id_types %}
+          <option value="{{ code }}" {{ 'selected' if cfg and cfg.emisor_id_tipo == code else ('selected' if not cfg and code=='02' else '') }}>{{ code }} — {{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="fc-field">
+        <label>Número de identificación</label>
+        <input name="emisor_id_numero" maxlength="20" inputmode="numeric" value="{{ cfg.emisor_id_numero or '' }}" placeholder="Solo números">
+      </div>
+      <div class="fc-field">
+        <label>Código actividad económica</label>
+        <input name="emisor_actividad" maxlength="6" inputmode="numeric" value="{{ cfg.emisor_actividad or '' }}" placeholder="Ej: 561000">
+      </div>
+      <div class="fc-field">
+        <label>Teléfono</label>
+        <input name="emisor_telefono" maxlength="20" inputmode="numeric" value="{{ cfg.emisor_telefono or '' }}">
+      </div>
+      <div class="fc-field">
+        <label>Correo del emisor</label>
+        <input name="emisor_correo" type="email" maxlength="160" value="{{ cfg.emisor_correo or '' }}">
+      </div>
+    </div>
+  </div>
+
+  <div class="fc-card">
+    <h2>Ubicación</h2>
+    <div class="hint">Códigos de Provincia (1 dígito), Cantón y Distrito (2 dígitos) según Hacienda.</div>
+    <div class="fc-grid">
+      <div class="fc-field"><label>Provincia</label><input name="emisor_provincia" maxlength="1" inputmode="numeric" value="{{ cfg.emisor_provincia or '' }}"></div>
+      <div class="fc-field"><label>Cantón</label><input name="emisor_canton" maxlength="2" inputmode="numeric" value="{{ cfg.emisor_canton or '' }}"></div>
+      <div class="fc-field"><label>Distrito</label><input name="emisor_distrito" maxlength="2" inputmode="numeric" value="{{ cfg.emisor_distrito or '' }}"></div>
+      <div class="fc-field full"><label>Otras señas</label><input name="emisor_otras_senas" maxlength="160" value="{{ cfg.emisor_otras_senas or '' }}" placeholder="Dirección exacta"></div>
+    </div>
+  </div>
+
+  <div class="fc-card">
+    <h2>Credenciales del ATV</h2>
+    <div class="hint">Usuario y clave que generaste en el ATV para el ambiente seleccionado. La clave se guarda cifrada.</div>
+    <div class="fc-grid">
+      <div class="fc-field">
+        <label>Usuario ATV</label>
+        <input name="atv_usuario" maxlength="160" value="{{ cfg.atv_usuario or '' }}" placeholder="cpj-...@stag.comprobanteselectronicos.go.cr">
+      </div>
+      <div class="fc-field">
+        <label>Clave ATV</label>
+        <input name="atv_clave" type="password" placeholder="{{ '•••••••• (configurada — dejar vacío para no cambiar)' if has_clave else 'Ingresá la clave' }}">
+        <span class="fc-secret">{{ '✓ Clave configurada' if has_clave else 'Sin configurar' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="fc-card">
+    <h2>Certificado digital (.p12)</h2>
+    <div class="hint">Tu llave criptográfica del ATV. Se guarda en una carpeta privada (no accesible por web). El PIN se guarda cifrado.</div>
+    <div class="fc-grid">
+      <div class="fc-field">
+        <label>Archivo del certificado (.p12 / .pfx)</label>
+        <input name="cert_file" type="file" accept=".p12,.pfx">
+        <span class="fc-secret">{{ '✓ Cargado: ' + cfg.cert_filename if cfg and cfg.cert_filename else 'Sin cargar' }}</span>
+      </div>
+      <div class="fc-field">
+        <label>PIN del certificado</label>
+        <input name="cert_pin" type="password" placeholder="{{ '•••••••• (configurado — dejar vacío para no cambiar)' if has_pin else 'Ingresá el PIN' }}">
+        <span class="fc-secret">{{ '✓ PIN configurado' if has_pin else 'Sin configurar' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="fc-actions">
+    <button class="fc-btn primary" type="submit">Guardar configuración</button>
+  </div>
+</form>
+{% endblock %}
