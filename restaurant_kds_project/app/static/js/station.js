@@ -96,6 +96,16 @@ let stationProducts = [];
 let stationSort = "manual";    // "manual" | "az"
 let stationReorder = false;
 let stationCategory = "General";  // pestaña de categoría activa
+let stationQuitar = false;        // modo "Quitar" (ocultar productos del panel)
+let hiddenIds = new Set();        // productos ocultos en este dispositivo (localStorage)
+try { hiddenIds = new Set(JSON.parse(localStorage.getItem("station_hidden") || "[]").map(Number)); } catch (e) {}
+function saveHidden() { try { localStorage.setItem("station_hidden", JSON.stringify([...hiddenIds])); } catch (e) {} }
+function toggleHidden(id) {
+  id = Number(id);
+  if (hiddenIds.has(id)) hiddenIds.delete(id); else hiddenIds.add(id);
+  saveHidden();
+  applyCategoryFilter();
+}
 
 function productImg(p) {
   return p.image_path ? `<img src="${p.image_path}" alt="" style="width:100%;height:110px;object-fit:cover;border-radius:12px;margin-bottom:8px;">` : "";
@@ -118,6 +128,7 @@ function bindProductButtons() {
     if (btn.dataset.bound) return;
     btn.dataset.bound = "1";
     btn.addEventListener("click", () => {
+      if (stationQuitar) { toggleHidden(btn.dataset.productId); return; }
       flashTap(btn);
       addProduct(btn.dataset.productId, btn.dataset.productName);
     });
@@ -134,7 +145,12 @@ function applyCategoryFilter() {
   const shown = (stationCategory === "Uber") ? "Desayuno" : stationCategory;
   grid.querySelectorAll(".product-btn").forEach(btn => {
     const c = btn.dataset.category || "General";
-    btn.style.display = (c === shown) ? "" : "none";
+    const inCat = (c === shown);
+    const isHidden = hiddenIds.has(Number(btn.dataset.productId));
+    btn.classList.toggle("is-hidden", isHidden);
+    if (!inCat) { btn.style.display = "none"; return; }
+    // En modo Quitar se ven todos (los ocultos en gris con ＋); si no, se esconden.
+    btn.style.display = (stationQuitar || !isHidden) ? "" : "none";
   });
   // El campo "Nombre de la orden" solo aparece en modo Uber.
   const wrap = document.getElementById("uberNameWrap");
@@ -304,9 +320,32 @@ if (_reorderBtn) {
     if (stationReorder) {
       stationSort = "manual";
       document.querySelectorAll(".sort-btn").forEach(x => x.classList.toggle("active", x.dataset.sort === "manual"));
+      // salir del modo Quitar si estaba activo
+      stationQuitar = false;
+      const qb = document.getElementById("quitarBtn");
+      if (qb) { qb.classList.remove("on"); qb.textContent = "✕ Quitar"; }
+      document.getElementById("productsGrid").classList.remove("quitar-on");
     }
     document.querySelectorAll(".sort-btn").forEach(x => { x.disabled = stationReorder; });
     renderProducts();
+  });
+}
+
+// Modo "Quitar": ocultar/mostrar productos del panel (guardado en el dispositivo)
+const _quitarBtn = document.getElementById("quitarBtn");
+if (_quitarBtn) {
+  _quitarBtn.addEventListener("click", () => {
+    if (stationReorder) {   // salir de Ordenar primero
+      stationReorder = false;
+      if (_reorderBtn) { _reorderBtn.classList.remove("on"); _reorderBtn.textContent = "↕ Ordenar"; }
+      document.querySelectorAll(".sort-btn").forEach(x => { x.disabled = false; });
+      renderProducts();
+    }
+    stationQuitar = !stationQuitar;
+    _quitarBtn.classList.toggle("on", stationQuitar);
+    _quitarBtn.textContent = stationQuitar ? "✓ Listo" : "✕ Quitar";
+    document.getElementById("productsGrid").classList.toggle("quitar-on", stationQuitar);
+    applyCategoryFilter();
   });
 }
 
