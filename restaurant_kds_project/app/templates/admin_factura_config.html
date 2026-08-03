@@ -1,154 +1,283 @@
 {% extends 'base.html' %}
 {% block content %}
 <style>
-  .fc-head { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
-  .fc-head h1 { margin:0; font-size:28px; }
-  .fc-btn { border:none; border-radius:12px; padding:12px 20px; font-weight:800; font-size:16px; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:8px; }
-  .fc-btn.primary { background:var(--accent); color:#111; }
-  .fc-btn.ghost { background:var(--muted); color:var(--text); }
-  .fc-banner { border-radius:12px; padding:12px 16px; margin-bottom:18px; font-weight:700; font-size:15px; }
-  .fc-banner.ok { background:rgba(76,175,80,0.15); border:1px solid rgba(76,175,80,0.5); color:var(--green); }
-  .fc-banner.bad { background:rgba(228,91,91,0.15); border:1px solid rgba(228,91,91,0.5); color:var(--red); }
-  .fc-card { background:var(--card); border:1px solid var(--border); border-radius:18px; padding:22px; margin-bottom:22px; }
-  .fc-card h2 { margin:0 0 4px; font-size:19px; }
-  .fc-card .hint { color:var(--muted); font-size:13px; margin-bottom:16px; }
-  .fc-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; }
-  .fc-field { display:flex; flex-direction:column; gap:6px; }
-  .fc-field.full { grid-column:1/-1; }
-  .fc-field label { font-size:12px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; }
-  .fc-field input, .fc-field select { background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:13px 14px; font-size:16px; color:var(--text); font-family:inherit; outline:none; }
-  .fc-field input:focus, .fc-field select:focus { border-color:var(--accent); }
-  .fc-secret { font-size:12px; color:var(--muted); }
-  .fc-actions { display:flex; justify-content:flex-end; gap:10px; }
+  .wz { max-width: 720px; margin: 0 auto; }
+  .wz-top { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:16px; }
+  .wz-top h1 { margin:0; font-size:30px; }
+  .wz-back-link { background:var(--muted); color:var(--text); border-radius:12px; padding:12px 18px; text-decoration:none; font-weight:800; font-size:18px; }
+
+  /* Progreso de pasos */
+  .wz-steps { display:flex; gap:8px; margin-bottom:22px; flex-wrap:wrap; }
+  .wz-chip { flex:1; min-width:120px; text-align:center; padding:12px 8px; border-radius:14px; background:var(--card); border:2px solid var(--border); font-size:17px; font-weight:800; color:#8ea0c0; }
+  .wz-chip.active { border-color:var(--accent); color:var(--accent); background:rgba(104,211,145,0.10); }
+  .wz-chip.done { border-color:rgba(104,211,145,0.4); color:#9fdcb4; }
+
+  .wz-card { background:var(--card); border:1px solid var(--border); border-radius:20px; padding:26px; }
+  .wz-card-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:6px; }
+  .wz-card-head h2 { margin:0; font-size:26px; }
+  .wz-sub { color:#b7becd; font-size:18px; margin-bottom:22px; }
+
+  .wz-field { margin-bottom:24px; }
+  .wz-field label { display:block; font-size:21px; font-weight:800; margin-bottom:8px; }
+  .wz-field input, .wz-field select { width:100%; font-size:20px; padding:16px 16px; border-radius:14px; border:2px solid var(--border); background:var(--bg); color:var(--text); font-family:inherit; outline:none; }
+  .wz-field input:focus, .wz-field select:focus { border-color:var(--accent); }
+  .wz-help { font-size:18px; color:#93a1ba; margin-top:8px; line-height:1.4; }
+  .wz-tag { font-size:16px; font-weight:800; color:var(--green); }
+
+  .wz-nav { display:flex; gap:14px; margin-top:8px; }
+  .wz-btn { border:none; border-radius:16px; padding:18px 22px; font-size:22px; font-weight:900; cursor:pointer; flex:1; }
+  .wz-btn.next { background:var(--accent); color:#111; }
+  .wz-btn.back { background:var(--muted); color:var(--text); }
+  .wz-btn.save { background:var(--accent); color:#111; }
+
+  .wz-info { width:46px; height:46px; min-width:46px; border-radius:50%; border:2px solid var(--blue); background:rgba(77,163,255,0.15); color:var(--blue); font-size:24px; font-weight:900; cursor:pointer; font-family:Georgia, serif; }
+
+  .wz-banner { border-radius:14px; padding:16px 18px; margin-bottom:18px; font-weight:800; font-size:19px; }
+  .wz-banner.ok { background:rgba(76,175,80,0.15); border:1px solid rgba(76,175,80,0.5); color:var(--green); }
+  .wz-banner.bad { background:rgba(228,91,91,0.15); border:1px solid rgba(228,91,91,0.5); color:var(--red); }
+
+  .wz-test { background:var(--card); border:1px solid var(--border); border-radius:20px; padding:24px; margin-top:22px; }
+  .wz-test h2 { margin:0 0 6px; font-size:22px; }
+  .wz-test .wz-help { margin-bottom:16px; }
+  .wz-test button { background:rgba(77,163,255,0.18); color:var(--blue); border:2px solid rgba(77,163,255,0.4); border-radius:16px; padding:16px 24px; font-size:20px; font-weight:900; cursor:pointer; }
+
+  /* Modal de información */
+  .wz-modal-ov { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+  .wz-modal-ov.open { display:flex; }
+  .wz-modal { background:var(--bg); border:1px solid var(--border); border-radius:20px; padding:26px; max-width:460px; width:100%; }
+  .wz-modal h3 { margin:0 0 12px; font-size:24px; }
+  .wz-modal p { font-size:19px; line-height:1.5; color:#cfd5e1; margin:0 0 18px; }
+  .wz-modal button { width:100%; background:var(--accent); color:#111; border:none; border-radius:14px; padding:16px; font-size:20px; font-weight:900; cursor:pointer; }
 </style>
 
-<div class="fc-head">
-  <h1>Configuración — Factura Electrónica</h1>
-  <a href="/admin/factura" class="fc-btn ghost">← Clientes</a>
-</div>
-
-{% if saved %}
-  <div class="fc-banner ok">Configuración guardada.
-    {% if cert_status == 'ok' %} Certificado válido con el PIN. ✓{% elif cert_status == 'bad' %} <span style="color:var(--red)">Ojo: el certificado o el PIN no son válidos. ✗</span>{% endif %}
+<div class="wz">
+  <div class="wz-top">
+    <h1>Configurar Factura</h1>
+    <a href="/admin/factura" class="wz-back-link">← Clientes</a>
   </div>
-{% endif %}
-{% if conexion == 'ok' %}
-  <div class="fc-banner ok">✓ Conexión con Hacienda exitosa — las credenciales del ATV funcionan.</div>
-{% elif conexion == 'fail' %}
-  <div class="fc-banner bad">✗ No se pudo autenticar con Hacienda. Revisá usuario, clave y ambiente.</div>
-{% endif %}
 
-<form method="post" action="/admin/factura/config" enctype="multipart/form-data" autocomplete="off">
-
-  <div class="fc-card">
-    <h2>Ambiente</h2>
-    <div class="hint">Sandbox para pruebas, Producción para facturas reales. (client_id se ajusta solo.)</div>
-    <div class="fc-field" style="max-width:320px;">
-      <label>Ambiente de Hacienda</label>
-      <select name="ambiente">
-        <option value="sandbox" {{ 'selected' if not cfg or cfg.ambiente != 'produccion' else '' }}>Sandbox (pruebas)</option>
-        <option value="produccion" {{ 'selected' if cfg and cfg.ambiente == 'produccion' else '' }}>Producción</option>
-      </select>
+  {% if saved %}
+    <div class="wz-banner ok">✓ Se guardó la configuración.
+      {% if cert_status == 'ok' %} Su firma digital es válida.{% elif cert_status == 'bad' %} <span style="color:var(--red)">Revise: la firma o su clave (PIN) no son correctas.</span>{% endif %}
     </div>
+  {% endif %}
+  {% if conexion == 'ok' %}<div class="wz-banner ok">✓ Conexión con Hacienda exitosa.</div>
+  {% elif conexion == 'fail' %}<div class="wz-banner bad">✗ No se pudo conectar con Hacienda. Revise el usuario y la clave.</div>{% endif %}
+
+  <div class="wz-steps">
+    <div class="wz-chip active" data-chip="1">1. Negocio</div>
+    <div class="wz-chip" data-chip="2">2. Ubicación</div>
+    <div class="wz-chip" data-chip="3">3. Hacienda</div>
+    <div class="wz-chip" data-chip="4">4. Firma digital</div>
   </div>
 
-  <div class="fc-card">
-    <h2>Datos del emisor</h2>
-    <div class="hint">Los datos de tu negocio tal como están en Hacienda.</div>
-    <div class="fc-grid">
-      <div class="fc-field full">
-        <label>Nombre / Razón social</label>
-        <input name="emisor_nombre" maxlength="100" value="{{ cfg.emisor_nombre or '' }}" placeholder="Ej: Mi Restaurante S.A.">
+  <form method="post" action="/admin/factura/config" enctype="multipart/form-data" autocomplete="off" id="wzForm">
+
+    <!-- Paso 1: Negocio -->
+    <div class="wz-card wz-step" data-step="1">
+      <div class="wz-card-head"><h2>Su negocio</h2><button type="button" class="wz-info" data-info="negocio">i</button></div>
+      <div class="wz-sub">Los datos de su empresa, tal como están en Hacienda.</div>
+
+      <div class="wz-field">
+        <label>¿Está probando o ya va a facturar de verdad?</label>
+        <select name="ambiente">
+          <option value="sandbox" {{ 'selected' if not cfg or cfg.ambiente != 'produccion' else '' }}>Estoy probando</option>
+          <option value="produccion" {{ 'selected' if cfg and cfg.ambiente == 'produccion' else '' }}>Facturas reales</option>
+        </select>
+        <div class="wz-help">Si apenas está configurando, deje "Estoy probando".</div>
       </div>
-      <div class="fc-field">
-        <label>Tipo de identificación</label>
+
+      <div class="wz-field">
+        <label>Nombre del negocio</label>
+        <input name="emisor_nombre" maxlength="100" value="{{ cfg.emisor_nombre or '' }}" placeholder="Ej: Mi Restaurante S.A.">
+        <div class="wz-help">El nombre de su empresa tal como está inscrita.</div>
+      </div>
+
+      <div class="wz-field">
+        <label>¿Con qué está inscrito?</label>
         <select name="emisor_id_tipo">
           {% for code, label in id_types %}
-          <option value="{{ code }}" {{ 'selected' if cfg and cfg.emisor_id_tipo == code else ('selected' if not cfg and code=='02' else '') }}>{{ code }} — {{ label }}</option>
+          <option value="{{ code }}" {{ 'selected' if cfg and cfg.emisor_id_tipo == code else ('selected' if not cfg and code=='02' else '') }}>{{ label }}</option>
           {% endfor %}
         </select>
+        <div class="wz-help">Casi siempre es "Cédula Jurídica" para empresas.</div>
       </div>
-      <div class="fc-field">
-        <label>Número de identificación</label>
+
+      <div class="wz-field">
+        <label>Número de cédula</label>
         <input name="emisor_id_numero" maxlength="20" inputmode="numeric" value="{{ cfg.emisor_id_numero or '' }}" placeholder="Solo números">
+        <div class="wz-help">Escriba solo los números, sin guiones.</div>
       </div>
-      <div class="fc-field">
-        <label>Código actividad económica</label>
+
+      <div class="wz-field">
+        <label>Código de actividad</label>
         <input name="emisor_actividad" maxlength="6" inputmode="numeric" value="{{ cfg.emisor_actividad or '' }}" placeholder="Ej: 561000">
+        <div class="wz-help">El código que Hacienda le asignó a su actividad. Para restaurante suele ser 561000.</div>
       </div>
-      <div class="fc-field">
-        <label>Teléfono</label>
+
+      <div class="wz-field">
+        <label>Teléfono del negocio</label>
         <input name="emisor_telefono" maxlength="20" inputmode="numeric" value="{{ cfg.emisor_telefono or '' }}">
+        <div class="wz-help">Opcional.</div>
       </div>
-      <div class="fc-field">
-        <label>Correo del emisor</label>
+
+      <div class="wz-field">
+        <label>Correo del negocio</label>
         <input name="emisor_correo" type="email" maxlength="160" value="{{ cfg.emisor_correo or '' }}">
+        <div class="wz-help">A este correo llegan avisos de sus facturas.</div>
+      </div>
+
+      <div class="wz-nav"><button type="button" class="wz-btn next" data-next="2">Siguiente →</button></div>
+    </div>
+
+    <!-- Paso 2: Ubicación -->
+    <div class="wz-card wz-step" data-step="2" style="display:none;">
+      <div class="wz-card-head"><h2>Ubicación del local</h2><button type="button" class="wz-info" data-info="ubicacion">i</button></div>
+      <div class="wz-sub">Dónde queda su restaurante.</div>
+
+      <div class="wz-field">
+        <label>Provincia</label>
+        <input name="emisor_provincia" maxlength="1" inputmode="numeric" value="{{ cfg.emisor_provincia or '' }}" placeholder="1 a 7">
+        <div class="wz-help">Un número del 1 al 7 (1 = San José, 2 = Alajuela, etc.).</div>
+      </div>
+
+      <div class="wz-field">
+        <label>Cantón</label>
+        <input name="emisor_canton" maxlength="2" inputmode="numeric" value="{{ cfg.emisor_canton or '' }}" placeholder="Ej: 01">
+        <div class="wz-help">El código del cantón según Hacienda.</div>
+      </div>
+
+      <div class="wz-field">
+        <label>Distrito</label>
+        <input name="emisor_distrito" maxlength="2" inputmode="numeric" value="{{ cfg.emisor_distrito or '' }}" placeholder="Ej: 01">
+        <div class="wz-help">El código del distrito según Hacienda.</div>
+      </div>
+
+      <div class="wz-field">
+        <label>Dirección exacta</label>
+        <input name="emisor_otras_senas" maxlength="160" value="{{ cfg.emisor_otras_senas or '' }}" placeholder="Ej: 100m sur de la iglesia">
+        <div class="wz-help">Las señas para llegar a su local.</div>
+      </div>
+
+      <div class="wz-nav">
+        <button type="button" class="wz-btn back" data-back="1">← Atrás</button>
+        <button type="button" class="wz-btn next" data-next="3">Siguiente →</button>
       </div>
     </div>
-  </div>
 
-  <div class="fc-card">
-    <h2>Ubicación</h2>
-    <div class="hint">Códigos de Provincia (1 dígito), Cantón y Distrito (2 dígitos) según Hacienda.</div>
-    <div class="fc-grid">
-      <div class="fc-field"><label>Provincia</label><input name="emisor_provincia" maxlength="1" inputmode="numeric" value="{{ cfg.emisor_provincia or '' }}"></div>
-      <div class="fc-field"><label>Cantón</label><input name="emisor_canton" maxlength="2" inputmode="numeric" value="{{ cfg.emisor_canton or '' }}"></div>
-      <div class="fc-field"><label>Distrito</label><input name="emisor_distrito" maxlength="2" inputmode="numeric" value="{{ cfg.emisor_distrito or '' }}"></div>
-      <div class="fc-field full"><label>Otras señas</label><input name="emisor_otras_senas" maxlength="160" value="{{ cfg.emisor_otras_senas or '' }}" placeholder="Dirección exacta"></div>
-    </div>
-  </div>
+    <!-- Paso 3: Hacienda -->
+    <div class="wz-card wz-step" data-step="3" style="display:none;">
+      <div class="wz-card-head"><h2>Datos de Hacienda</h2><button type="button" class="wz-info" data-info="hacienda">i</button></div>
+      <div class="wz-sub">El usuario y la clave que le dio el sistema ATV de Hacienda.</div>
 
-  <div class="fc-card">
-    <h2>Credenciales del ATV</h2>
-    <div class="hint">Usuario y clave que generaste en el ATV para el ambiente seleccionado. La clave se guarda cifrada.</div>
-    <div class="fc-grid">
-      <div class="fc-field">
-        <label>Usuario ATV</label>
+      <div class="wz-field">
+        <label>Usuario de Hacienda (ATV)</label>
         <input name="atv_usuario" maxlength="160" value="{{ cfg.atv_usuario or '' }}" placeholder="cpj-...@stag.comprobanteselectronicos.go.cr">
+        <div class="wz-help">Es un usuario largo que termina en "comprobanteselectronicos.go.cr".</div>
       </div>
-      <div class="fc-field">
-        <label>Clave ATV</label>
-        <input name="atv_clave" type="password" placeholder="{{ '•••••••• (configurada — dejar vacío para no cambiar)' if has_clave else 'Ingresá la clave' }}">
-        <span class="fc-secret">{{ '✓ Clave configurada' if has_clave else 'Sin configurar' }}</span>
+
+      <div class="wz-field">
+        <label>Clave de Hacienda (ATV)</label>
+        <input name="atv_clave" type="password" placeholder="{{ 'Ya está guardada — deje vacío para no cambiarla' if has_clave else 'Escriba la clave' }}">
+        <div class="wz-help">Se guarda protegida (cifrada). {% if has_clave %}<span class="wz-tag">✓ Ya configurada</span>{% endif %}</div>
       </div>
-      <div class="fc-field">
+
+      <div class="wz-field">
         <label>Sucursal</label>
         <input name="sucursal" maxlength="3" inputmode="numeric" value="{{ cfg.sucursal if cfg and cfg.sucursal else '001' }}">
+        <div class="wz-help">Si tiene un solo local, déjelo en 001.</div>
       </div>
-      <div class="fc-field">
-        <label>Terminal</label>
+
+      <div class="wz-field">
+        <label>Caja / Terminal</label>
         <input name="terminal" maxlength="5" inputmode="numeric" value="{{ cfg.terminal if cfg and cfg.terminal else '00001' }}">
+        <div class="wz-help">Si tiene una sola caja, déjelo en 00001.</div>
+      </div>
+
+      <div class="wz-nav">
+        <button type="button" class="wz-btn back" data-back="2">← Atrás</button>
+        <button type="button" class="wz-btn next" data-next="4">Siguiente →</button>
       </div>
     </div>
-  </div>
 
-  <div class="fc-card">
-    <h2>Certificado digital (.p12)</h2>
-    <div class="hint">Tu llave criptográfica del ATV. Se guarda en una carpeta privada (no accesible por web). El PIN se guarda cifrado.</div>
-    <div class="fc-grid">
-      <div class="fc-field">
-        <label>Archivo del certificado (.p12 / .pfx)</label>
+    <!-- Paso 4: Firma digital -->
+    <div class="wz-card wz-step" data-step="4" style="display:none;">
+      <div class="wz-card-head"><h2>Firma digital</h2><button type="button" class="wz-info" data-info="firma">i</button></div>
+      <div class="wz-sub">El archivo de firma que le entregó Hacienda para firmar sus facturas.</div>
+
+      <div class="wz-field">
+        <label>Archivo de firma (.p12)</label>
         <input name="cert_file" type="file" accept=".p12,.pfx">
-        <span class="fc-secret">{{ '✓ Cargado: ' + cfg.cert_filename if cfg and cfg.cert_filename else 'Sin cargar' }}</span>
+        <div class="wz-help">Es un archivo que termina en ".p12". {% if cfg and cfg.cert_filename %}<span class="wz-tag">✓ Ya cargado</span>{% endif %}</div>
       </div>
-      <div class="fc-field">
-        <label>PIN del certificado</label>
-        <input name="cert_pin" type="password" placeholder="{{ '•••••••• (configurado — dejar vacío para no cambiar)' if has_pin else 'Ingresá el PIN' }}">
-        <span class="fc-secret">{{ '✓ PIN configurado' if has_pin else 'Sin configurar' }}</span>
+
+      <div class="wz-field">
+        <label>Clave de la firma (PIN)</label>
+        <input name="cert_pin" type="password" placeholder="{{ 'Ya está guardada — deje vacío para no cambiarla' if has_pin else 'Escriba la clave del archivo' }}">
+        <div class="wz-help">Es la contraseña de ese archivo de firma. Se guarda protegida. {% if has_pin %}<span class="wz-tag">✓ Ya configurada</span>{% endif %}</div>
+      </div>
+
+      <div class="wz-nav">
+        <button type="button" class="wz-btn back" data-back="3">← Atrás</button>
+        <button type="submit" class="wz-btn save">Guardar todo ✓</button>
       </div>
     </div>
-  </div>
-
-  <div class="fc-actions">
-    <button class="fc-btn primary" type="submit">Guardar configuración</button>
-  </div>
-</form>
-
-<div class="fc-card" style="margin-top:8px;">
-  <h2>Probar conexión con Hacienda</h2>
-  <div class="hint">Autentica con el IdP usando el usuario/clave y ambiente guardados. Verifica que tus credenciales del ATV funcionen (no envía ninguna factura).</div>
-  <form method="post" action="/admin/factura/config/test">
-    <button class="fc-btn ghost" type="submit">🔌 Probar conexión</button>
   </form>
+
+  <div class="wz-test">
+    <h2>Probar conexión con Hacienda</h2>
+    <div class="wz-help">Comprueba que su usuario y clave funcionan. Primero guarde, luego pruebe. No envía ninguna factura.</div>
+    <form method="post" action="/admin/factura/config/test">
+      <button type="submit">🔌 Probar conexión</button>
+    </form>
+  </div>
 </div>
+
+<div class="wz-modal-ov" id="infoModal">
+  <div class="wz-modal">
+    <h3 id="infoTitle">Información</h3>
+    <p id="infoBody"></p>
+    <button type="button" id="infoClose">Entendido</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  // Navegación por pasos
+  const steps = [...document.querySelectorAll(".wz-step")];
+  const chips = [...document.querySelectorAll(".wz-chip")];
+  function show(n) {
+    steps.forEach(s => s.style.display = (s.dataset.step === String(n)) ? "" : "none");
+    chips.forEach(c => {
+      const cn = Number(c.dataset.chip);
+      c.classList.toggle("active", cn === n);
+      c.classList.toggle("done", cn < n);
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  document.querySelectorAll("[data-next]").forEach(b => b.addEventListener("click", () => show(Number(b.dataset.next))));
+  document.querySelectorAll("[data-back]").forEach(b => b.addEventListener("click", () => show(Number(b.dataset.back))));
+  chips.forEach(c => c.addEventListener("click", () => show(Number(c.dataset.chip))));
+
+  // Botones de información
+  const INFO = {
+    negocio: ["Su negocio", "Aquí van los datos de su empresa registrados en Hacienda: el nombre, la cédula jurídica y el código de su actividad. Si está empezando, elija \"Estoy probando\" para no facturar de verdad todavía."],
+    ubicacion: ["Ubicación del local", "Hacienda pide la ubicación con números: provincia (1 al 7), cantón y distrito. Si no los sabe, los puede consultar en su comprobante de inscripción o preguntarle a su contador."],
+    hacienda: ["Datos de Hacienda", "Son el usuario y la clave que usted generó en el sistema ATV de Hacienda. Con eso el sistema se conecta para enviar sus facturas. La clave se guarda protegida."],
+    firma: ["Firma digital", "Es un archivo (.p12) con su firma electrónica, que Hacienda le entrega. Sirve para firmar cada factura. Tiene su propia contraseña (PIN). Ambos se guardan protegidos y nadie más los ve."],
+  };
+  const ov = document.getElementById("infoModal");
+  document.querySelectorAll(".wz-info").forEach(b => b.addEventListener("click", () => {
+    const info = INFO[b.dataset.info];
+    if (!info) return;
+    document.getElementById("infoTitle").textContent = info[0];
+    document.getElementById("infoBody").textContent = info[1];
+    ov.classList.add("open");
+  }));
+  document.getElementById("infoClose").addEventListener("click", () => ov.classList.remove("open"));
+  ov.addEventListener("click", e => { if (e.target === ov) ov.classList.remove("open"); });
+
+  show(1);
+})();
+</script>
 {% endblock %}
