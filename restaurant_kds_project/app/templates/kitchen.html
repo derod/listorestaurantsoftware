@@ -113,7 +113,10 @@
       <button class="modal-close" id="kitchenNewProductCancelBtn">CERRAR</button>
     </div>
     <input id="kitchenNewProductName" type="text" placeholder="Nombre del producto" autocomplete="off" style="width:100%;padding:18px;font-size:24px;border-radius:14px;border:1px solid var(--border);background:#10141b;color:#fff;margin-bottom:20px;" />
-    <button class="action primary" id="kitchenNewProductSaveBtn" style="width:100%;min-height:64px;font-size:24px;">Crear</button>
+    <div style="display:flex;gap:14px;">
+      <button class="action primary" id="kitchenNewProductSaveBtn" style="flex:1;min-height:64px;font-size:24px;">Crear</button>
+      <button class="action" id="kitchenNewProductCancelBtn2" style="flex:1;min-height:64px;font-size:24px;background:rgba(228,91,91,0.18);color:var(--red);">Cancelar</button>
+    </div>
   </div>
 </div>
 <script>
@@ -127,5 +130,5 @@ window.KITCHEN_AUDIO = {
 };
 window.INITIAL_ORDERS = {{ orders_json|safe }};
 </script>
-<script src="/static/js/kitchen.js?v=mesas2"></script>
+<script src="/static/js/kitchen.js?v=cancelprod"></script>
 {% endblock %}

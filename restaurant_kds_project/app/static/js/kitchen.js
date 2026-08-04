@@ -597,6 +597,7 @@ async function saveKitchenNewProduct() {
 }
 document.getElementById("kitchenNewProductBtn").addEventListener("click", openKitchenNewProductModal);
 document.getElementById("kitchenNewProductCancelBtn").addEventListener("click", closeKitchenNewProductModal);
+document.getElementById("kitchenNewProductCancelBtn2").addEventListener("click", closeKitchenNewProductModal);
 document.getElementById("kitchenNewProductSaveBtn").addEventListener("click", saveKitchenNewProduct);
 kNewInput.addEventListener("keydown", (e) => { if (e.key === "Enter") saveKitchenNewProduct(); });
 document.getElementById("kitchenSendBtn").addEventListener("click", submitKitchenOrder);
