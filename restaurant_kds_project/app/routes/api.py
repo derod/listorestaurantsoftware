@@ -110,7 +110,15 @@ def create_product(payload: ProductCreate, db: Session = Depends(get_db)):
         raise HTTPException(400, "Ya existe un producto con ese nombre")
     last = db.query(Product).order_by(Product.display_order.desc()).first()
     display_order = (last.display_order + 1) if last else 1
-    product = Product(name=name, display_order=display_order)
+    cat = (payload.category or "").strip()
+    try:
+        from .web import PRODUCT_CATEGORIES
+        valid = set(PRODUCT_CATEGORIES)
+    except Exception:
+        valid = {"General", "Desayuno"}
+    if cat not in valid:
+        cat = "General"
+    product = Product(name=name, display_order=display_order, category=cat)
     db.add(product)
     db.commit()
     db.refresh(product)

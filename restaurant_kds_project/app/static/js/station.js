@@ -384,10 +384,12 @@ function closeNewProductModal() { newProductModal.style.display = "none"; }
 async function saveNewProduct() {
   const name = newProductInput.value.trim();
   if (!name) return toast("Escribe un nombre.", "error");
+  // El producto nuevo toma la pestaña activa (Uber reutiliza los de Desayuno).
+  const cat = (stationCategory === "Uber") ? "Desayuno" : stationCategory;
   const res = await fetch("/api/products", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name })
+    body: JSON.stringify({ name, category: cat })
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
