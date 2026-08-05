@@ -643,7 +643,7 @@ def admin_logs(request: Request, db: Session = Depends(get_db)):
 
 
 # Categorías de producto (menús) mostradas como pestañas en el Salón.
-PRODUCT_CATEGORIES = ["General", "Desayuno"]
+PRODUCT_CATEGORIES = ["General", "Desayuno", "Sandwiches"]
 
 
 @router.get("/admin/products")
