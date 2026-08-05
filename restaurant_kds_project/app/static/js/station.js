@@ -386,17 +386,35 @@ async function saveNewProduct() {
   if (!name) return toast("Escribe un nombre.", "error");
   // El producto nuevo toma la pestaña activa (Uber reutiliza los de Desayuno).
   const cat = (stationCategory === "Uber") ? "Desayuno" : stationCategory;
+  // ¿Existe (activo) pero oculto en esta tablet? Ofrecer mostrarlo en vez de crear.
+  const hiddenMatch = stationProducts.find(p => (p.name || "").trim().toLowerCase() === name.toLowerCase() && hiddenIds.has(Number(p.id)));
+  if (hiddenMatch) {
+    const ok = await window.askConfirm("Ese producto existe pero está oculto en esta tablet. ¿Mostrarlo?", { yes: "Mostrar" });
+    if (ok) { hiddenIds.delete(Number(hiddenMatch.id)); saveHidden(); applyCategoryFilter(); closeNewProductModal(); toast("Producto mostrado."); }
+    return;
+  }
   const res = await fetch("/api/products", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, category: cat })
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    return toast(err.detail || "No se pudo crear.", "error");
+  if (res.ok) { closeNewProductModal(); await refreshProductsGrid(); return; }
+  const err = await res.json().catch(() => ({}));
+  // Existe pero desactivado -> ofrecer reactivarlo.
+  if (res.status === 409 && err.inactive && err.product_id) {
+    const ok = await window.askConfirm("Ese producto existe pero está desactivado. ¿Reactivarlo?", { yes: "Reactivar" });
+    if (ok) {
+      const r2 = await fetch(`/api/products/${err.product_id}/activate`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ category: cat })
+      });
+      if (r2.ok) {
+        hiddenIds.delete(Number(err.product_id)); saveHidden();
+        closeNewProductModal(); await refreshProductsGrid(); toast("Producto reactivado.");
+      } else { toast("No se pudo reactivar.", "error"); }
+    }
+    return;
   }
-  closeNewProductModal();
-  await refreshProductsGrid();
+  toast(err.detail || "No se pudo crear.", "error");
 }
 document.getElementById("newProductBtn").addEventListener("click", openNewProductModal);
 document.getElementById("newProductCancelBtn").addEventListener("click", closeNewProductModal);

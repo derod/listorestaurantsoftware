@@ -1,6 +1,7 @@
 import logging
 import re
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 from ..database import get_db
@@ -107,6 +108,12 @@ def create_product(payload: ProductCreate, db: Session = Depends(get_db)):
         raise HTTPException(400, "Nombre vacío")
     existing = db.query(Product).filter(Product.name == name).first()
     if existing:
+        if not existing.active:
+            # Existe pero está desactivado — ofrecer reactivarlo en vez de duplicar.
+            return JSONResponse(status_code=409, content={
+                "detail": "Ese producto existe pero está desactivado.",
+                "inactive": True, "product_id": existing.id,
+            })
         raise HTTPException(400, "Ya existe un producto con ese nombre")
     last = db.query(Product).order_by(Product.display_order.desc()).first()
     display_order = (last.display_order + 1) if last else 1
@@ -123,6 +130,30 @@ def create_product(payload: ProductCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(product)
     return {"id": product.id, "name": product.name, "active": product.active, "image_path": product.image_path}
+
+
+class ProductActivate(BaseModel):
+    category: Optional[str] = None
+
+
+@router.post("/products/{product_id}/activate")
+def activate_product(product_id: int, payload: ProductActivate, db: Session = Depends(get_db)):
+    """Reactiva un producto desactivado (opcionalmente le fija la categoría)."""
+    p = db.query(Product).filter(Product.id == product_id).first()
+    if not p:
+        raise HTTPException(404, "Producto no encontrado")
+    p.active = True
+    cat = (payload.category or "").strip()
+    if cat:
+        try:
+            from .web import PRODUCT_CATEGORIES
+            valid = set(PRODUCT_CATEGORIES)
+        except Exception:
+            valid = {"General", "Desayuno"}
+        if cat in valid:
+            p.category = cat
+    db.commit()
+    return {"id": p.id, "name": p.name, "active": p.active, "category": p.category or "General"}
 
 
 @router.post("/orders")
