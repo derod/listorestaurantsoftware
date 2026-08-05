@@ -151,6 +151,12 @@
   .recent-toggle { margin-top:12px; width:100%; min-height:52px; border:1px solid var(--border); background:var(--muted); color:var(--text); border-radius:14px; font-size:18px; font-weight:700; cursor:pointer; }
   .recent-toggle:hover { border-color:var(--accent); }
 
+  /* "Pedido actual": la lista de productos scrollea por dentro (altura máxima),
+     y el bloque de abajo (Total + Enviar/Borrar/Quitar + Mesa) queda siempre
+     visible sin que la lista lo empuje fuera de pantalla. */
+  .summary-list { flex:1 1 auto; min-height:120px; max-height:40vh; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  .summary-total, .big-actions, .table-pick, .recent-card { flex-shrink:0; }
+
   /* Tablet/desktop (≥761px): la GRILLA de productos scrollea DENTRO del panel,
      sin arrastrar la página ni el panel de resumen. Los controles (Nuevo
      producto, orden, pestañas) quedan fijos arriba del panel. */
