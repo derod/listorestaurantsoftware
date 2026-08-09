@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Admin Dashboard</h1>
+<h1>{{ t('adm.dashboard') }}</h1>
 
 <style>
   .nav-section { margin-bottom:32px; }
@@ -30,54 +30,54 @@
 </style>
 
 <div class="nav-section sec-sales">
-  <div class="nav-section-title">Ventas y dinero</div>
+  <div class="nav-section-title">{{ t('adm.sec_ventas') }}</div>
   <div class="admin-actions">
-    <a href="/admin/pos-settings" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M2.5 10h19"/></svg></div>POS</a>
-    <a href="/admin/orders/history" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2z"/><path d="M9 7h6M9 11h6M9 15h4"/></svg></div>Órdenes</a>
-    <a href="/admin/reports" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><path d="M3 21h18"/><rect x="5" y="10" width="3.5" height="8"/><rect x="10.5" y="5" width="3.5" height="13"/><rect x="16" y="8" width="3.5" height="10"/></svg></div>Reportes</a>
-    <a href="/admin/rentabilidad" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="15 6 21 6 21 12"/></svg></div>Rentabilidad</a>
-    <a href="/admin/gastos" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h12v3"/><path d="M3 7v11a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-3"/><path d="M21 11h-5a2 2 0 0 0 0 4h5z"/></svg></div>Gastos</a>
-    <a href="/admin/factura" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><path d="M7 3h10a1 1 0 0 1 1 1v17l-3-2-3 2-3-2-3 2V4a1 1 0 0 1 1-1z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></div>Factura Electrónica</a>
+    <a href="/admin/pos-settings" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M2.5 10h19"/></svg></div>{{ t('adm.pos') }}</a>
+    <a href="/admin/orders/history" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2z"/><path d="M9 7h6M9 11h6M9 15h4"/></svg></div>{{ t('adm.ordenes') }}</a>
+    <a href="/admin/reports" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><path d="M3 21h18"/><rect x="5" y="10" width="3.5" height="8"/><rect x="10.5" y="5" width="3.5" height="13"/><rect x="16" y="8" width="3.5" height="10"/></svg></div>{{ t('adm.reportes') }}</a>
+    <a href="/admin/rentabilidad" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="15 6 21 6 21 12"/></svg></div>{{ t('adm.rentabilidad') }}</a>
+    <a href="/admin/gastos" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h12v3"/><path d="M3 7v11a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-3"/><path d="M21 11h-5a2 2 0 0 0 0 4h5z"/></svg></div>{{ t('adm.gastos') }}</a>
+    <a href="/admin/factura" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><path d="M7 3h10a1 1 0 0 1 1 1v17l-3-2-3 2-3-2-3 2V4a1 1 0 0 1 1-1z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></div>{{ t('adm.factura') }}</a>
   </div>
 </div>
 
 <div class="nav-section sec-kitchen">
-  <div class="nav-section-title">Cocina e inventario</div>
+  <div class="nav-section-title">{{ t('adm.sec_cocina') }}</div>
   <div class="admin-actions">
-    <a href="/admin/products" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5-8 4.5-8-4.5L12 3z"/><path d="M4 7.5V16l8 4.5 8-4.5V7.5"/><path d="M12 12v8.5"/></svg></div>Productos</a>
-    <a href="/admin/inventario" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4.5" rx="1"/><path d="M5 8.5V19a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8.5"/><path d="M10 12h4"/></svg></div>Insumos</a>
-    <a href="/admin/compras" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/><path d="M2.5 4H5l2.4 11.2a1 1 0 0 0 1 .8h8.5a1 1 0 0 0 1-.78L20.5 8H6"/></svg></div>Compras</a>
-    <a href="/admin/mesas" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>Plano mesas</a>
+    <a href="/admin/products" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5-8 4.5-8-4.5L12 3z"/><path d="M4 7.5V16l8 4.5 8-4.5V7.5"/><path d="M12 12v8.5"/></svg></div>{{ t('adm.productos') }}</a>
+    <a href="/admin/inventario" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4.5" rx="1"/><path d="M5 8.5V19a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8.5"/><path d="M10 12h4"/></svg></div>{{ t('adm.insumos') }}</a>
+    <a href="/admin/compras" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/><path d="M2.5 4H5l2.4 11.2a1 1 0 0 0 1 .8h8.5a1 1 0 0 0 1-.78L20.5 8H6"/></svg></div>{{ t('adm.compras') }}</a>
+    <a href="/admin/mesas" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>{{ t('adm.plano_mesas') }}</a>
   </div>
 </div>
 
 <div class="nav-section sec-system">
-  <div class="nav-section-title">Sistema</div>
+  <div class="nav-section-title">{{ t('adm.sec_sistema') }}</div>
   <div class="admin-actions">
-    <a href="/admin/logs" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg></div>Logs</a>
-    <a href="/admin/clock" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg></div>Reloj</a>
-    <a href="/admin/audio" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19.5 5.5a9 9 0 0 1 0 13"/></svg></div>Audio</a>
-    <a href="/admin/leads" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 7l8.5 6 8.5-6"/></svg></div>Contactos{% if leads_unread %}<span class="lead-count">{{ leads_unread }}</span>{% endif %}</a>
-    <a href="/cuestionario" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><polygon points="13 2 4 14 11 14 10 22 20 9 13 9 13 2"/></svg></div>Cuestionario Fácil</a>
-    <a href="/admin/waiters" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><circle cx="17.5" cy="9" r="2.3"/><path d="M16 15.2a4.6 4.6 0 0 1 5 4.3"/></svg></div>Agentes</a>
+    <a href="/admin/logs" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg></div>{{ t('adm.logs') }}</a>
+    <a href="/admin/clock" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg></div>{{ t('adm.reloj') }}</a>
+    <a href="/admin/audio" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19.5 5.5a9 9 0 0 1 0 13"/></svg></div>{{ t('adm.audio') }}</a>
+    <a href="/admin/leads" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 7l8.5 6 8.5-6"/></svg></div>{{ t('adm.contactos') }}{% if leads_unread %}<span class="lead-count">{{ leads_unread }}</span>{% endif %}</a>
+    <a href="/cuestionario" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><polygon points="13 2 4 14 11 14 10 22 20 9 13 9 13 2"/></svg></div>{{ t('adm.cuestionario') }}</a>
+    <a href="/admin/waiters" class="admin-action"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><circle cx="17.5" cy="9" r="2.3"/><path d="M16 15.2a4.6 4.6 0 0 1 5 4.3"/></svg></div>{{ t('adm.agentes') }}</a>
   </div>
 </div>
 
 <div class="stats-grid">
-  <div class="stat-card"><div class="stat-label">Órdenes hoy</div><div class="stat-value">{{ stats.orders_today }}</div></div>
-  <div class="stat-card"><div class="stat-label">Órdenes ayer</div><div class="stat-value">{{ stats.orders_yesterday }}</div></div>
-  <div class="stat-card"><div class="stat-label">Promedio hoy</div><div class="stat-value">{{ stats.avg_today }} min</div></div>
-  <div class="stat-card"><div class="stat-label">Promedio ayer</div><div class="stat-value">{{ stats.avg_yesterday }} min</div></div>
-  <div class="stat-card"><div class="stat-label">Canceladas hoy</div><div class="stat-value">{{ stats.cancelled_today }}</div></div>
-  <div class="stat-card"><div class="stat-label">Activas ahora</div><div class="stat-value">{{ stats.active_now }}</div></div>
+  <div class="stat-card"><div class="stat-label">{{ t('adm.ordenes_hoy') }}</div><div class="stat-value">{{ stats.orders_today }}</div></div>
+  <div class="stat-card"><div class="stat-label">{{ t('adm.ordenes_ayer') }}</div><div class="stat-value">{{ stats.orders_yesterday }}</div></div>
+  <div class="stat-card"><div class="stat-label">{{ t('adm.promedio_hoy') }}</div><div class="stat-value">{{ stats.avg_today }} {{ t('adm.min') }}</div></div>
+  <div class="stat-card"><div class="stat-label">{{ t('adm.promedio_ayer') }}</div><div class="stat-value">{{ stats.avg_yesterday }} {{ t('adm.min') }}</div></div>
+  <div class="stat-card"><div class="stat-label">{{ t('adm.canceladas_hoy') }}</div><div class="stat-value">{{ stats.cancelled_today }}</div></div>
+  <div class="stat-card"><div class="stat-label">{{ t('adm.activas_ahora') }}</div><div class="stat-value">{{ stats.active_now }}</div></div>
 </div>
 
 <div class="table-card">
-  <h2>Órdenes recientes</h2>
+  <h2>{{ t('adm.ordenes_recientes') }}</h2>
   <table class="big-table">
     <thead>
       <tr>
-        <th>ID</th><th>Origen</th><th>Agente</th><th>Estado</th><th>Hora</th><th>Duración</th><th>Items</th>
+        <th>ID</th><th>{{ t('adm.th_origen') }}</th><th>{{ t('adm.th_agente') }}</th><th>{{ t('adm.th_estado') }}</th><th>{{ t('adm.th_hora') }}</th><th>{{ t('adm.th_duracion') }}</th><th>{{ t('adm.th_items') }}</th>
       </tr>
     </thead>
     <tbody>
@@ -88,7 +88,7 @@
         <td>{{ order.waiter_name or '-' }}</td>
         <td>{{ order.status }}</td>
         <td>{{ order.created_at.strftime('%H:%M') }}</td>
-        <td>{% set secs = duration_seconds(order) %}{% if secs %}{{ (secs // 60) }} min{% else %}-{% endif %}</td>
+        <td>{% set secs = duration_seconds(order) %}{% if secs %}{{ (secs // 60) }} {{ t('adm.min') }}{% else %}-{% endif %}</td>
         <td>{% for item in order.items %}{{ item.quantity }} {{ item.product.name }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
       </tr>
       {% endfor %}
@@ -99,29 +99,29 @@
   <div class="danger-header">
     <span class="danger-icon">&#9888;</span>
     <div>
-      <div class="danger-title">Zona de peligro – Reset del sistema</div>
-      <div class="danger-sub">Esta acción no se puede deshacer. Se requiere confirmación.</div>
+      <div class="danger-title">{{ t('adm.dz_title') }}</div>
+      <div class="danger-sub">{{ t('adm.dz_sub') }}</div>
     </div>
   </div>
   <div class="reset-grid">
     <div class="reset-card">
-      <div class="reset-label">Productos</div>
-      <div class="reset-desc">Elimina todos los productos e inventario</div>
+      <div class="reset-label">{{ t('adm.productos') }}</div>
+      <div class="reset-desc">{{ t('adm.dz_prod_desc') }}</div>
       <button class="btn-reset" data-endpoint="/admin/reset/products">Reset Products</button>
     </div>
     <div class="reset-card">
-      <div class="reset-label">Órdenes</div>
-      <div class="reset-desc">Elimina todas las órdenes, items y eventos</div>
+      <div class="reset-label">{{ t('adm.ordenes') }}</div>
+      <div class="reset-desc">{{ t('adm.dz_ord_desc') }}</div>
       <button class="btn-reset" data-endpoint="/admin/reset/orders">Reset Orders</button>
     </div>
     <div class="reset-card">
-      <div class="reset-label">Logs</div>
-      <div class="reset-desc">Elimina todos los logs de inventario</div>
+      <div class="reset-label">{{ t('adm.logs') }}</div>
+      <div class="reset-desc">{{ t('adm.dz_logs_desc') }}</div>
       <button class="btn-reset" data-endpoint="/admin/reset/logs">Reset Logs</button>
     </div>
     <div class="reset-card">
-      <div class="reset-label">Inventario</div>
-      <div class="reset-desc">Pone todas las cantidades a 0</div>
+      <div class="reset-label">{{ t('adm.insumos') }}</div>
+      <div class="reset-desc">{{ t('adm.dz_inv_desc') }}</div>
       <button class="btn-reset" data-endpoint="/admin/reset/inventory">Reset Inventory</button>
     </div>
   </div>
@@ -130,17 +130,17 @@
 <!-- Confirmation modal -->
 <div class="reset-overlay" id="resetOverlay">
   <div class="reset-modal">
-    <div class="reset-modal-title">&#9888; Confirmar reset</div>
+    <div class="reset-modal-title">&#9888; {{ t('adm.dz_confirmar') }}</div>
     <div class="reset-modal-body" id="resetModalBody"></div>
-    <div class="reset-modal-warn">Esta acción no se puede deshacer.</div>
+    <div class="reset-modal-warn">{{ t('adm.dz_irreversible') }}</div>
     <label class="reset-confirm-label">
-      Escribe <strong>RESET</strong> para confirmar:
+      {{ t('adm.dz_escribe_pre') }} <strong>RESET</strong> {{ t('adm.dz_escribe') }}
       <input type="text" id="resetConfirmInput" placeholder="RESET" autocomplete="off" />
     </label>
     <div id="resetResult" class="reset-result"></div>
     <div class="reset-modal-actions">
-      <button class="btn-cancel-reset" id="btnCancelReset">Cancelar</button>
-      <button class="btn-confirm-reset" id="btnConfirmReset" disabled>Confirmar</button>
+      <button class="btn-cancel-reset" id="btnCancelReset">{{ t('common.cancelar') }}</button>
+      <button class="btn-confirm-reset" id="btnConfirmReset" disabled>{{ t('common.confirmar') }}</button>
     </div>
   </div>
 </div>

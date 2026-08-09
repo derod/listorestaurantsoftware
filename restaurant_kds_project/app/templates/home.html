@@ -299,7 +299,7 @@
   <div class="hub-header">
     <div class="hub-time" id="hubClock"></div>
     <h1 class="hub-title">LISTO <span>Restaurant</span> Software</h1>
-    <p class="hub-sub">Selecciona un módulo para continuar</p>
+    <p class="hub-sub">{{ t('hub.sub') }}</p>
   </div>
 
   <div class="hub-layout">
@@ -311,10 +311,10 @@
         <div class="hub-icon">
           <svg viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h12"/><circle cx="19" cy="18" r="2"/></svg>
         </div>
-        <div class="hub-label">Salón</div>
-        <div class="hub-desc">Toma de pedidos en mesa. Envío directo a cocina sin papel.</div>
+        <div class="hub-label">{{ t('hub.salon') }}</div>
+        <div class="hub-desc">{{ t('hub.salon_desc') }}</div>
         <div class="hub-card-footer">
-          <span class="hub-enter">Abrir</span>
+          <span class="hub-enter">{{ t('hub.abrir') }}</span>
           <div class="hub-chevron"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
       </a>
@@ -323,10 +323,10 @@
         <div class="hub-icon">
           <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8h2M11 8h6"/><path d="M7 12h4M15 12h2"/></svg>
         </div>
-        <div class="hub-label">Kitchen Display</div>
-        <div class="hub-desc">Pantalla de cocina en tiempo real. Alertas de pedidos vía WebSocket.</div>
+        <div class="hub-label">{{ t('hub.kitchen') }}</div>
+        <div class="hub-desc">{{ t('hub.kitchen_desc') }}</div>
         <div class="hub-card-footer">
-          <span class="hub-enter">Abrir</span>
+          <span class="hub-enter">{{ t('hub.abrir') }}</span>
           <div class="hub-chevron"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
       </a>
@@ -340,10 +340,10 @@
         <div class="hub-icon">
           <svg viewBox="0 0 24 24"><path d="M12 2a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/><path d="M3 20a9 9 0 0 1 18 0"/></svg>
         </div>
-        <div class="hub-label">Admin</div>
-        <div class="hub-desc">Configuración, productos y reportes</div>
+        <div class="hub-label">{{ t('hub.admin') }}</div>
+        <div class="hub-desc">{{ t('hub.admin_desc') }}</div>
         <div class="hub-card-footer">
-          <span class="hub-enter">Abrir</span>
+          <span class="hub-enter">{{ t('hub.abrir') }}</span>
           <div class="hub-chevron"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
       </a>
@@ -352,10 +352,10 @@
         <div class="hub-icon">
           <svg viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 3H8l-2 4h12z"/></svg>
         </div>
-        <div class="hub-label">Inventario</div>
-        <div class="hub-desc">Control de stock y existencias</div>
+        <div class="hub-label">{{ t('hub.inv') }}</div>
+        <div class="hub-desc">{{ t('hub.inv_desc') }}</div>
         <div class="hub-card-footer">
-          <span class="hub-enter">Abrir</span>
+          <span class="hub-enter">{{ t('hub.abrir') }}</span>
           <div class="hub-chevron"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
       </a>
@@ -364,10 +364,10 @@
         <div class="hub-icon">
           <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M7 15h2M11 15h4"/></svg>
         </div>
-        <div class="hub-label">Punto de Venta</div>
-        <div class="hub-desc">Cobros y facturación</div>
+        <div class="hub-label">{{ t('hub.pos') }}</div>
+        <div class="hub-desc">{{ t('hub.pos_desc') }}</div>
         <div class="hub-card-footer">
-          <span class="hub-enter">Abrir</span>
+          <span class="hub-enter">{{ t('hub.abrir') }}</span>
           <div class="hub-chevron"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
       </a>
@@ -378,7 +378,7 @@
 
   <div class="hub-status">
     <div class="status-dot"></div>
-    <span class="status-text">Sistema operativo &mdash; todos los módulos en línea</span>
+    <span class="status-text">{{ t('hub.status') }}</span>
   </div>
 
 </div>
