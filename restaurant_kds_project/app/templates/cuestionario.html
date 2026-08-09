@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="{{ cur_lang(request) }}">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
@@ -88,36 +88,36 @@
   </style>
 </head>
 <body>
-  <div class="saved" id="saved">✓ Guardado</div>
+  <div class="saved" id="saved">{{ t('cue.guardado') }}</div>
 
   <!-- HUB -->
   <section class="screen active" id="hubScreen">
     <div class="topbar">
-      <div class="title">Cuestionario <span>Fácil</span></div>
-      <a class="exit" href="/admin">✕ Salir</a>
+      <div class="title">{{ t('cue.cuestionario') }} <span>{{ t('cue.facil') }}</span></div>
+      <a class="exit" href="/admin">{{ t('cue.salir') }}</a>
     </div>
     <div class="hub">
       <div>
-        <h1>Modo <span>rápido</span> de inventario</h1>
-        <p class="lead">Actualiza sin ir fila por fila: una pregunta a la vez, se guarda solo.</p>
+        <h1>{{ t('cue.modo') }} <span>{{ t('cue.rapido') }}</span> {{ t('cue.de_inventario') }}</h1>
+        <p class="lead">{{ t('cue.lead') }}</p>
       </div>
       <div class="hub-group">
-        <div class="hub-label">¿Qué vas a actualizar?</div>
+        <div class="hub-label">{{ t('cue.que_actualizar') }}</div>
         <div class="opt-grid" id="targetOpts">
-          <button class="opt" data-target="insumo"><span class="emoji">🧺</span>Insumos<small id="cntInsumos"></small></button>
-          <button class="opt" data-target="producto"><span class="emoji">📦</span>Productos<small id="cntProductos"></small></button>
-          <button class="opt" data-target="gasto"><span class="emoji">💳</span>Gastos<small id="cntGastos"></small></button>
+          <button class="opt" data-target="insumo"><span class="emoji">🧺</span>{{ t('cue.insumos') }}<small id="cntInsumos"></small></button>
+          <button class="opt" data-target="producto"><span class="emoji">📦</span>{{ t('cue.productos') }}<small id="cntProductos"></small></button>
+          <button class="opt" data-target="gasto"><span class="emoji">💳</span>{{ t('cue.gastos') }}<small id="cntGastos"></small></button>
         </div>
       </div>
       <div class="hub-group" id="modeGroup">
-        <div class="hub-label">¿Qué quieres hacer?</div>
+        <div class="hub-label">{{ t('cue.que_hacer') }}</div>
         <div class="opt-grid" id="modeOpts">
-          <button class="opt" data-mode="conteo"><span class="emoji">🔢</span>Conteo<small>fijar el stock real</small></button>
-          <button class="opt" data-mode="compra"><span class="emoji">🛒</span>Compras<small>sumar lo comprado</small></button>
-          <button class="opt" data-mode="merma"><span class="emoji">🗑️</span>Merma<small>descontar lo botado</small></button>
+          <button class="opt" data-mode="conteo"><span class="emoji">🔢</span>{{ t('cue.conteo') }}<small>{{ t('cue.conteo_sub') }}</small></button>
+          <button class="opt" data-mode="compra"><span class="emoji">🛒</span>{{ t('cue.compras') }}<small>{{ t('cue.compras_sub') }}</small></button>
+          <button class="opt" data-mode="merma"><span class="emoji">🗑️</span>{{ t('cue.merma') }}<small>{{ t('cue.merma_sub') }}</small></button>
         </div>
       </div>
-      <button class="start-btn" id="startBtn" disabled>Empezar</button>
+      <button class="start-btn" id="startBtn" disabled>{{ t('cue.empezar') }}</button>
     </div>
   </section>
 
@@ -125,7 +125,7 @@
   <section class="screen" id="slideScreen">
     <div class="topbar">
       <div class="title" id="slideTitle"></div>
-      <a class="exit" href="/admin">✕ Salir</a>
+      <a class="exit" href="/admin">{{ t('cue.salir') }}</a>
     </div>
     <div class="progress-wrap">
       <div class="progress-bar"><div class="progress-fill" id="progFill"></div></div>
@@ -144,43 +144,45 @@
       <div class="chips" id="chips"></div>
     </div>
     <div class="actions">
-      <button class="btn skip" id="skipBtn">Saltar</button>
-      <button class="btn next" id="nextBtn">Siguiente →</button>
+      <button class="btn skip" id="skipBtn">{{ t('cue.saltar') }}</button>
+      <button class="btn next" id="nextBtn">{{ t('cue.siguiente') }}</button>
     </div>
   </section>
 
   <!-- DONE -->
   <section class="screen" id="doneScreen">
     <div class="topbar">
-      <div class="title">Cuestionario <span>Fácil</span></div>
-      <a class="exit" href="/admin">✕ Salir</a>
+      <div class="title">{{ t('cue.cuestionario') }} <span>{{ t('cue.facil') }}</span></div>
+      <a class="exit" href="/admin">{{ t('cue.salir') }}</a>
     </div>
     <div class="done">
       <div class="check">✅</div>
-      <h1>¡Listo!</h1>
+      <h1>{{ t('cue.listo') }}</h1>
       <p id="doneMsg"></p>
       <div class="row">
-        <button class="primary" onclick="location.reload()">Hacer otro</button>
-        <a href="/admin/gastos">Ir a Gastos</a>
-        <a href="/admin/inventario">Ir a Insumos</a>
-        <a href="/admin/products">Ir a Productos</a>
-        <a href="/admin">Dashboard</a>
+        <button class="primary" onclick="location.reload()">{{ t('cue.hacer_otro') }}</button>
+        <a href="/admin/gastos">{{ t('cue.ir_gastos') }}</a>
+        <a href="/admin/inventario">{{ t('cue.ir_insumos') }}</a>
+        <a href="/admin/products">{{ t('cue.ir_productos') }}</a>
+        <a href="/admin">{{ t('common.dashboard') }}</a>
       </div>
     </div>
   </section>
 
+  <script>window.LANG={{ cur_lang(request)|tojson }};window.I18N={{ i18n_dict(cur_lang(request))|tojson }};</script>
   <script src="/static/js/ui.js?v=1"></script>
   <script>
+    const T = (k, fb) => (window.I18N && window.I18N[k]) || fb;
     const INSUMOS = {{ insumos|tojson }};
     const PRODUCTOS = {{ productos|tojson }};
     const GASTOS = {{ gastos|tojson }};
     const GASTOS_MONTH = "{{ gmonth }}";
     const GASTOS_MONTH_LABEL = "{{ gmonth_label }}";
-    const MODE_LABEL = { conteo:"Conteo", compra:"Compras", merma:"Merma", gasto:"Gastos" };
-    const TARGET_LABEL = { insumo:"Insumos", producto:"Productos", gasto:"Gastos" };
+    const MODE_LABEL = { conteo:T("cue.conteo","Conteo"), compra:T("cue.compras","Compras"), merma:T("cue.merma","Merma"), gasto:T("cue.gastos","Gastos") };
+    const TARGET_LABEL = { insumo:T("cue.insumos","Insumos"), producto:T("cue.productos","Productos"), gasto:T("cue.gastos","Gastos") };
 
-    document.getElementById("cntInsumos").textContent = INSUMOS.length + " ítems";
-    document.getElementById("cntProductos").textContent = PRODUCTOS.length + " ítems";
+    document.getElementById("cntInsumos").textContent = INSUMOS.length + " " + T("cue.js_items","ítems");
+    document.getElementById("cntProductos").textContent = PRODUCTOS.length + " " + T("cue.js_items","ítems");
     document.getElementById("cntGastos").textContent = GASTOS_MONTH_LABEL;
 
     let sel = { target:null, mode:null };
@@ -224,7 +226,7 @@
         items = (sel.target === "insumo" ? INSUMOS : PRODUCTOS).map(x => ({...x}));
       }
       idx = 0; updated = 0;
-      if (!items.length) { window.toast("No hay ítems para este objetivo.", false); return; }
+      if (!items.length) { window.toast(T("cue.js_no_items","No hay ítems para este objetivo."), false); return; }
       document.getElementById("slideTitle").innerHTML =
         TARGET_LABEL[sel.target] + " · <span>" + (sel.target === "gasto" ? GASTOS_MONTH_LABEL : MODE_LABEL[sel.mode]) + "</span>";
       show("slideScreen");
@@ -243,11 +245,11 @@
 
       if (sel.target === "gasto") {
         qType.className = "qtype compra";
-        qType.textContent = "Gastos · " + GASTOS_MONTH_LABEL;
+        qType.textContent = T("cue.gastos","Gastos") + " · " + GASTOS_MONTH_LABEL;
         document.getElementById("qName").textContent = it.name;
         document.getElementById("qCurrent").innerHTML =
-          `Ya registrado en ${GASTOS_MONTH_LABEL}: <b>₡${(it.current || 0).toLocaleString("es-CR")}</b>`;
-        document.getElementById("qUnit").textContent = "¿Cuánto gastaste en " + it.name + "? (₡)";
+          `${T("cue.js_ya_registrado","Ya registrado en")} ${GASTOS_MONTH_LABEL}: <b>₡${(it.current || 0).toLocaleString("es-CR")}</b>`;
+        document.getElementById("qUnit").textContent = T("cue.js_cuanto_gastaste","¿Cuánto gastaste en") + " " + it.name + "? (₡)";
         numInput.value = it.current || 0;
         document.getElementById("chips").innerHTML = "";
         setTimeout(() => numInput.focus(), 50);
@@ -256,14 +258,14 @@
 
       qType.className = "qtype " + sel.mode;
       const prompts = {
-        conteo: "¿Cuánto hay de",
-        compra: "¿Cuánto compraste de",
-        merma:  "¿Cuánto se botó de",
+        conteo: T("cue.js_p_conteo","¿Cuánto hay de"),
+        compra: T("cue.js_p_compra","¿Cuánto compraste de"),
+        merma:  T("cue.js_p_merma","¿Cuánto se botó de"),
       };
       qType.textContent = MODE_LABEL[sel.mode];
       document.getElementById("qName").textContent = it.name;
       document.getElementById("qCurrent").innerHTML =
-        `Stock actual: <b>${it.stock}</b> ${it.unit}`;
+        `${T("cue.js_stock_actual","Stock actual:")} <b>${it.stock}</b> ${it.unit}`;
       document.getElementById("qUnit").textContent = prompts[sel.mode] + " " + it.name + "? (" + it.unit + ")";
 
       // default value: conteo -> current stock; compra/merma -> 0
@@ -300,7 +302,7 @@
       idx++;
       if (idx >= items.length) {
         document.getElementById("doneMsg").textContent =
-          `${updated} ${updated === 1 ? "ítem actualizado" : "ítems actualizados"} de ${items.length}.`;
+          `${updated} ${updated === 1 ? T("cue.js_item_act","ítem actualizado") : T("cue.js_items_act","ítems actualizados")} ${T("cue.js_de","de")} ${items.length}.`;
         show("doneScreen");
       } else {
         renderSlide();
@@ -319,7 +321,7 @@
           credentials: "same-origin",
           body: JSON.stringify({ category: it.category, month: GASTOS_MONTH, amount: val })
         });
-        if (!res.ok) { window.toast("No se pudo guardar. Intenta de nuevo.", false); throw new Error("save failed"); }
+        if (!res.ok) { window.toast(T("cue.js_no_guardar","No se pudo guardar. Intenta de nuevo."), false); throw new Error("save failed"); }
         const data = await res.json();
         it.current = data.amount;
         updated++;
@@ -339,7 +341,7 @@
         credentials: "same-origin",
         body: JSON.stringify({ target: sel.target, id: it.id, mode: sel.mode, value: val })
       });
-      if (!res.ok) { window.toast("No se pudo guardar. Intenta de nuevo.", false); throw new Error("save failed"); }
+      if (!res.ok) { window.toast(T("cue.js_no_guardar","No se pudo guardar. Intenta de nuevo."), false); throw new Error("save failed"); }
       const data = await res.json();
       it.stock = data.new_stock;
       updated++;
