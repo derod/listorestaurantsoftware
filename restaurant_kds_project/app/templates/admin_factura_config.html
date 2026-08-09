@@ -52,197 +52,198 @@
 
 <div class="wz">
   <div class="wz-top">
-    <h1>Configurar Factura</h1>
-    <a href="/admin/factura" class="wz-back-link">← Clientes</a>
+    <h1>{{ t('wzc.title') }}</h1>
+    <a href="/admin/factura" class="wz-back-link">← {{ t('wzc.clientes') }}</a>
   </div>
 
   {% if saved %}
-    <div class="wz-banner ok">✓ Se guardó la configuración.
-      {% if cert_status == 'ok' %} Su firma digital es válida.{% elif cert_status == 'bad' %} <span style="color:var(--red)">Revise: la firma o su clave (PIN) no son correctas.</span>{% endif %}
+    <div class="wz-banner ok">{{ t('wzc.saved') }}
+      {% if cert_status == 'ok' %} {{ t('wzc.firma_valida') }}{% elif cert_status == 'bad' %} <span style="color:var(--red)">{{ t('wzc.firma_revise') }}</span>{% endif %}
     </div>
   {% endif %}
-  {% if conexion == 'ok' %}<div class="wz-banner ok">✓ Conexión con Hacienda exitosa.</div>
-  {% elif conexion == 'fail' %}<div class="wz-banner bad">✗ No se pudo conectar con Hacienda. Revise el usuario y la clave.</div>{% endif %}
+  {% if conexion == 'ok' %}<div class="wz-banner ok">{{ t('wzc.conn_ok') }}</div>
+  {% elif conexion == 'fail' %}<div class="wz-banner bad">{{ t('wzc.conn_fail') }}</div>{% endif %}
 
   <div class="wz-steps">
-    <div class="wz-chip active" data-chip="1">1. Negocio</div>
-    <div class="wz-chip" data-chip="2">2. Ubicación</div>
-    <div class="wz-chip" data-chip="3">3. Hacienda</div>
-    <div class="wz-chip" data-chip="4">4. Firma digital</div>
+    <div class="wz-chip active" data-chip="1">{{ t('wzc.step1') }}</div>
+    <div class="wz-chip" data-chip="2">{{ t('wzc.step2') }}</div>
+    <div class="wz-chip" data-chip="3">{{ t('wzc.step3') }}</div>
+    <div class="wz-chip" data-chip="4">{{ t('wzc.step4') }}</div>
   </div>
 
   <form method="post" action="/admin/factura/config" enctype="multipart/form-data" autocomplete="off" id="wzForm">
 
     <!-- Paso 1: Negocio -->
     <div class="wz-card wz-step" data-step="1">
-      <div class="wz-card-head"><h2>Su negocio</h2><button type="button" class="wz-info" data-info="negocio">i</button></div>
-      <div class="wz-sub">Los datos de su empresa, tal como están en Hacienda.</div>
+      <div class="wz-card-head"><h2>{{ t('wzc.neg_title') }}</h2><button type="button" class="wz-info" data-info="negocio">i</button></div>
+      <div class="wz-sub">{{ t('wzc.neg_sub') }}</div>
 
       <div class="wz-field">
-        <label>¿Está probando o ya va a facturar de verdad?</label>
+        <label>{{ t('wzc.probando_q') }}</label>
         <select name="ambiente">
-          <option value="sandbox" {{ 'selected' if not cfg or cfg.ambiente != 'produccion' else '' }}>Estoy probando</option>
-          <option value="produccion" {{ 'selected' if cfg and cfg.ambiente == 'produccion' else '' }}>Facturas reales</option>
+          <option value="sandbox" {{ 'selected' if not cfg or cfg.ambiente != 'produccion' else '' }}>{{ t('wzc.opt_sandbox') }}</option>
+          <option value="produccion" {{ 'selected' if cfg and cfg.ambiente == 'produccion' else '' }}>{{ t('wzc.opt_prod') }}</option>
         </select>
-        <div class="wz-help">Si apenas está configurando, deje "Estoy probando".</div>
+        <div class="wz-help">{{ t('wzc.probando_help') }}</div>
       </div>
 
       <div class="wz-field">
-        <label>Nombre del negocio</label>
-        <input name="emisor_nombre" maxlength="100" value="{{ cfg.emisor_nombre or '' }}" placeholder="Ej: Mi Restaurante S.A.">
-        <div class="wz-help">El nombre de su empresa tal como está inscrita.</div>
+        <label>{{ t('wzc.neg_nombre') }}</label>
+        <input name="emisor_nombre" maxlength="100" value="{{ cfg.emisor_nombre or '' }}" placeholder="{{ t('wzc.neg_nombre_ph') }}">
+        <div class="wz-help">{{ t('wzc.neg_nombre_help') }}</div>
       </div>
 
       <div class="wz-field">
-        <label>¿Con qué está inscrito?</label>
+        <label>{{ t('wzc.inscrito_q') }}</label>
         <select name="emisor_id_tipo">
           {% for code, label in id_types %}
           <option value="{{ code }}" {{ 'selected' if cfg and cfg.emisor_id_tipo == code else ('selected' if not cfg and code=='02' else '') }}>{{ label }}</option>
           {% endfor %}
         </select>
-        <div class="wz-help">Casi siempre es "Cédula Jurídica" para empresas.</div>
+        <div class="wz-help">{{ t('wzc.inscrito_help') }}</div>
       </div>
 
       <div class="wz-field">
-        <label>Número de cédula</label>
-        <input name="emisor_id_numero" maxlength="20" inputmode="numeric" value="{{ cfg.emisor_id_numero or '' }}" placeholder="Solo números">
-        <div class="wz-help">Escriba solo los números, sin guiones.</div>
+        <label>{{ t('wzc.cedula') }}</label>
+        <input name="emisor_id_numero" maxlength="20" inputmode="numeric" value="{{ cfg.emisor_id_numero or '' }}" placeholder="{{ t('fe.solo_numeros') }}">
+        <div class="wz-help">{{ t('wzc.cedula_help') }}</div>
       </div>
 
       <div class="wz-field">
-        <label>Código de actividad</label>
+        <label>{{ t('wzc.actividad') }}</label>
         <input name="emisor_actividad" maxlength="6" inputmode="numeric" value="{{ cfg.emisor_actividad or '' }}" placeholder="Ej: 561000">
-        <div class="wz-help">El código que Hacienda le asignó a su actividad. Para restaurante suele ser 561000.</div>
+        <div class="wz-help">{{ t('wzc.actividad_help') }}</div>
       </div>
 
       <div class="wz-field">
-        <label>Teléfono del negocio</label>
+        <label>{{ t('wzc.neg_tel') }}</label>
         <input name="emisor_telefono" maxlength="20" inputmode="numeric" value="{{ cfg.emisor_telefono or '' }}">
-        <div class="wz-help">Opcional.</div>
+        <div class="wz-help">{{ t('fe.opcional') }}.</div>
       </div>
 
       <div class="wz-field">
-        <label>Correo del negocio</label>
+        <label>{{ t('wzc.neg_correo') }}</label>
         <input name="emisor_correo" type="email" maxlength="160" value="{{ cfg.emisor_correo or '' }}">
-        <div class="wz-help">A este correo llegan avisos de sus facturas.</div>
+        <div class="wz-help">{{ t('wzc.neg_correo_help') }}</div>
       </div>
 
-      <div class="wz-nav"><button type="button" class="wz-btn next" data-next="2">Siguiente →</button></div>
+      <div class="wz-nav"><button type="button" class="wz-btn next" data-next="2">{{ t('wzc.siguiente') }}</button></div>
     </div>
 
     <!-- Paso 2: Ubicación -->
     <div class="wz-card wz-step" data-step="2" style="display:none;">
-      <div class="wz-card-head"><h2>Ubicación del local</h2><button type="button" class="wz-info" data-info="ubicacion">i</button></div>
-      <div class="wz-sub">Dónde queda su restaurante.</div>
+      <div class="wz-card-head"><h2>{{ t('wzc.ubi_title') }}</h2><button type="button" class="wz-info" data-info="ubicacion">i</button></div>
+      <div class="wz-sub">{{ t('wzc.ubi_sub') }}</div>
 
       <div class="wz-field">
-        <label>Provincia</label>
+        <label>{{ t('wzc.provincia') }}</label>
         <input name="emisor_provincia" maxlength="1" inputmode="numeric" value="{{ cfg.emisor_provincia or '' }}" placeholder="1 a 7">
-        <div class="wz-help">Un número del 1 al 7 (1 = San José, 2 = Alajuela, etc.).</div>
+        <div class="wz-help">{{ t('wzc.provincia_help') }}</div>
       </div>
 
       <div class="wz-field">
-        <label>Cantón</label>
+        <label>{{ t('wzc.canton') }}</label>
         <input name="emisor_canton" maxlength="2" inputmode="numeric" value="{{ cfg.emisor_canton or '' }}" placeholder="Ej: 01">
-        <div class="wz-help">El código del cantón según Hacienda.</div>
+        <div class="wz-help">{{ t('wzc.canton_help') }}</div>
       </div>
 
       <div class="wz-field">
-        <label>Distrito</label>
+        <label>{{ t('wzc.distrito') }}</label>
         <input name="emisor_distrito" maxlength="2" inputmode="numeric" value="{{ cfg.emisor_distrito or '' }}" placeholder="Ej: 01">
-        <div class="wz-help">El código del distrito según Hacienda.</div>
+        <div class="wz-help">{{ t('wzc.distrito_help') }}</div>
       </div>
 
       <div class="wz-field">
-        <label>Dirección exacta</label>
-        <input name="emisor_otras_senas" maxlength="160" value="{{ cfg.emisor_otras_senas or '' }}" placeholder="Ej: 100m sur de la iglesia">
-        <div class="wz-help">Las señas para llegar a su local.</div>
+        <label>{{ t('wzc.direccion') }}</label>
+        <input name="emisor_otras_senas" maxlength="160" value="{{ cfg.emisor_otras_senas or '' }}" placeholder="{{ t('wzc.direccion_ph') }}">
+        <div class="wz-help">{{ t('wzc.direccion_help') }}</div>
       </div>
 
       <div class="wz-nav">
-        <button type="button" class="wz-btn back" data-back="1">← Atrás</button>
-        <button type="button" class="wz-btn next" data-next="3">Siguiente →</button>
+        <button type="button" class="wz-btn back" data-back="1">{{ t('wzc.atras') }}</button>
+        <button type="button" class="wz-btn next" data-next="3">{{ t('wzc.siguiente') }}</button>
       </div>
     </div>
 
     <!-- Paso 3: Hacienda -->
     <div class="wz-card wz-step" data-step="3" style="display:none;">
-      <div class="wz-card-head"><h2>Datos de Hacienda</h2><button type="button" class="wz-info" data-info="hacienda">i</button></div>
-      <div class="wz-sub">El usuario y la clave que le dio el sistema ATV de Hacienda.</div>
+      <div class="wz-card-head"><h2>{{ t('wzc.hac_title') }}</h2><button type="button" class="wz-info" data-info="hacienda">i</button></div>
+      <div class="wz-sub">{{ t('wzc.hac_sub') }}</div>
 
       <div class="wz-field">
-        <label>Usuario de Hacienda (ATV)</label>
+        <label>{{ t('wzc.atv_user') }}</label>
         <input name="atv_usuario" maxlength="160" value="{{ cfg.atv_usuario or '' }}" placeholder="cpj-...@stag.comprobanteselectronicos.go.cr">
-        <div class="wz-help">Es un usuario largo que termina en "comprobanteselectronicos.go.cr".</div>
+        <div class="wz-help">{{ t('wzc.atv_user_help') }}</div>
       </div>
 
       <div class="wz-field">
-        <label>Clave de Hacienda (ATV)</label>
-        <input name="atv_clave" type="password" placeholder="{{ 'Ya está guardada — deje vacío para no cambiarla' if has_clave else 'Escriba la clave' }}">
-        <div class="wz-help">Se guarda protegida (cifrada). {% if has_clave %}<span class="wz-tag">✓ Ya configurada</span>{% endif %}</div>
+        <label>{{ t('wzc.atv_clave') }}</label>
+        <input name="atv_clave" type="password" placeholder="{{ t('wzc.clave_guardada_ph') if has_clave else t('wzc.escriba_clave') }}">
+        <div class="wz-help">{{ t('wzc.atv_clave_help') }} {% if has_clave %}<span class="wz-tag">{{ t('wzc.ya_config') }}</span>{% endif %}</div>
       </div>
 
       <div class="wz-field">
-        <label>Sucursal</label>
+        <label>{{ t('wzc.sucursal') }}</label>
         <input name="sucursal" maxlength="3" inputmode="numeric" value="{{ cfg.sucursal if cfg and cfg.sucursal else '001' }}">
-        <div class="wz-help">Si tiene un solo local, déjelo en 001.</div>
+        <div class="wz-help">{{ t('wzc.sucursal_help') }}</div>
       </div>
 
       <div class="wz-field">
-        <label>Caja / Terminal</label>
+        <label>{{ t('wzc.terminal') }}</label>
         <input name="terminal" maxlength="5" inputmode="numeric" value="{{ cfg.terminal if cfg and cfg.terminal else '00001' }}">
-        <div class="wz-help">Si tiene una sola caja, déjelo en 00001.</div>
+        <div class="wz-help">{{ t('wzc.terminal_help') }}</div>
       </div>
 
       <div class="wz-nav">
-        <button type="button" class="wz-btn back" data-back="2">← Atrás</button>
-        <button type="button" class="wz-btn next" data-next="4">Siguiente →</button>
+        <button type="button" class="wz-btn back" data-back="2">{{ t('wzc.atras') }}</button>
+        <button type="button" class="wz-btn next" data-next="4">{{ t('wzc.siguiente') }}</button>
       </div>
     </div>
 
     <!-- Paso 4: Firma digital -->
     <div class="wz-card wz-step" data-step="4" style="display:none;">
-      <div class="wz-card-head"><h2>Firma digital</h2><button type="button" class="wz-info" data-info="firma">i</button></div>
-      <div class="wz-sub">El archivo de firma que le entregó Hacienda para firmar sus facturas.</div>
+      <div class="wz-card-head"><h2>{{ t('wzc.firma_title') }}</h2><button type="button" class="wz-info" data-info="firma">i</button></div>
+      <div class="wz-sub">{{ t('wzc.firma_sub') }}</div>
 
       <div class="wz-field">
-        <label>Archivo de firma (.p12)</label>
+        <label>{{ t('wzc.archivo') }}</label>
         <input name="cert_file" type="file" accept=".p12,.pfx">
-        <div class="wz-help">Es un archivo que termina en ".p12". {% if cfg and cfg.cert_filename %}<span class="wz-tag">✓ Ya cargado</span>{% endif %}</div>
+        <div class="wz-help">{{ t('wzc.archivo_help') }} {% if cfg and cfg.cert_filename %}<span class="wz-tag">{{ t('wzc.ya_cargado') }}</span>{% endif %}</div>
       </div>
 
       <div class="wz-field">
-        <label>Clave de la firma (PIN)</label>
-        <input name="cert_pin" type="password" placeholder="{{ 'Ya está guardada — deje vacío para no cambiarla' if has_pin else 'Escriba la clave del archivo' }}">
-        <div class="wz-help">Es la contraseña de ese archivo de firma. Se guarda protegida. {% if has_pin %}<span class="wz-tag">✓ Ya configurada</span>{% endif %}</div>
+        <label>{{ t('wzc.pin') }}</label>
+        <input name="cert_pin" type="password" placeholder="{{ t('wzc.clave_guardada_ph') if has_pin else t('wzc.escriba_pin') }}">
+        <div class="wz-help">{{ t('wzc.pin_help') }} {% if has_pin %}<span class="wz-tag">{{ t('wzc.ya_config') }}</span>{% endif %}</div>
       </div>
 
       <div class="wz-nav">
-        <button type="button" class="wz-btn back" data-back="3">← Atrás</button>
-        <button type="submit" class="wz-btn save">Guardar todo ✓</button>
+        <button type="button" class="wz-btn back" data-back="3">{{ t('wzc.atras') }}</button>
+        <button type="submit" class="wz-btn save">{{ t('wzc.guardar_todo') }}</button>
       </div>
     </div>
   </form>
 
   <div class="wz-test">
-    <h2>Probar conexión con Hacienda</h2>
-    <div class="wz-help">Comprueba que su usuario y clave funcionan. Primero guarde, luego pruebe. No envía ninguna factura.</div>
+    <h2>{{ t('wzc.probar_title') }}</h2>
+    <div class="wz-help">{{ t('wzc.probar_help') }}</div>
     <form method="post" action="/admin/factura/config/test">
-      <button type="submit">🔌 Probar conexión</button>
+      <button type="submit">{{ t('wzc.probar_btn') }}</button>
     </form>
   </div>
 </div>
 
 <div class="wz-modal-ov" id="infoModal">
   <div class="wz-modal">
-    <h3 id="infoTitle">Información</h3>
+    <h3 id="infoTitle">{{ t('wzc.info') }}</h3>
     <p id="infoBody"></p>
-    <button type="button" id="infoClose">Entendido</button>
+    <button type="button" id="infoClose">{{ t('act.entendido') }}</button>
   </div>
 </div>
 
 <script>
 (function () {
+  const T = (k, fb) => (window.I18N && window.I18N[k]) || fb;
   // Navegación por pasos
   const steps = [...document.querySelectorAll(".wz-step")];
   const chips = [...document.querySelectorAll(".wz-chip")];
@@ -261,10 +262,10 @@
 
   // Botones de información
   const INFO = {
-    negocio: ["Su negocio", "Aquí van los datos de su empresa registrados en Hacienda: el nombre, la cédula jurídica y el código de su actividad. Si está empezando, elija \"Estoy probando\" para no facturar de verdad todavía."],
-    ubicacion: ["Ubicación del local", "Hacienda pide la ubicación con números: provincia (1 al 7), cantón y distrito. Si no los sabe, los puede consultar en su comprobante de inscripción o preguntarle a su contador."],
-    hacienda: ["Datos de Hacienda", "Son el usuario y la clave que usted generó en el sistema ATV de Hacienda. Con eso el sistema se conecta para enviar sus facturas. La clave se guarda protegida."],
-    firma: ["Firma digital", "Es un archivo (.p12) con su firma electrónica, que Hacienda le entrega. Sirve para firmar cada factura. Tiene su propia contraseña (PIN). Ambos se guardan protegidos y nadie más los ve."],
+    negocio: [T("wzc.info_neg_t","Su negocio"), T("wzc.info_neg_b","")],
+    ubicacion: [T("wzc.info_ubi_t","Ubicación del local"), T("wzc.info_ubi_b","")],
+    hacienda: [T("wzc.info_hac_t","Datos de Hacienda"), T("wzc.info_hac_b","")],
+    firma: [T("wzc.info_firma_t","Firma digital"), T("wzc.info_firma_b","")],
   };
   const ov = document.getElementById("infoModal");
   document.querySelectorAll(".wz-info").forEach(b => b.addEventListener("click", () => {

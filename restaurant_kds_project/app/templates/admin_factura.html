@@ -26,27 +26,26 @@
 </style>
 
 <div class="fe-head">
-  <h1>Factura Electrónica</h1>
+  <h1>{{ t('adm.factura') }}</h1>
   <div style="display:flex;gap:10px;flex-wrap:wrap;">
-    <a href="/admin/factura/config" class="fe-btn ghost">⚙️ Configuración</a>
-    <a href="/admin" class="fe-btn ghost">← Dashboard</a>
+    <a href="/admin/factura/config" class="fe-btn ghost">{{ t('fe.config') }}</a>
+    <a href="/admin" class="fe-btn ghost">← {{ t('common.dashboard') }}</a>
   </div>
 </div>
 <div class="fe-note">
-  <strong>Fase 1 — Clientes.</strong> Registrá acá los datos del cliente (receptor) que necesita factura electrónica.
-  El envío a Hacienda (firma del XML + API) es la siguiente fase y requiere tu certificado (.p12) y credenciales del ATV.
+  <strong>{{ t('fe.note_strong') }}</strong> {{ t('fe.note') }}
 </div>
 
 <div class="fe-card">
-  <h2>Agregar cliente</h2>
+  <h2>{{ t('fe.agregar') }}</h2>
   <form method="post" action="/admin/factura" autocomplete="off">
     <div class="fe-grid">
       <div class="fe-field" style="grid-column:1/-1;">
-        <label>Nombre / Razón social</label>
-        <input name="nombre" maxlength="100" required placeholder="Ej: Juan Pérez / Empresa S.A.">
+        <label>{{ t('fe.nombre') }}</label>
+        <input name="nombre" maxlength="100" required placeholder="{{ t('fe.nombre_ph') }}">
       </div>
       <div class="fe-field">
-        <label>Tipo de identificación</label>
+        <label>{{ t('fe.tipo_id') }}</label>
         <select name="id_tipo">
           {% for code, label in id_types %}
           <option value="{{ code }}">{{ code }} — {{ label }}</option>
@@ -54,33 +53,33 @@
         </select>
       </div>
       <div class="fe-field">
-        <label>Número de identificación</label>
-        <input name="id_numero" maxlength="20" required inputmode="numeric" placeholder="Solo números">
+        <label>{{ t('fe.num_id') }}</label>
+        <input name="id_numero" maxlength="20" required inputmode="numeric" placeholder="{{ t('fe.solo_numeros') }}">
       </div>
       <div class="fe-field">
-        <label>Correo electrónico</label>
-        <input name="correo" type="email" maxlength="160" placeholder="Para enviarle la factura">
+        <label>{{ t('fe.correo') }}</label>
+        <input name="correo" type="email" maxlength="160" placeholder="{{ t('fe.correo_ph') }}">
       </div>
       <div class="fe-field">
-        <label>Teléfono</label>
-        <input name="telefono" maxlength="20" inputmode="numeric" placeholder="Opcional">
+        <label>{{ t('fe.telefono') }}</label>
+        <input name="telefono" maxlength="20" inputmode="numeric" placeholder="{{ t('fe.opcional') }}">
       </div>
     </div>
     <div class="fe-actions">
-      <button class="fe-btn primary" type="submit">Guardar cliente</button>
+      <button class="fe-btn primary" type="submit">{{ t('fe.guardar') }}</button>
     </div>
   </form>
 </div>
 
 <div class="fe-card">
-  <h2>Clientes registrados ({{ clients|length }})</h2>
+  <h2>{{ t('fe.registrados') }} ({{ clients|length }})</h2>
   {% if not clients %}
-    <div class="fe-empty">Aún no hay clientes. Agregá el primero arriba.</div>
+    <div class="fe-empty">{{ t('fe.sin') }}</div>
   {% else %}
   <div class="fe-table-wrap">
     <table class="fe-table">
       <thead>
-        <tr><th>Nombre</th><th>Identificación</th><th>Correo</th><th>Teléfono</th><th></th></tr>
+        <tr><th>{{ t('fe.nombre') }}</th><th>{{ t('fe.th_id') }}</th><th>{{ t('fe.correo') }}</th><th>{{ t('fe.telefono') }}</th><th></th></tr>
       </thead>
       <tbody>
         {% for c in clients %}
@@ -90,8 +89,8 @@
           <td>{{ c.correo or '—' }}</td>
           <td>{{ c.telefono or '—' }}</td>
           <td style="text-align:right;">
-            <form method="post" action="/admin/factura/{{ c.id }}/delete" onsubmit="return confirm('¿Eliminar este cliente?');" style="display:inline;">
-              <button class="fe-del" type="submit">Eliminar</button>
+            <form method="post" action="/admin/factura/{{ c.id }}/delete" onsubmit="return confirm('{{ t('fe.conf_eliminar') }}');" style="display:inline;">
+              <button class="fe-del" type="submit">{{ t('common.eliminar') }}</button>
             </form>
           </td>
         </tr>
