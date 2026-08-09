@@ -66,7 +66,7 @@
 
   <!-- top bar -->
   <div class="oh-top">
-    <h1 class="oh-title">Historial de Órdenes</h1>
+    <h1 class="oh-title">{{ t('oh.title') }}</h1>
     <div class="oh-exports">
       <a class="btn-export btn-csv"   href="{{ export_url('csv') }}">&#8595; CSV</a>
       <a class="btn-export btn-excel" href="{{ export_url('excel') }}">&#8595; Excel</a>
@@ -76,55 +76,55 @@
 
   <!-- quick presets -->
   <div class="presets">
-    <button class="preset" data-preset="today">Hoy</button>
-    <button class="preset" data-preset="week">Últimos 7 días</button>
-    <button class="preset" data-preset="month">Este mes</button>
+    <button class="preset" data-preset="today">{{ t('common.hoy') }}</button>
+    <button class="preset" data-preset="week">{{ t('common.ultimos7') }}</button>
+    <button class="preset" data-preset="month">{{ t('oh.este_mes') }}</button>
   </div>
 
   <!-- filter bar -->
   <div class="filter-bar">
     <form id="filterForm" method="get" action="/admin/orders/history">
       <div class="filter-group">
-        <label>Desde</label>
+        <label>{{ t('oh.desde') }}</label>
         <input type="date" name="date_from" value="{{ params.get('date_from','') }}" />
       </div>
       <div class="filter-group">
-        <label>Hasta</label>
+        <label>{{ t('oh.hasta') }}</label>
         <input type="date" name="date_to" value="{{ params.get('date_to','') }}" />
       </div>
       <div class="filter-group">
-        <label>Estado</label>
+        <label>{{ t('oh.estado') }}</label>
         <select name="status">
-          <option value="">Todos</option>
+          <option value="">{{ t('common.todos') }}</option>
           {% for s in ['nuevo','aceptado','preparando','listo','despachado','cancelado'] %}
-          <option value="{{ s }}" {% if params.get('status')==s %}selected{% endif %}>{{ s }}</option>
+          <option value="{{ s }}" {% if params.get('status')==s %}selected{% endif %}>{{ t('st.'+s) }}</option>
           {% endfor %}
         </select>
       </div>
       <div class="filter-group">
-        <label>Origen</label>
+        <label>{{ t('oh.origen') }}</label>
         <select name="source_role">
-          <option value="">Todos</option>
-          <option value="station_a" {% if params.get('source_role')=='station_a' %}selected{% endif %}>Salón</option>
-          <option value="kitchen"   {% if params.get('source_role')=='kitchen'   %}selected{% endif %}>Kitchen</option>
+          <option value="">{{ t('common.todos') }}</option>
+          <option value="station_a" {% if params.get('source_role')=='station_a' %}selected{% endif %}>{{ t('hub.salon') }}</option>
+          <option value="kitchen"   {% if params.get('source_role')=='kitchen'   %}selected{% endif %}>{{ t('kitchen.title') }}</option>
         </select>
       </div>
       <div class="filter-group">
-        <label>Mesero</label>
-        <input type="text" name="waiter_name" value="{{ params.get('waiter_name','') }}" placeholder="Nombre…" />
+        <label>{{ t('oh.mesero') }}</label>
+        <input type="text" name="waiter_name" value="{{ params.get('waiter_name','') }}" placeholder="{{ t('oh.nombre_ph') }}" />
       </div>
       <div class="filter-group">
-        <label>Producto</label>
+        <label>{{ t('oh.producto') }}</label>
         <select name="product_id">
-          <option value="">Todos</option>
+          <option value="">{{ t('common.todos') }}</option>
           {% for p in products %}
           <option value="{{ p.id }}" {% if params.get('product_id')|string == p.id|string %}selected{% endif %}>{{ p.name }}</option>
           {% endfor %}
         </select>
       </div>
       <div class="filter-actions">
-        <button type="submit" class="btn-filter">Filtrar</button>
-        <a href="/admin/orders/history" class="btn-clear">Limpiar</a>
+        <button type="submit" class="btn-filter">{{ t('oh.filtrar') }}</button>
+        <a href="/admin/orders/history" class="btn-clear">{{ t('oh.limpiar') }}</a>
       </div>
     </form>
   </div>
@@ -134,11 +134,11 @@
   {% set total_revenue = active_orders | sum(attribute='fin.total') %}
   {% set total_tax     = active_orders | sum(attribute='fin.tax') %}
   <div class="summary-bar">
-    <div class="summary-card"><div class="label">Total órdenes</div><div class="value">{{ total }}</div></div>
-    <div class="summary-card"><div class="label">En esta página</div><div class="value">{{ orders|length }}</div></div>
-    <div class="summary-card"><div class="label">Ingresos (pág.)</div><div class="value">${{ "%.2f"|format(total_revenue) }}</div></div>
-    <div class="summary-card"><div class="label">Impuestos (pág.)</div><div class="value">${{ "%.2f"|format(total_tax) }}</div></div>
-    <div class="summary-card"><div class="label">IVA aplicado</div><div class="value">{{ "%.1f"|format(tax_rate) }}%</div></div>
+    <div class="summary-card"><div class="label">{{ t('oh.total_ordenes') }}</div><div class="value">{{ total }}</div></div>
+    <div class="summary-card"><div class="label">{{ t('oh.en_pagina') }}</div><div class="value">{{ orders|length }}</div></div>
+    <div class="summary-card"><div class="label">{{ t('oh.ingresos_pag') }}</div><div class="value">${{ "%.2f"|format(total_revenue) }}</div></div>
+    <div class="summary-card"><div class="label">{{ t('oh.impuestos_pag') }}</div><div class="value">${{ "%.2f"|format(total_tax) }}</div></div>
+    <div class="summary-card"><div class="label">{{ t('oh.iva_aplicado') }}</div><div class="value">{{ "%.1f"|format(tax_rate) }}%</div></div>
   </div>
 
   <!-- table -->
@@ -147,31 +147,31 @@
       <thead>
         <tr>
           <th>ID</th>
-          <th>Fecha</th>
-          <th>Estado</th>
-          <th>Origen</th>
-          <th>Mesero</th>
-          <th>Items</th>
-          <th>Subtotal</th>
-          <th>Tax</th>
-          <th>Total</th>
-          <th>Pago</th>
+          <th>{{ t('oh.th_fecha') }}</th>
+          <th>{{ t('oh.estado') }}</th>
+          <th>{{ t('oh.origen') }}</th>
+          <th>{{ t('oh.mesero') }}</th>
+          <th>{{ t('adm.th_items') }}</th>
+          <th>{{ t('oh.th_subtotal') }}</th>
+          <th>{{ t('oh.th_tax') }}</th>
+          <th>{{ t('oh.th_total') }}</th>
+          <th>{{ t('oh.th_pago') }}</th>
         </tr>
       </thead>
       <tbody>
         {% for o in orders %}
         <tr {% if o.was_cancelled %}class="cancelled-row"{% endif %}>
-          <td><strong>#{{ o.id }}</strong>{% if o.was_cancelled %}<br><span style="font-size:11px;color:var(--red);">CANCELADO</span>{% endif %}</td>
+          <td><strong>#{{ o.id }}</strong>{% if o.was_cancelled %}<br><span style="font-size:11px;color:var(--red);">{{ t('oh.cancelado') }}</span>{% endif %}</td>
           <td style="white-space:nowrap;">
             {{ o.created_at.strftime('%Y-%m-%d') }}<br>
             <span style="color:#6c757d;font-size:12px;">{{ o.created_at.strftime('%H:%M') }}</span>
           </td>
-          <td><span class="badge badge-{{ o.status }}">{{ o.status }}</span></td>
+          <td><span class="badge badge-{{ o.status }}">{{ t('st.'+o.status) }}</span></td>
           <td>
             {% if o.source_role == 'station_a' %}
-            <span class="badge badge-station">SALÓN</span>
+            <span class="badge badge-station">{{ t('salon.title') }}</span>
             {% else %}
-            <span class="badge badge-kitchen">KITCHEN</span>
+            <span class="badge badge-kitchen">{{ t('kitchen.title') }}</span>
             {% endif %}
           </td>
           <td>{{ o.waiter_name or '-' }}</td>
@@ -188,7 +188,7 @@
           <td><span style="color:#b7becd;">{{ o.fin.payment_method }}</span></td>
         </tr>
         {% else %}
-        <tr><td colspan="10" style="text-align:center;color:#6c757d;padding:40px;">Sin órdenes con los filtros actuales.</td></tr>
+        <tr><td colspan="10" style="text-align:center;color:#6c757d;padding:40px;">{{ t('oh.sin_ordenes') }}</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -198,7 +198,7 @@
   {% if total_pages > 1 %}
   <div class="pagination">
     {% if page > 1 %}
-    <a class="page-btn" href="{{ page_url(page-1) }}">&#8592; Anterior</a>
+    <a class="page-btn" href="{{ page_url(page-1) }}">&#8592; {{ t('oh.anterior') }}</a>
     {% endif %}
 
     {% for p in range([1, page-2]|max, [total_pages+1, page+3]|min) %}
@@ -206,9 +206,9 @@
     {% endfor %}
 
     {% if page < total_pages %}
-    <a class="page-btn" href="{{ page_url(page+1) }}">Siguiente &#8594;</a>
+    <a class="page-btn" href="{{ page_url(page+1) }}">{{ t('oh.siguiente') }} &#8594;</a>
     {% endif %}
-    <span class="page-info">Página {{ page }} de {{ total_pages }} · {{ total }} resultados</span>
+    <span class="page-info">{{ t('oh.pagina_pre') }} {{ page }} {{ t('oh.pagina_de') }} {{ total_pages }} · {{ total }} {{ t('oh.resultados') }}</span>
   </div>
   {% endif %}
 

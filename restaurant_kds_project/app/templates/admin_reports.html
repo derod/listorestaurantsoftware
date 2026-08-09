@@ -22,78 +22,78 @@
 {{ n|int if n == n|int else '%.2f'|format(n) }}
 {%- endmacro %}
 
-<h1>Reportes</h1>
+<h1>{{ t('adm.reportes') }}</h1>
 
 <!-- ── B) Consumo de platos: KDS despachado + ventas POS ─────────────────── -->
-<div class="rep-section-title">Platos vendidos / despachados</div>
-<div class="rep-section-note">Incluye pedidos despachados por Cocina (KDS) y las ventas del POS.</div>
+<div class="rep-section-title">{{ t('rep.platos_title') }}</div>
+<div class="rep-section-note">{{ t('rep.platos_note') }}</div>
 <div class="rep-grid">
   <div class="rep-card">
-    <h2>Hoy</h2>
+    <h2>{{ t('common.hoy') }}</h2>
     <div class="rep-sub">{{ today_label }}</div>
     {% for row in daily %}
     <div class="rep-row"><span class="rep-name">{{ row.name }}</span><strong>{{ num(row.total) }}</strong></div>
     {% else %}
-    <div class="rep-empty">Sin ventas ni despachos hoy.</div>
+    <div class="rep-empty">{{ t('rep.sin_ventas_hoy') }}</div>
     {% endfor %}
   </div>
 
   <div class="rep-card">
-    <h2>Últimos 7 días</h2>
+    <h2>{{ t('common.ultimos7') }}</h2>
     <div class="rep-sub">{{ week_label }}</div>
     {% for row in weekly %}
     <div class="rep-row"><span class="rep-name">{{ row.name }}</span><strong>{{ num(row.total) }}</strong></div>
     {% else %}
-    <div class="rep-empty">Sin ventas ni despachos.</div>
+    <div class="rep-empty">{{ t('rep.sin_ventas') }}</div>
     {% endfor %}
   </div>
 </div>
 
 <!-- ── C) Consumo de insumos: movimientos de salida/merma ────────────────── -->
-<div class="rep-section-title">Consumo de insumos</div>
-<div class="rep-section-note">Salidas del inventario de insumos (ventas con receta + mermas registradas).</div>
+<div class="rep-section-title">{{ t('rep.insumos_title') }}</div>
+<div class="rep-section-note">{{ t('rep.insumos_note') }}</div>
 <div class="rep-grid">
   <div class="rep-card">
-    <h2>Hoy</h2>
+    <h2>{{ t('common.hoy') }}</h2>
     <div class="rep-sub">{{ today_label }}</div>
     {% for row in ing_daily %}
     <div class="rep-row">
       <span class="rep-name">{{ row.name }}</span>
-      <strong>{{ num(row.total) }} <span class="rep-unit">{{ row.unit }}</span>{% if row.waste %}<span class="rep-waste">merma {{ num(row.waste) }}</span>{% endif %}</strong>
+      <strong>{{ num(row.total) }} <span class="rep-unit">{{ row.unit }}</span>{% if row.waste %}<span class="rep-waste">{{ t('rep.merma') }} {{ num(row.waste) }}</span>{% endif %}</strong>
     </div>
     {% else %}
-    <div class="rep-empty">Sin salidas de insumos hoy.</div>
+    <div class="rep-empty">{{ t('rep.sin_salidas_hoy') }}</div>
     {% endfor %}
   </div>
 
   <div class="rep-card">
-    <h2>Últimos 7 días</h2>
+    <h2>{{ t('common.ultimos7') }}</h2>
     <div class="rep-sub">{{ week_label }}</div>
     {% for row in ing_weekly %}
     <div class="rep-row">
       <span class="rep-name">{{ row.name }}</span>
-      <strong>{{ num(row.total) }} <span class="rep-unit">{{ row.unit }}</span>{% if row.waste %}<span class="rep-waste">merma {{ num(row.waste) }}</span>{% endif %}</strong>
+      <strong>{{ num(row.total) }} <span class="rep-unit">{{ row.unit }}</span>{% if row.waste %}<span class="rep-waste">{{ t('rep.merma') }} {{ num(row.waste) }}</span>{% endif %}</strong>
     </div>
     {% else %}
-    <div class="rep-empty">Sin salidas de insumos.</div>
+    <div class="rep-empty">{{ t('rep.sin_salidas') }}</div>
     {% endfor %}
   </div>
 </div>
 
 <!-- ── A) Stock actual: inventario de insumos ────────────────────────────── -->
-<div class="rep-section-title">Stock actual de insumos</div>
-<div class="rep-section-note">Mismo inventario que <a href="/admin/inventario" style="color:var(--accent);">Insumos</a>. Se descuenta con cada venta del POS según la receta.</div>
+<div class="rep-section-title">{{ t('rep.stock_title') }}</div>
+<div class="rep-section-note">{{ t('rep.stock_note_pre') }} <a href="/admin/inventario" style="color:var(--accent);">{{ t('adm.insumos') }}</a>{{ t('rep.stock_note_post') }}</div>
 <div class="rep-grid">
   <div class="rep-card">
-    <h2>Existencias</h2>
-    <div class="rep-sub">Inventario al momento</div>
+    <h2>{{ t('rep.existencias') }}</h2>
+    <div class="rep-sub">{{ t('rep.inv_momento') }}</div>
     {% for row in stock %}
     <div class="rep-row {{ 'low' if row.low else '' }}">
-      <span class="rep-name">{{ row.name }}{% if row.low %}<span class="rep-low-tag">BAJO</span>{% endif %}</span>
+      <span class="rep-name">{{ row.name }}{% if row.low %}<span class="rep-low-tag">{{ t('rep.bajo') }}</span>{% endif %}</span>
       <strong>{{ num(row.stock) }} <span class="rep-unit">{{ row.unit }}</span></strong>
     </div>
     {% else %}
-    <div class="rep-empty">Sin insumos registrados.</div>
+    <div class="rep-empty">{{ t('rep.sin_insumos') }}</div>
     {% endfor %}
   </div>
 </div>

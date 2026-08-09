@@ -47,10 +47,10 @@
 </style>
 
 <div class="g-head">
-  <h1>Gastos del negocio</h1>
+  <h1>{{ t('gto.title') }}</h1>
   <div class="g-tools">
     <a class="g-btn" href="/admin/gastos/export.csv?month={{ month }}">&#11015; CSV</a>
-    <a class="g-btn" href="/admin">&#8592; Dashboard</a>
+    <a class="g-btn" href="/admin">&#8592; {{ t('common.dashboard') }}</a>
   </div>
 </div>
 
@@ -58,23 +58,23 @@
   <a class="g-btn" href="/admin/gastos?month={{ prev_month }}">&#8592;</a>
   <div class="g-month">{{ month_label }}</div>
   <a class="g-btn" href="/admin/gastos?month={{ next_month }}">&#8594;</a>
-  <button class="g-btn primary" onclick="openModal('addModal')">&#43; Agregar gasto</button>
-  <a class="g-btn" href="/cuestionario?gmonth={{ month }}&start=gasto">&#9889; Modo rápido</a>
+  <button class="g-btn primary" onclick="openModal('addModal')">&#43; {{ t('gto.agregar') }}</button>
+  <a class="g-btn" href="/cuestionario?gmonth={{ month }}&start=gasto">&#9889; {{ t('gto.modo_rapido') }}</a>
 </div>
 
 <div class="g-totals">
-  <div class="g-total-card big"><div class="t-label">Total del mes</div><div class="t-val">{{ total }}</div></div>
+  <div class="g-total-card big"><div class="t-label">{{ t('gto.total_mes') }}</div><div class="t-val">{{ total }}</div></div>
   {% for c, v in cat_totals %}
   <div class="g-cat"><span>{{ c }}</span><b>{{ v }}</b></div>
   {% endfor %}
 </div>
 
 {% if not expenses %}
-  <div class="g-empty">No hay gastos registrados en {{ month_label }}. Usa “Agregar gasto”.</div>
+  <div class="g-empty">{{ t('gto.sin_gastos_pre') }} {{ month_label }}{{ t('gto.sin_gastos_post') }}</div>
 {% else %}
 <div class="g-table-wrap">
   <table class="g-table">
-    <thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Método</th><th>Monto</th><th></th></tr></thead>
+    <thead><tr><th>{{ t('gto.th_fecha') }}</th><th>{{ t('gto.th_categoria') }}</th><th>{{ t('gto.th_desc') }}</th><th>{{ t('gto.th_metodo') }}</th><th>{{ t('gto.th_monto') }}</th><th></th></tr></thead>
     <tbody>
       {% for e in expenses %}
       <tr>
@@ -87,10 +87,10 @@
           <div class="g-row-actions">
             <button class="mini" onclick="openEdit(this)"
               data-id="{{ e.id }}" data-category="{{ e.category }}" data-amount="{{ e.amount }}"
-              data-date="{{ e.date_iso }}" data-desc="{{ e.description }}" data-method="{{ e.method }}">Editar</button>
-            <form method="post" action="/admin/gastos/{{ e.id }}/delete" onsubmit="return window.confirmForm(this, '¿Eliminar este gasto?')" style="display:inline;">
+              data-date="{{ e.date_iso }}" data-desc="{{ e.description }}" data-method="{{ e.method }}">{{ t('common.editar') }}</button>
+            <form method="post" action="/admin/gastos/{{ e.id }}/delete" onsubmit="return window.confirmForm(this, '{{ t('gto.conf_eliminar') }}')" style="display:inline;">
               <input type="hidden" name="month" value="{{ month }}">
-              <button type="submit" class="mini danger">Eliminar</button>
+              <button type="submit" class="mini danger">{{ t('common.eliminar') }}</button>
             </form>
           </div>
         </td>
@@ -102,15 +102,15 @@
 {% endif %}
 
 <details class="g-fixed">
-  <summary>Gastos fijos mensuales (plantilla)</summary>
+  <summary>{{ t('gto.fijos_title') }}</summary>
   <p style="color:var(--muted);font-size:14px;margin:12px 0;">
-    Define aquí los gastos que se repiten cada mes (alquiler, salarios, CCSS, internet…). Total fijo activo: <b>{{ fixed_total }}</b>.
-    Luego usa “Generar gastos del mes” para crearlos en {{ month_label }} con un clic.
+    {{ t('gto.fijos_desc_pre') }} <b>{{ fixed_total }}</b>.
+    {{ t('gto.fijos_desc_post') }}
   </p>
 
-  <form method="post" action="/admin/gastos/generar" onsubmit="return window.confirmForm(this, '¿Generar los gastos fijos en {{ month_label }}? No se duplican los ya generados.')" style="margin-bottom:14px;">
+  <form method="post" action="/admin/gastos/generar" onsubmit="return window.confirmForm(this, '{{ t('gto.generar') }} — {{ month_label }}?')" style="margin-bottom:14px;">
     <input type="hidden" name="month" value="{{ month }}">
-    <button type="submit" class="g-btn primary">⚙ Generar gastos del mes</button>
+    <button type="submit" class="g-btn primary">{{ t('gto.generar') }}</button>
   </form>
 
   {% if fixed %}
@@ -120,9 +120,9 @@
       <span>{{ f.category }}{% if f.description %} · {{ f.description }}{% endif %}</span>
       <span style="display:flex;align-items:center;gap:12px;">
         <b>{{ f.amount_fmt }}</b>
-        <form method="post" action="/admin/gastos/fijos/{{ f.id }}/delete" onsubmit="return window.confirmForm(this, '¿Quitar este gasto fijo de la plantilla?')" style="display:inline;">
+        <form method="post" action="/admin/gastos/fijos/{{ f.id }}/delete" onsubmit="return window.confirmForm(this, '{{ t('gto.conf_quitar_fijo') }}')" style="display:inline;">
           <input type="hidden" name="month" value="{{ month }}">
-          <button type="submit" class="mini danger">Quitar</button>
+          <button type="submit" class="mini danger">{{ t('common.quitar') }}</button>
         </form>
       </span>
     </div>
@@ -133,40 +133,40 @@
   <form method="post" action="/admin/gastos/fijos" class="g-fixed-add">
     <input type="hidden" name="month" value="{{ month }}">
     <div class="g-field" style="flex:1;min-width:160px;">
-      <label>Categoría</label>
+      <label>{{ t('gto.th_categoria') }}</label>
       <select name="category" required>
         {% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
       </select>
     </div>
     <div class="g-field" style="flex:1;min-width:140px;">
-      <label>Descripción (opcional)</label>
-      <input name="description" maxlength="300" placeholder="Ej: Salario Juan">
+      <label>{{ t('gto.desc_opcional') }}</label>
+      <input name="description" maxlength="300" placeholder="{{ t('gto.ej_salario') }}">
     </div>
     <div class="g-field" style="width:130px;">
-      <label>Monto ₡</label>
+      <label>{{ t('gto.th_monto') }} ₡</label>
       <input name="amount" type="number" step="1" min="0" required>
     </div>
-    <button type="submit" class="g-btn">Agregar fijo</button>
+    <button type="submit" class="g-btn">{{ t('gto.agregar_fijo') }}</button>
   </form>
 </details>
 
 <!-- Add modal -->
 <div class="g-overlay" id="addModal">
   <form class="g-modal" method="post" action="/admin/gastos">
-    <h2>Agregar gasto</h2>
+    <h2>{{ t('gto.agregar') }}</h2>
     <input type="hidden" name="month" value="{{ month }}">
-    <div class="g-field"><label>Categoría</label>
+    <div class="g-field"><label>{{ t('gto.th_categoria') }}</label>
       <select name="category" required>{% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}</select>
     </div>
-    <div class="g-field"><label>Monto ₡</label><input name="amount" type="number" step="1" min="0" required></div>
-    <div class="g-field"><label>Fecha</label><input name="date" type="date" id="addDate"></div>
-    <div class="g-field"><label>Descripción (opcional)</label><input name="description" maxlength="300"></div>
-    <div class="g-field"><label>Método (opcional)</label>
+    <div class="g-field"><label>{{ t('gto.th_monto') }} ₡</label><input name="amount" type="number" step="1" min="0" required></div>
+    <div class="g-field"><label>{{ t('gto.th_fecha') }}</label><input name="date" type="date" id="addDate"></div>
+    <div class="g-field"><label>{{ t('gto.desc_opcional') }}</label><input name="description" maxlength="300"></div>
+    <div class="g-field"><label>{{ t('gto.metodo_opcional') }}</label>
       <select name="payment_method"><option value="">—</option>{% for m in methods %}<option value="{{ m }}">{{ m }}</option>{% endfor %}</select>
     </div>
     <div class="g-modal-actions">
-      <button type="button" class="g-btn" onclick="closeModal('addModal')">Cancelar</button>
-      <button type="submit" class="g-btn primary">Guardar</button>
+      <button type="button" class="g-btn" onclick="closeModal('addModal')">{{ t('common.cancelar') }}</button>
+      <button type="submit" class="g-btn primary">{{ t('common.guardar') }}</button>
     </div>
   </form>
 </div>
@@ -174,20 +174,20 @@
 <!-- Edit modal -->
 <div class="g-overlay" id="editModal">
   <form class="g-modal" method="post" id="editForm" action="">
-    <h2>Editar gasto</h2>
+    <h2>{{ t('gto.editar_gasto') }}</h2>
     <input type="hidden" name="month" value="{{ month }}">
-    <div class="g-field"><label>Categoría</label>
+    <div class="g-field"><label>{{ t('gto.th_categoria') }}</label>
       <select name="category" id="eCat" required>{% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}</select>
     </div>
-    <div class="g-field"><label>Monto ₡</label><input name="amount" id="eAmount" type="number" step="1" min="0" required></div>
-    <div class="g-field"><label>Fecha</label><input name="date" id="eDate" type="date"></div>
-    <div class="g-field"><label>Descripción (opcional)</label><input name="description" id="eDesc" maxlength="300"></div>
-    <div class="g-field"><label>Método (opcional)</label>
+    <div class="g-field"><label>{{ t('gto.th_monto') }} ₡</label><input name="amount" id="eAmount" type="number" step="1" min="0" required></div>
+    <div class="g-field"><label>{{ t('gto.th_fecha') }}</label><input name="date" id="eDate" type="date"></div>
+    <div class="g-field"><label>{{ t('gto.desc_opcional') }}</label><input name="description" id="eDesc" maxlength="300"></div>
+    <div class="g-field"><label>{{ t('gto.metodo_opcional') }}</label>
       <select name="payment_method" id="eMethod"><option value="">—</option>{% for m in methods %}<option value="{{ m }}">{{ m }}</option>{% endfor %}</select>
     </div>
     <div class="g-modal-actions">
-      <button type="button" class="g-btn" onclick="closeModal('editModal')">Cancelar</button>
-      <button type="submit" class="g-btn primary">Guardar</button>
+      <button type="button" class="g-btn" onclick="closeModal('editModal')">{{ t('common.cancelar') }}</button>
+      <button type="submit" class="g-btn primary">{{ t('common.guardar') }}</button>
     </div>
   </form>
 </div>

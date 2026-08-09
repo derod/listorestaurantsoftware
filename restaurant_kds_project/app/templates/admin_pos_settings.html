@@ -1,13 +1,13 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>POS – Configuración</h1>
+<h1>{{ t('pset.title') }}</h1>
 <div class="panel form-panel" style="max-width:520px;">
   <form method="post" action="/admin/pos-settings" class="big-form" style="display:flex;flex-direction:column;gap:14px;">
     <label style="display:flex;flex-direction:column;gap:6px;">
-      <span>Tasa de impuestos (%)</span>
+      <span>{{ t('pset.tasa') }}</span>
       <input type="number" step="0.01" min="0" max="100" name="tax_rate" value="{{ '%.2f'|format(settings.tax_rate or 0) }}" required />
     </label>
-    <button class="action primary" type="submit">Guardar</button>
+    <button class="action primary" type="submit">{{ t('common.guardar') }}</button>
   </form>
 </div>
 {% endblock %}

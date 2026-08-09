@@ -38,81 +38,81 @@
 </style>
 
 <div class="rent-head">
-  <h1>Rentabilidad</h1>
-  <a class="rent-back" href="/admin">&#8592; Dashboard</a>
+  <h1>{{ t('adm.rentabilidad') }}</h1>
+  <a class="rent-back" href="/admin">&#8592; {{ t('common.dashboard') }}</a>
 </div>
 
 <div class="rent-filters" style="margin-bottom:22px;">
-  <a class="rent-filter {% if active_range=='today' %}active{% endif %}" href="/admin/rentabilidad?range=today">Hoy</a>
-  <a class="rent-filter {% if active_range=='week' %}active{% endif %}" href="/admin/rentabilidad?range=week">Semana</a>
-  <a class="rent-filter {% if active_range=='month' %}active{% endif %}" href="/admin/rentabilidad?range=month">Mes</a>
-  <a class="rent-filter {% if active_range=='all' %}active{% endif %}" href="/admin/rentabilidad?range=all">Todo</a>
+  <a class="rent-filter {% if active_range=='today' %}active{% endif %}" href="/admin/rentabilidad?range=today">{{ t('common.hoy') }}</a>
+  <a class="rent-filter {% if active_range=='week' %}active{% endif %}" href="/admin/rentabilidad?range=week">{{ t('common.semana') }}</a>
+  <a class="rent-filter {% if active_range=='month' %}active{% endif %}" href="/admin/rentabilidad?range=month">{{ t('common.mes') }}</a>
+  <a class="rent-filter {% if active_range=='all' %}active{% endif %}" href="/admin/rentabilidad?range=all">{{ t('common.todo') }}</a>
 </div>
 
 <div class="rent-grid">
   <div class="rent-card v-green">
     <div class="ico">&#128176;</div>
-    <div class="label">Vendido (POS)</div>
+    <div class="label">{{ t('rnt.vendido') }}</div>
     <div class="value">{{ vendido }}</div>
-    <div class="hint">{{ num_sales }} venta{{ '' if num_sales == 1 else 's' }}</div>
+    <div class="hint">{{ num_sales }} {{ t('rnt.venta') if num_sales == 1 else t('rnt.ventas') }}</div>
   </div>
   <div class="rent-card v-blue">
     <div class="ico">&#128722;</div>
-    <div class="label">Comprado (insumos)</div>
+    <div class="label">{{ t('rnt.comprado') }}</div>
     <div class="value">{{ comprado }}</div>
-    <div class="hint">entradas de stock valoradas al costo</div>
+    <div class="hint">{{ t('rnt.comprado_hint') }}</div>
   </div>
   <div class="rent-card v-red">
     <div class="ico">&#128465;</div>
-    <div class="label">Merma</div>
+    <div class="label">{{ t('rnt.merma') }}</div>
     <div class="value">{{ merma }}</div>
-    <div class="hint">pérdida por lo botado</div>
+    <div class="hint">{{ t('rnt.merma_hint') }}</div>
   </div>
   <div class="rent-card v-accent">
     <div class="ico">&#128230;</div>
-    <div class="label">Valor de inventario</div>
+    <div class="label">{{ t('rnt.inv_valor') }}</div>
     <div class="value">{{ inv_value }}</div>
-    <div class="hint">insumos en stock ahora</div>
+    <div class="hint">{{ t('rnt.inv_hint') }}</div>
   </div>
   <div class="rent-card {% if balance_pos %}v-green{% else %}v-red{% endif %}">
     <div class="ico">&#9878;</div>
-    <div class="label">Balance (vendido − comprado)</div>
+    <div class="label">{{ t('rnt.balance') }}</div>
     <div class="value">{{ balance }}</div>
-    <div class="hint">entra vs sale en el período</div>
+    <div class="hint">{{ t('rnt.balance_hint') }}</div>
   </div>
   <div class="rent-card v-red">
     <div class="ico">&#128179;</div>
-    <div class="label">Gastos del negocio</div>
+    <div class="label">{{ t('rnt.gastos') }}</div>
     <div class="value">{{ gastos }}</div>
-    <div class="hint"><a href="/admin/gastos" style="color:var(--accent);text-decoration:none;">salarios, alquiler, servicios…</a></div>
+    <div class="hint"><a href="/admin/gastos" style="color:var(--accent);text-decoration:none;">{{ t('rnt.gastos_hint') }}</a></div>
   </div>
 </div>
 
 <div class="rent-profit {% if neta_pos %}ok{% endif %}" style="{% if not neta_pos %}border-color:rgba(228,91,91,0.5);{% endif %}margin-bottom:24px;">
-  <h2>Ganancia neta</h2>
+  <h2>{{ t('rnt.neta') }}</h2>
   <div class="big" style="{% if not neta_pos %}color:var(--red);{% endif %}">{{ neta }}</div>
-  <div class="meta">Vendido − Comprado − Gastos del negocio. Es lo que realmente te queda en el período (base efectivo).</div>
+  <div class="meta">{{ t('rnt.neta_meta') }}</div>
 </div>
 
 <div class="rent-bars">
-  <h2>Vendido vs Gastado</h2>
+  <h2>{{ t('rnt.vs_title') }}</h2>
   <div class="bar-row">
-    <div class="bar-name">Vendido</div>
+    <div class="bar-name">{{ t('rnt.vendido') }}</div>
     <div class="bar-track"><div class="bar-fill green" style="width:{{ bar_vendido }}%;"></div></div>
     <div class="bar-val">{{ vendido }}</div>
   </div>
   <div class="bar-row">
-    <div class="bar-name">Comprado</div>
+    <div class="bar-name">{{ t('rnt.comprado') }}</div>
     <div class="bar-track"><div class="bar-fill blue" style="width:{{ bar_comprado }}%;"></div></div>
     <div class="bar-val">{{ comprado }}</div>
   </div>
   <div class="bar-row">
-    <div class="bar-name">Gastos</div>
+    <div class="bar-name">{{ t('rnt.gastos') }}</div>
     <div class="bar-track"><div class="bar-fill red" style="width:{{ bar_gastos }}%;"></div></div>
     <div class="bar-val">{{ gastos }}</div>
   </div>
   <div class="bar-row">
-    <div class="bar-name">Merma</div>
+    <div class="bar-name">{{ t('rnt.merma') }}</div>
     <div class="bar-track"><div class="bar-fill red" style="width:{{ bar_merma }}%;opacity:0.6;"></div></div>
     <div class="bar-val">{{ merma }}</div>
   </div>
@@ -120,13 +120,13 @@
 
 {% if has_cost %}
 <div class="rent-profit ok">
-  <h2>Ganancia bruta (costeada)</h2>
+  <h2>{{ t('rnt.bruta') }}</h2>
   <div class="big">{{ gross }}</div>
-  <div class="meta">Margen {{ margin }}% · Costo de lo vendido {{ cogs }} · basado en el <b>{{ coverage }}%</b> de las ventas (productos con receta).</div>
+  <div class="meta">{{ t('rnt.margen') }} {{ margin }}% · {{ t('rnt.cogs') }} {{ cogs }} · {{ t('rnt.basado_pre') }} <b>{{ coverage }}%</b> {{ t('rnt.basado_post') }}</div>
 </div>
 {% else %}
 <div class="rent-note">
-  💡 Para ver <b>ganancia y margen por venta</b>, agrega <b>recetas</b> a tus productos (producto → insumos que lleva). Ahora mismo {{ products_recipe }} de {{ products_total }} productos tienen receta. Cárgalas en <a href="/admin/inventario">Insumos → Modo avanzado: Recetas</a>.
+  💡 {{ t('rnt.note_pre') }} {{ products_recipe }} {{ t('oh.pagina_de') }} {{ products_total }} {{ t('rnt.note_mid') }} <a href="/admin/inventario">{{ t('rnt.note_link') }}</a>.
 </div>
 {% endif %}
 {% endblock %}
