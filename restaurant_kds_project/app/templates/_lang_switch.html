@@ -1,0 +1,12 @@
+<style>
+  .lang-switch-fixed { position:fixed; top:14px; right:14px; z-index:200; display:flex; gap:4px; }
+  .lang-switch-fixed .lang-btn { font-size:15px; font-weight:800; padding:8px 12px; border-radius:10px;
+    background:rgba(0,0,0,0.45); color:#fff; text-decoration:none; border:1px solid rgba(255,255,255,0.25); }
+  .lang-switch-fixed .lang-btn.on { background:var(--accent, #ffd24d); color:#111; border-color:var(--accent, #ffd24d); }
+</style>
+<div class="lang-switch-fixed">
+  {% set _cl = cur_lang(request) %}
+  {% for code in i18n_langs %}
+  <a href="/idioma/{{ code }}?next={{ request.url.path }}" class="lang-btn{{ ' on' if _cl == code else '' }}">{{ i18n_labels[code] }}</a>
+  {% endfor %}
+</div>

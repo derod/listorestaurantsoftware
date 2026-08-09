@@ -73,10 +73,22 @@
 <body>
   <header class="topbar">
     <div class="brand">LISTO Restaurant Software</div>
-    <nav class="nav">
+    <nav class="nav" style="align-items:center;">
+      <span class="lang-switch-inline">
+        {% set _cl = cur_lang(request) %}
+        {% for code in i18n_langs %}
+        <a href="/idioma/{{ code }}?next={{ request.url.path }}" class="lang-btn{{ ' on' if _cl == code else '' }}">{{ i18n_labels[code] }}</a>
+        {% endfor %}
+      </span>
       <a href="/" class="btn-home">Inicio</a>
       <a href="/pos/logout" class="btn-logout">Salir</a>
     </nav>
+    <style>
+      .lang-switch-inline { display:inline-flex; gap:4px; margin-right:6px; }
+      .lang-switch-inline .lang-btn { font-size:14px; font-weight:800; padding:6px 10px; border-radius:9px;
+        background:rgba(255,255,255,0.1); color:#fff; text-decoration:none; border:1px solid rgba(255,255,255,0.22); }
+      .lang-switch-inline .lang-btn.on { background:var(--accent, #ffd24d); color:#111; border-color:var(--accent, #ffd24d); }
+    </style>
   </header>
 
   <div class="pos-top" style="padding:0 20px;">
