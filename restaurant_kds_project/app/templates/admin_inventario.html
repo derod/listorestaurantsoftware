@@ -111,38 +111,38 @@
 <div class="inv2-wrap">
   <div class="inv2-head">
     <div>
-      <h1 class="inv2-title">Inventario (Insumos)</h1>
-      <div class="inv2-sub">Gestión sencilla de materia prima</div>
+      <h1 class="inv2-title">{{ t('inv.title') }}</h1>
+      <div class="inv2-sub">{{ t('inv.sub') }}</div>
     </div>
   </div>
 
   <!-- Botones principales -->
   <div class="inv2-actions">
-    <a class="inv2-btn primary" href="/cuestionario" style="text-decoration:none;">⚡ Modo rápido</a>
-    <button class="inv2-btn" data-open="mAddIng">➕ Agregar insumo</button>
-    <button class="inv2-btn blue" data-open="mAddStock">📦 Agregar stock</button>
-    <button class="inv2-btn yellow" data-open="mAdjust">✏️ Ajustar inventario</button>
-    <button class="inv2-btn red" data-open="mWaste">🗑️ Registrar merma</button>
+    <a class="inv2-btn primary" href="/cuestionario" style="text-decoration:none;">{{ t('inv.modo_rapido') }}</a>
+    <button class="inv2-btn" data-open="mAddIng">{{ t('inv.agregar_insumo') }}</button>
+    <button class="inv2-btn blue" data-open="mAddStock">{{ t('inv.agregar_stock') }}</button>
+    <button class="inv2-btn yellow" data-open="mAdjust">{{ t('inv.ajustar_btn') }}</button>
+    <button class="inv2-btn red" data-open="mWaste">{{ t('inv.merma_btn') }}</button>
   </div>
 
   <!-- Alerta de stock bajo -->
   <div class="inv2-alert" id="lowStockAlert" style="display:none;">
     <div class="ico">⚠️</div>
     <div>
-      <div class="inv2-alert-title">Stock bajo</div>
+      <div class="inv2-alert-title">{{ t('inv.stock_bajo') }}</div>
       <div class="inv2-alert-body" id="lowStockBody"></div>
     </div>
   </div>
 
   <!-- Tarjetas de insumos -->
   <div id="ingGrid" class="inv2-cats"></div>
-  <div id="ingEmpty" class="inv2-empty" style="display:none;">No hay insumos aún. Usa el botón "Agregar insumo" para comenzar.</div>
+  <div id="ingEmpty" class="inv2-empty" style="display:none;">{{ t('inv.sin_insumos') }}</div>
 
   <!-- Modo avanzado: recetas -->
   <details class="inv2-advanced">
-    <summary>Modo avanzado: Recetas (asociar insumos a productos)</summary>
+    <summary>{{ t('inv.recetas_summary') }}</summary>
     <div style="margin-top:16px;">
-      <button class="inv2-btn ghost" data-open="mRecipe">🧾 Crear / editar receta</button>
+      <button class="inv2-btn ghost" data-open="mRecipe">{{ t('inv.crear_receta') }}</button>
     </div>
   </details>
 </div>
@@ -150,17 +150,17 @@
 <!-- ─── Modal: Agregar insumo ─────────────────────────────────────────── -->
 <div class="inv2-overlay" id="mAddIng">
   <form class="inv2-modal" id="fAddIng" autocomplete="off">
-    <h2 class="inv2-modal-title" id="ingModalTitle">Agregar insumo</h2>
+    <h2 class="inv2-modal-title" id="ingModalTitle">{{ t('inv.add_title') }}</h2>
     <input type="hidden" name="id" value="">
     <div class="inv2-field">
-      <label>Nombre</label>
-      <input name="name" required maxlength="200" placeholder="Ej: Jamón">
+      <label>{{ t('inv.nombre') }}</label>
+      <input name="name" required maxlength="200" placeholder="{{ t('inv.nombre_ph') }}">
     </div>
     <div class="inv2-grid2">
       <div class="inv2-field">
-        <label>Categoría</label>
+        <label>{{ t('inv.categoria') }}</label>
         <select name="category">
-          <option value="">— Sin categoría —</option>
+          <option value="">{{ t('inv.sin_categoria') }}</option>
           <option value="Proteínas">Proteínas</option>
           <option value="Embutidos">Embutidos</option>
           <option value="Granos">Granos</option>
@@ -174,81 +174,81 @@
         </select>
       </div>
       <div class="inv2-field">
-        <label>Unidad base (para recetas)</label>
+        <label>{{ t('inv.unidad_base') }}</label>
         <select name="unit" required>
-          <option value="g">Gramos (g)</option>
-          <option value="kg">Kilogramos (kg)</option>
-          <option value="ml">Mililitros (ml)</option>
-          <option value="l">Litros (l)</option>
-          <option value="unit" selected>Unidad</option>
-          <option value="pieza">Pieza</option>
-          <option value="porción">Porción</option>
+          <option value="g">{{ t('inv.u_gramos') }}</option>
+          <option value="kg">{{ t('inv.u_kilos') }}</option>
+          <option value="ml">{{ t('inv.u_ml') }}</option>
+          <option value="l">{{ t('inv.u_litros') }}</option>
+          <option value="unit" selected>{{ t('inv.u_unidad') }}</option>
+          <option value="pieza">{{ t('inv.u_pieza') }}</option>
+          <option value="porción">{{ t('inv.u_porcion') }}</option>
         </select>
       </div>
     </div>
 
-    <div class="inv2-section-label">Compra y costeo</div>
+    <div class="inv2-section-label">{{ t('inv.compra_costeo') }}</div>
     <div class="inv2-grid2">
       <div class="inv2-field">
-        <label>Presentación de compra</label>
-        <input name="purchase_unit" maxlength="40" placeholder="Ej: bolsa, caja, botella">
+        <label>{{ t('inv.pres_compra') }}</label>
+        <input name="purchase_unit" maxlength="40" placeholder="{{ t('inv.pres_compra_ph') }}">
       </div>
       <div class="inv2-field">
-        <label>Contenido (en unidad base)</label>
+        <label>{{ t('inv.contenido') }}</label>
         <input name="pack_content" type="number" step="0.01" min="0" placeholder="Ej: 454">
       </div>
     </div>
     <div class="inv2-field">
-      <label>Precio de compra (₡ por presentación)</label>
+      <label>{{ t('inv.precio_compra') }}</label>
       <input name="purchase_price" type="number" step="0.01" min="0" placeholder="Ej: 2000">
     </div>
     <div class="inv2-cost-hint" id="ingCostHint"></div>
 
-    <div class="inv2-section-label">Rendimiento (opcional)</div>
+    <div class="inv2-section-label">{{ t('inv.rendimiento') }}</div>
     <div class="inv2-grid2">
       <div class="inv2-field">
-        <label>Rinde (cantidad)</label>
+        <label>{{ t('inv.rinde') }}</label>
         <input name="yield_qty" type="number" step="0.01" min="0" placeholder="Ej: 6">
       </div>
       <div class="inv2-field">
-        <label>Unidad del rendimiento</label>
-        <input name="yield_unit" maxlength="40" placeholder="Ej: porción, pieza">
+        <label>{{ t('inv.unidad_rend') }}</label>
+        <input name="yield_unit" maxlength="40" placeholder="{{ t('inv.unidad_rend_ph') }}">
       </div>
     </div>
 
-    <div class="inv2-section-label">Inventario y control</div>
+    <div class="inv2-section-label">{{ t('inv.inv_control') }}</div>
     <div class="inv2-grid2">
       <div class="inv2-field">
-        <label>Stock actual</label>
+        <label>{{ t('inv.stock_actual') }}</label>
         <input name="stock" type="number" step="0.01" min="0" value="0">
       </div>
       <div class="inv2-field">
-        <label>Stock mínimo (alerta)</label>
+        <label>{{ t('inv.stock_min') }}</label>
         <input name="min_stock" type="number" step="0.01" min="0" value="0">
       </div>
     </div>
     <div class="inv2-grid2">
       <div class="inv2-field">
-        <label>Proveedor</label>
-        <input name="supplier" maxlength="200" placeholder="Opcional">
+        <label>{{ t('inv.proveedor') }}</label>
+        <input name="supplier" maxlength="200" placeholder="{{ t('fe.opcional') }}">
       </div>
       <div class="inv2-field">
-        <label>Vencimiento</label>
+        <label>{{ t('inv.vencimiento') }}</label>
         <input name="expiry_date" type="date">
       </div>
     </div>
     <div class="inv2-field">
-      <label>Costo por unidad base (manual, si no pones compra)</label>
+      <label>{{ t('inv.costo_manual') }}</label>
       <input name="cost_per_unit" type="number" step="0.0001" min="0" value="0">
     </div>
     <div class="inv2-field">
-      <label>Observaciones</label>
-      <input name="notes" maxlength="300" placeholder="Opcional">
+      <label>{{ t('inv.observaciones') }}</label>
+      <input name="notes" maxlength="300" placeholder="{{ t('fe.opcional') }}">
     </div>
     <div class="inv2-result" data-result></div>
     <div class="inv2-modal-actions">
-      <button type="button" class="inv2-btn ghost sm" data-close>Cancelar</button>
-      <button type="submit" class="inv2-btn primary sm">Guardar</button>
+      <button type="button" class="inv2-btn ghost sm" data-close>{{ t('common.cancelar') }}</button>
+      <button type="submit" class="inv2-btn primary sm">{{ t('common.guardar') }}</button>
     </div>
   </form>
 </div>
@@ -256,28 +256,28 @@
 <!-- ─── Modal: Agregar stock (entrada) ─────────────────────────────────── -->
 <div class="inv2-overlay" id="mAddStock">
   <form class="inv2-modal" id="fAddStock" autocomplete="off">
-    <h2 class="inv2-modal-title">Agregar stock (entrada)</h2>
+    <h2 class="inv2-modal-title">{{ t('inv.add_stock_title') }}</h2>
     <div class="inv2-field">
-      <label>Insumo</label>
+      <label>{{ t('inv.insumo') }}</label>
       <select name="ingredient_id" required data-ing-select></select>
     </div>
     <div class="inv2-field entry-mode-wrap" style="display:none;">
-      <label>Unidad de ingreso</label>
+      <label>{{ t('inv.unidad_ingreso') }}</label>
       <select name="entry_mode"></select>
     </div>
     <div class="inv2-field">
-      <label>Cantidad a ingresar</label>
+      <label>{{ t('inv.cant_ingresar') }}</label>
       <input name="quantity" type="number" step="0.01" min="0.01" required>
       <div class="inv2-cost-hint entry-hint"></div>
     </div>
     <div class="inv2-field">
-      <label>Referencia (opcional)</label>
-      <input name="reference" maxlength="100" placeholder="Ej: Compra proveedor">
+      <label>{{ t('inv.referencia_opc') }}</label>
+      <input name="reference" maxlength="100" placeholder="{{ t('inv.ref_compra_ph') }}">
     </div>
     <div class="inv2-result" data-result></div>
     <div class="inv2-modal-actions">
-      <button type="button" class="inv2-btn ghost sm" data-close>Cancelar</button>
-      <button type="submit" class="inv2-btn blue sm">Guardar</button>
+      <button type="button" class="inv2-btn ghost sm" data-close>{{ t('common.cancelar') }}</button>
+      <button type="submit" class="inv2-btn blue sm">{{ t('common.guardar') }}</button>
     </div>
   </form>
 </div>
@@ -285,29 +285,29 @@
 <!-- ─── Modal: Ajustar inventario ──────────────────────────────────────── -->
 <div class="inv2-overlay" id="mAdjust">
   <form class="inv2-modal" id="fAdjust" autocomplete="off">
-    <h2 class="inv2-modal-title">Ajustar inventario</h2>
-    <div class="inv2-sub" style="font-size:16px; color:#b7becd;">Usa números positivos para sumar, negativos para restar.</div>
+    <h2 class="inv2-modal-title">{{ t('inv.ajustar_title') }}</h2>
+    <div class="inv2-sub" style="font-size:16px; color:#b7becd;">{{ t('inv.ajustar_hint') }}</div>
     <div class="inv2-field">
-      <label>Insumo</label>
+      <label>{{ t('inv.insumo') }}</label>
       <select name="ingredient_id" required data-ing-select></select>
     </div>
     <div class="inv2-field entry-mode-wrap" style="display:none;">
-      <label>Unidad de ingreso</label>
+      <label>{{ t('inv.unidad_ingreso') }}</label>
       <select name="entry_mode"></select>
     </div>
     <div class="inv2-field">
-      <label>Cantidad (+ o −)</label>
+      <label>{{ t('inv.cantidad_pm') }}</label>
       <input name="quantity" type="number" step="0.01" required placeholder="Ej: -3">
       <div class="inv2-cost-hint entry-hint"></div>
     </div>
     <div class="inv2-field">
-      <label>Razón</label>
-      <input name="reference" maxlength="100" required placeholder="Ej: Conteo físico">
+      <label>{{ t('inv.razon') }}</label>
+      <input name="reference" maxlength="100" required placeholder="{{ t('inv.razon_conteo_ph') }}">
     </div>
     <div class="inv2-result" data-result></div>
     <div class="inv2-modal-actions">
-      <button type="button" class="inv2-btn ghost sm" data-close>Cancelar</button>
-      <button type="submit" class="inv2-btn yellow sm">Guardar</button>
+      <button type="button" class="inv2-btn ghost sm" data-close>{{ t('common.cancelar') }}</button>
+      <button type="submit" class="inv2-btn yellow sm">{{ t('common.guardar') }}</button>
     </div>
   </form>
 </div>
@@ -315,28 +315,28 @@
 <!-- ─── Modal: Merma ───────────────────────────────────────────────────── -->
 <div class="inv2-overlay" id="mWaste">
   <form class="inv2-modal" id="fWaste" autocomplete="off">
-    <h2 class="inv2-modal-title">Registrar merma / pérdida</h2>
+    <h2 class="inv2-modal-title">{{ t('inv.merma_title') }}</h2>
     <div class="inv2-field">
-      <label>Insumo</label>
+      <label>{{ t('inv.insumo') }}</label>
       <select name="ingredient_id" required data-ing-select></select>
     </div>
     <div class="inv2-field entry-mode-wrap" style="display:none;">
-      <label>Unidad de ingreso</label>
+      <label>{{ t('inv.unidad_ingreso') }}</label>
       <select name="entry_mode"></select>
     </div>
     <div class="inv2-field">
-      <label>Cantidad perdida</label>
+      <label>{{ t('inv.cant_perdida') }}</label>
       <input name="quantity" type="number" step="0.01" min="0.01" required>
       <div class="inv2-cost-hint entry-hint"></div>
     </div>
     <div class="inv2-field">
-      <label>Razón</label>
-      <input name="reference" maxlength="100" required placeholder="Ej: Producto vencido">
+      <label>{{ t('inv.razon') }}</label>
+      <input name="reference" maxlength="100" required placeholder="{{ t('inv.razon_venc_ph') }}">
     </div>
     <div class="inv2-result" data-result></div>
     <div class="inv2-modal-actions">
-      <button type="button" class="inv2-btn ghost sm" data-close>Cancelar</button>
-      <button type="submit" class="inv2-btn red sm">Guardar</button>
+      <button type="button" class="inv2-btn ghost sm" data-close>{{ t('common.cancelar') }}</button>
+      <button type="submit" class="inv2-btn red sm">{{ t('common.guardar') }}</button>
     </div>
   </form>
 </div>
@@ -344,10 +344,10 @@
 <!-- ─── Modal: Historial (kardex) ──────────────────────────────────────── -->
 <div class="inv2-overlay" id="mHistory">
   <div class="inv2-modal wide">
-    <h2 class="inv2-modal-title" id="histTitle">Historial</h2>
-    <div id="histBody">Cargando…</div>
+    <h2 class="inv2-modal-title" id="histTitle">{{ t('inv.historial') }}</h2>
+    <div id="histBody">{{ t('inv.cargando') }}</div>
     <div class="inv2-modal-actions">
-      <button type="button" class="inv2-btn ghost sm" data-close>Cerrar</button>
+      <button type="button" class="inv2-btn ghost sm" data-close>{{ t('inv.cerrar') }}</button>
     </div>
   </div>
 </div>
@@ -355,25 +355,25 @@
 <!-- ─── Modal: Receta ──────────────────────────────────────────────────── -->
 <div class="inv2-overlay" id="mRecipe">
   <form class="inv2-modal wide" id="fRecipe" autocomplete="off">
-    <h2 class="inv2-modal-title">Crear / editar receta</h2>
+    <h2 class="inv2-modal-title">{{ t('inv.receta_title') }}</h2>
     <div class="inv2-field">
-      <label>Producto</label>
+      <label>{{ t('inv.producto') }}</label>
       <select name="product_id" required>
-        <option value="">— Selecciona un producto —</option>
+        <option value="">{{ t('inv.sel_producto') }}</option>
         {% for p in products %}
         <option value="{{ p.id }}">{{ p.name }}</option>
         {% endfor %}
       </select>
     </div>
     <div>
-      <label style="font-size:18px; font-weight:700; color:#cfd5e1; display:block; margin-bottom:8px;">Insumos</label>
+      <label style="font-size:18px; font-weight:700; color:#cfd5e1; display:block; margin-bottom:8px;">{{ t('inv.insumos') }}</label>
       <div class="inv2-recipe-rows" id="recipeRows"></div>
-      <button type="button" class="inv2-btn ghost sm" id="addRecipeRow" style="margin-top:10px;">➕ Agregar fila</button>
+      <button type="button" class="inv2-btn ghost sm" id="addRecipeRow" style="margin-top:10px;">{{ t('inv.agregar_fila') }}</button>
     </div>
     <div class="inv2-result" data-result></div>
     <div class="inv2-modal-actions">
-      <button type="button" class="inv2-btn ghost sm" data-close>Cancelar</button>
-      <button type="submit" class="inv2-btn primary sm">Guardar receta</button>
+      <button type="button" class="inv2-btn ghost sm" data-close>{{ t('common.cancelar') }}</button>
+      <button type="submit" class="inv2-btn primary sm">{{ t('inv.guardar_receta') }}</button>
     </div>
   </form>
 </div>
@@ -383,6 +383,8 @@
 <script>
 (function () {
   "use strict";
+
+  const T = (k, fb) => (window.I18N && window.I18N[k]) || fb;
 
   const LOW_THRESHOLD = 10;   // <= considered low
   const CRIT_THRESHOLD = 3;   // <= considered critical
@@ -430,7 +432,7 @@
     return "ok";
   }
   function statusLabel(cls) {
-    return cls === "crit" ? "🔴 Crítico" : cls === "low" ? "🟡 Bajo" : "🟢 Saludable";
+    return cls === "crit" ? T("inv.js_critico","🔴 Crítico") : cls === "low" ? T("inv.js_bajo","🟡 Bajo") : T("inv.js_saludable","🟢 Saludable");
   }
 
   // ─── API ──────────────────────────────────────────────────────────────
@@ -459,8 +461,8 @@
       } else if (data && data.message) {
         msg = data.message;
       }
-      if (res.status === 401) msg = "Sesión admin expirada. Recarga la página.";
-      if (res.status === 404) msg = "Ruta no encontrada (servidor sin actualizar).";
+      if (res.status === 401) msg = T("inv.js_sesion_exp","Sesión admin expirada. Recarga la página.");
+      if (res.status === 404) msg = T("inv.js_ruta","Ruta no encontrada (servidor sin actualizar).");
       console.error("API error", path, res.status, raw);
       throw new Error(msg);
     }
@@ -472,7 +474,7 @@
       ingredients = await api("/admin/inv/ingredients");
     } catch (e) {
       ingredients = [];
-      toast("No se pudo cargar inventario: " + e.message, false);
+      toast(T("inv.js_no_cargar","No se pudo cargar inventario:") + " " + e.message, false);
     }
     renderCards();
     populateIngredientSelects();
@@ -483,25 +485,25 @@
 
   function ingCardHtml(ing, cls) {
     const u = escapeHtml(ing.unit || "unidad");
-    let costLines = `<div class="inv2-card-price">Costo: <b>${formatMoney(ing.cost_per_unit)}</b> / ${u}</div>`;
+    let costLines = `<div class="inv2-card-price">${T("inv.js_costo","Costo:")} <b>${formatMoney(ing.cost_per_unit)}</b> / ${u}</div>`;
     if (ing.cost_per_portion != null && ing.yield_unit) {
-      costLines += `<div class="inv2-card-cost">Costo x ${escapeHtml(ing.yield_unit)}: <b>${formatMoney(ing.cost_per_portion)}</b></div>`;
+      costLines += `<div class="inv2-card-cost">${T("inv.js_costo_x","Costo x")} ${escapeHtml(ing.yield_unit)}: <b>${formatMoney(ing.cost_per_portion)}</b></div>`;
     }
     if (ing.purchase_unit && ing.purchase_price != null) {
-      costLines += `<div class="inv2-card-cost">Compra: ${formatMoney(ing.purchase_price)} / ${escapeHtml(ing.purchase_unit)}${ing.pack_content ? " (" + formatNum(ing.pack_content) + " " + u + ")" : ""}</div>`;
+      costLines += `<div class="inv2-card-cost">${T("inv.js_compra","Compra:")} ${formatMoney(ing.purchase_price)} / ${escapeHtml(ing.purchase_unit)}${ing.pack_content ? " (" + formatNum(ing.pack_content) + " " + u + ")" : ""}</div>`;
     }
-    const lowNote = ing.low ? `<div class="inv2-card-cost" style="color:var(--yellow);font-weight:700;">⚠ Bajo el mínimo (${formatNum(ing.min_stock)} ${u})</div>` : "";
+    const lowNote = ing.low ? `<div class="inv2-card-cost" style="color:var(--yellow);font-weight:700;">${T("inv.js_bajo_min","⚠ Bajo el mínimo")} (${formatNum(ing.min_stock)} ${u})</div>` : "";
     let presLine = "";
     if (ing.pack_content && ing.pack_content > 0) {
       const packs = ing.stock / ing.pack_content;
-      const packLabel = escapeHtml(ing.purchase_unit || "presentación");
+      const packLabel = escapeHtml(ing.purchase_unit || T("inv.js_presentacion","presentación"));
       presLine = `<div class="inv2-card-pres">≈ ${packs.toFixed(1)} ${packLabel}</div>`;
     }
     return `
       <div class="inv2-card ${cls}">
         <div class="inv2-card-name">${escapeHtml(ing.name)}</div>
         <div class="inv2-card-avail">
-          <div class="inv2-card-avail-label">Disponible</div>
+          <div class="inv2-card-avail-label">${T("inv.js_disponible","Disponible")}</div>
           <div>
             <span class="inv2-card-stock">${formatNum(ing.stock)}</span>
             <span class="inv2-card-unit">${u}</span>
@@ -512,11 +514,11 @@
         ${lowNote}
         <span class="inv2-badge ${cls}">${statusLabel(cls)}</span>
         <div class="inv2-card-actions">
-          <button class="inv2-btn blue sm" data-act="add" data-id="${ing.id}">➕ Agregar</button>
-          <button class="inv2-btn yellow sm" data-act="adjust" data-id="${ing.id}">✏️ Ajustar</button>
-          <button class="inv2-btn ghost sm" data-act="edit" data-id="${ing.id}">⚙️ Editar</button>
-          <button class="inv2-btn ghost sm" data-act="history" data-id="${ing.id}" data-name="${escapeAttr(ing.name)}">📜 Historial</button>
-          <button class="inv2-btn red sm wide" data-act="delete" data-id="${ing.id}" data-name="${escapeAttr(ing.name)}">🗑️ Eliminar</button>
+          <button class="inv2-btn blue sm" data-act="add" data-id="${ing.id}">${T("inv.js_agregar","➕ Agregar")}</button>
+          <button class="inv2-btn yellow sm" data-act="adjust" data-id="${ing.id}">${T("inv.js_ajustar","✏️ Ajustar")}</button>
+          <button class="inv2-btn ghost sm" data-act="edit" data-id="${ing.id}">${T("inv.js_editar","⚙️ Editar")}</button>
+          <button class="inv2-btn ghost sm" data-act="history" data-id="${ing.id}" data-name="${escapeAttr(ing.name)}">${T("inv.js_historial","📜 Historial")}</button>
+          <button class="inv2-btn red sm wide" data-act="delete" data-id="${ing.id}" data-name="${escapeAttr(ing.name)}">${T("inv.js_eliminar","🗑️ Eliminar")}</button>
         </div>
       </div>`;
   }
@@ -567,7 +569,7 @@
   function populateIngredientSelects() {
     $$("[data-ing-select]").forEach(sel => {
       const keep = sel.value;
-      sel.innerHTML = '<option value="">— Selecciona un insumo —</option>';
+      sel.innerHTML = `<option value="">${T("inv.js_sel_insumo","— Selecciona un insumo —")}</option>`;
       ingredients.forEach(i => {
         const opt = document.createElement("option");
         opt.value = i.id;
@@ -631,10 +633,10 @@
   });
 
   async function deleteIngredient(id, name) {
-    if (!(await window.askConfirm(`¿Eliminar el insumo "${name}"? Se borra también su historial. No se puede deshacer.`, { yes: "Eliminar" }))) return;
+    if (!(await window.askConfirm(`${T("inv.js_conf_del","¿Eliminar el insumo")} "${name}"${T("inv.js_conf_del_post","? Se borra también su historial. No se puede deshacer.")}`, { yes: T("common.eliminar","Eliminar") }))) return;
     try {
       await api(`/admin/inv/ingredients/${id}`, { method: "DELETE" });
-      toast("Insumo eliminado");
+      toast(T("inv.js_eliminado","Insumo eliminado"));
       await loadIngredients();
     } catch (err) {
       toast(err.message, false);
@@ -648,7 +650,7 @@
   function resetIngForm() {
     ingForm.reset();
     el("id").value = "";
-    $("#ingModalTitle").textContent = "Agregar insumo";
+    $("#ingModalTitle").textContent = T("inv.add_title","Agregar insumo");
     $("#ingCostHint").textContent = "";
     ingForm.querySelector("[data-result]").textContent = "";
   }
@@ -656,7 +658,7 @@
   function fillIngForm(ing) {
     resetIngForm();
     el("id").value = ing.id;
-    $("#ingModalTitle").textContent = "Editar insumo";
+    $("#ingModalTitle").textContent = T("inv.js_editar_insumo","Editar insumo");
     el("name").value = ing.name || "";
     el("category").value = ing.category || "";
     el("unit").value = ing.unit || "unit";
@@ -687,8 +689,8 @@
     const yq = parseFloat(el("yield_qty").value || "0");
     const u = el("unit").value || "unidad";
     let msg = "";
-    if (pp > 0 && pc > 0) msg += `Costo por ${u}: ${formatMoney(pp / pc)}`;
-    if (pp > 0 && yq > 0) msg += (msg ? " · " : "") + `Costo por ${el("yield_unit").value || "porción"}: ${formatMoney(pp / yq)}`;
+    if (pp > 0 && pc > 0) msg += `${T("inv.js_costo_por","Costo por")} ${u}: ${formatMoney(pp / pc)}`;
+    if (pp > 0 && yq > 0) msg += (msg ? " · " : "") + `${T("inv.js_costo_por","Costo por")} ${el("yield_unit").value || T("inv.u_porcion","porción")}: ${formatMoney(pp / yq)}`;
     $("#ingCostHint").textContent = msg;
   }
   ["purchase_price", "pack_content", "yield_qty", "yield_unit", "unit"].forEach(n => {
@@ -720,10 +722,10 @@
     try {
       if (id) {
         await api("/admin/inv/ingredients/" + id, { method: "PUT", body: JSON.stringify(data) });
-        toast("Insumo actualizado");
+        toast(T("inv.js_actualizado","Insumo actualizado"));
       } else {
         await api("/admin/inv/ingredients", { method: "POST", body: JSON.stringify(data) });
-        toast("Insumo creado");
+        toast(T("inv.js_creado","Insumo creado"));
       }
       closeModal(ingForm);
       await loadIngredients();
@@ -734,7 +736,7 @@
     const qtyRaw = form.quantity.value;
     const qty = parseFloat(qtyRaw);
     if (!qtyRaw || isNaN(qty) || (!allowNegative && qty <= 0)) {
-      showResult(form, "Cantidad inválida", false);
+      showResult(form, T("inv.js_cant_invalida","Cantidad inválida"), false);
       return;
     }
     // If entering by presentation (e.g. bolsas), convert to base units.
@@ -754,7 +756,7 @@
     try {
       await api("/admin/inv/movements", { method: "POST", body: JSON.stringify(data) });
       closeModal(form);
-      toast("Movimiento registrado");
+      toast(T("inv.js_mov_registrado","Movimiento registrado"));
       await loadIngredients();
     } catch (err) { showResult(form, err.message, false); }
   }
@@ -780,10 +782,10 @@
     if (!sel || !wrap) return;
     const ing = ingredients.find(i => String(i.id) === String(form.ingredient_id.value));
     if (ing && ing.pack_content) {
-      const pres = ing.purchase_unit || "presentación";
+      const pres = ing.purchase_unit || T("inv.js_presentacion","presentación");
       sel.innerHTML =
-        `<option value="pres">Por ${escapeHtml(pres)} (= ${formatNum(ing.pack_content)} ${escapeHtml(ing.unit || "")} c/u)</option>` +
-        `<option value="base">Por ${escapeHtml(ing.unit || "unidad")}</option>`;
+        `<option value="pres">${T("inv.js_por","Por")} ${escapeHtml(pres)} (= ${formatNum(ing.pack_content)} ${escapeHtml(ing.unit || "")} c/u)</option>` +
+        `<option value="base">${T("inv.js_por","Por")} ${escapeHtml(ing.unit || T("inv.js_unidad","unidad"))}</option>`;
       wrap.style.display = "";
     } else {
       sel.innerHTML = "";
@@ -802,16 +804,16 @@
   // ─── history modal ────────────────────────────────────────────────────
   async function openHistory(ingredientId, name) {
     openModal("mHistory");
-    $("#histTitle").textContent = "Historial — " + name;
+    $("#histTitle").textContent = T("inv.historial","Historial") + " — " + name;
     const body = $("#histBody");
-    body.innerHTML = "Cargando…";
+    body.innerHTML = T("inv.cargando","Cargando…");
     try {
       const rows = await api(`/admin/inv/movements?ingredient_id=${ingredientId}&limit=200`);
-      if (!rows.length) { body.innerHTML = '<div class="inv2-empty">Sin movimientos aún.</div>'; return; }
-      const typeLabel = { in: "Entrada", out: "Salida", adjustment: "Ajuste", waste: "Merma" };
+      if (!rows.length) { body.innerHTML = `<div class="inv2-empty">${T("inv.js_sin_mov","Sin movimientos aún.")}</div>`; return; }
+      const typeLabel = { in: T("inv.js_t_entrada","Entrada"), out: T("inv.js_t_salida","Salida"), adjustment: T("inv.js_t_ajuste","Ajuste"), waste: T("inv.js_t_merma","Merma") };
       body.innerHTML = `
         <table class="inv2-hist">
-          <thead><tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Referencia</th></tr></thead>
+          <thead><tr><th>${T("inv.js_th_fecha","Fecha")}</th><th>${T("inv.js_th_tipo","Tipo")}</th><th>${T("inv.js_th_cantidad","Cantidad")}</th><th>${T("inv.js_th_ref","Referencia")}</th></tr></thead>
           <tbody>${rows.map(r => `
             <tr>
               <td>${formatDate(r.created_at)}</td>
@@ -822,12 +824,12 @@
         </table>
       `;
     } catch (err) {
-      body.innerHTML = `<div class="inv2-result err">Error: ${escapeHtml(err.message)}</div>`;
+      body.innerHTML = `<div class="inv2-result err">${T("inv.js_error","Error:")} ${escapeHtml(err.message)}</div>`;
     }
   }
   function formatDate(iso) {
     if (!iso) return "-";
-    try { const d = new Date(iso); return d.toLocaleString("es", { dateStyle: "short", timeStyle: "short" }); }
+    try { const d = new Date(iso); return d.toLocaleString(window.LANG || "es", { dateStyle: "short", timeStyle: "short" }); }
     catch (e) { return iso; }
   }
 
@@ -836,8 +838,8 @@
     const row = document.createElement("div");
     row.className = "inv2-recipe-row";
     row.innerHTML = `
-      <select name="ingredient_id"><option value="">— Insumo —</option></select>
-      <input type="number" step="0.01" min="0.01" placeholder="Cantidad" name="quantity">
+      <select name="ingredient_id"><option value="">${T("inv.js_row_insumo","— Insumo —")}</option></select>
+      <input type="number" step="0.01" min="0.01" placeholder="${T("inv.js_cantidad","Cantidad")}" name="quantity">
       <button type="button" class="inv2-row-del">✕</button>
     `;
     const sel = row.querySelector("select");
@@ -861,18 +863,18 @@
     e.preventDefault();
     const form = e.currentTarget;
     const pid = parseInt(form.product_id.value, 10);
-    if (!pid) { showResult(form, "Selecciona un producto", false); return; }
+    if (!pid) { showResult(form, T("inv.js_sel_prod","Selecciona un producto"), false); return; }
     const items = [];
     $$(".inv2-recipe-row", form).forEach(row => {
       const ing = parseInt(row.querySelector("[name=ingredient_id]").value, 10);
       const qty = parseFloat(row.querySelector("[name=quantity]").value);
       if (ing && qty > 0) items.push({ ingredient_id: ing, quantity: qty });
     });
-    if (!items.length) { showResult(form, "Agrega al menos un insumo", false); return; }
+    if (!items.length) { showResult(form, T("inv.js_min_insumo","Agrega al menos un insumo"), false); return; }
     try {
       await api("/admin/inv/recipes", { method: "POST", body: JSON.stringify({ product_id: pid, items }) });
       closeModal(form);
-      toast("Receta guardada");
+      toast(T("inv.js_receta_guardada","Receta guardada"));
     } catch (err) { showResult(form, err.message, false); }
   });
 
