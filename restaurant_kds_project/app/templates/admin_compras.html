@@ -38,41 +38,41 @@
 </style>
 
 <div class="cmp-head">
-  <h1>Compras</h1>
-  <a class="cmp-btn" href="/admin">&#8592; Dashboard</a>
+  <h1>{{ t('adm.compras') }}</h1>
+  <a class="cmp-btn" href="/admin">&#8592; {{ t('common.dashboard') }}</a>
 </div>
 
 <div class="cmp-card">
-  <h2 style="margin:0 0 14px;font-size:20px;">Registrar compra</h2>
+  <h2 style="margin:0 0 14px;font-size:20px;">{{ t('cmp.registrar') }}</h2>
   <div class="cmp-top">
-    <div class="cmp-field"><label>Proveedor</label><input id="cSupplier" maxlength="200" placeholder="Ej: Distribuidora X"></div>
-    <div class="cmp-field"><label>Fecha</label><input id="cDate" type="date" value="{{ today }}"></div>
+    <div class="cmp-field"><label>{{ t('cmp.proveedor') }}</label><input id="cSupplier" maxlength="200" placeholder="{{ t('cmp.proveedor_ph') }}"></div>
+    <div class="cmp-field"><label>{{ t('cmp.fecha') }}</label><input id="cDate" type="date" value="{{ today }}"></div>
   </div>
 
   <div class="cmp-table-wrap">
     <table class="cmp-table">
-      <thead><tr><th>Insumo</th><th>Cantidad</th><th>Precio unit. ₡</th><th>Subtotal</th><th></th></tr></thead>
+      <thead><tr><th>{{ t('cmp.insumo') }}</th><th>{{ t('cmp.cantidad') }}</th><th>{{ t('cmp.precio_unit') }}</th><th>{{ t('cmp.subtotal') }}</th><th></th></tr></thead>
       <tbody id="cRows"></tbody>
     </table>
   </div>
 
   <div style="margin-top:12px;">
-    <button type="button" class="cmp-btn" id="cAddRow">&#43; Agregar línea</button>
+    <button type="button" class="cmp-btn" id="cAddRow">&#43; {{ t('cmp.agregar_linea') }}</button>
   </div>
 
   <div class="cmp-foot">
-    <div class="cmp-total">Total: <b id="cTotal">₡0</b></div>
+    <div class="cmp-total">{{ t('cmp.total') }} <b id="cTotal">₡0</b></div>
     <div style="display:flex;gap:12px;align-items:center;">
       <div class="cmp-result" id="cResult"></div>
-      <button type="button" class="cmp-btn primary" id="cSave">Guardar compra</button>
+      <button type="button" class="cmp-btn primary" id="cSave">{{ t('cmp.guardar_compra') }}</button>
     </div>
   </div>
 </div>
 
 <div class="cmp-hist">
-  <h2>Compras recientes</h2>
+  <h2>{{ t('cmp.recientes') }}</h2>
   {% if not purchases %}
-    <div class="cmp-empty">Aún no hay compras registradas.</div>
+    <div class="cmp-empty">{{ t('cmp.sin_compras') }}</div>
   {% else %}
     {% for p in purchases %}
     <div class="cmp-purchase">
@@ -89,6 +89,7 @@
 </div>
 
 <script>
+  const T = (k, fb) => (window.I18N && window.I18N[k]) || fb;
   const INGREDIENTS = {{ ingredients|tojson }};
   const byId = {};
   INGREDIENTS.forEach(i => byId[i.id] = i);
@@ -97,8 +98,8 @@
 
   function ingOptions() {
     const groups = {};
-    INGREDIENTS.forEach(i => { const c = i.category || "Sin categoría"; (groups[c] = groups[c] || []).push(i); });
-    let html = '<option value="">— Selecciona insumo —</option>';
+    INGREDIENTS.forEach(i => { const c = i.category || T("cmp.sin_categoria","Sin categoría"); (groups[c] = groups[c] || []).push(i); });
+    let html = `<option value="">${T("cmp.sel_insumo","— Selecciona insumo —")}</option>`;
     Object.keys(groups).sort().forEach(c => {
       html += `<optgroup label="${c}">`;
       groups[c].forEach(i => { html += `<option value="${i.id}">${i.name}</option>`; });
@@ -127,7 +128,7 @@
       const ing = byId[sel.value];
       if (ing) {
         if (ing.purchase_price != null) price.value = ing.purchase_price;
-        const pres = ing.purchase_unit || "presentación";
+        const pres = ing.purchase_unit || T("cmp.presentacion","presentación");
         hint.textContent = "1 " + pres + (ing.pack_content ? " = " + ing.pack_content + " " + ing.unit : "");
       } else { hint.textContent = ""; }
       recalc();
@@ -162,7 +163,7 @@
     });
     const res = document.getElementById("cResult");
     res.textContent = "";
-    if (!items.length) { res.textContent = "Agrega al menos un insumo con cantidad."; return; }
+    if (!items.length) { res.textContent = T("cmp.min_insumo","Agrega al menos un insumo con cantidad."); return; }
     const payload = {
       supplier: document.getElementById("cSupplier").value.trim() || null,
       date: document.getElementById("cDate").value || null,
@@ -176,7 +177,7 @@
         credentials: "same-origin", body: JSON.stringify(payload),
       });
       if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.detail || "Error"); }
-      window.toast("Compra registrada. Stock y costo actualizados.");
+      window.toast(T("cmp.registrada","Compra registrada. Stock y costo actualizados."));
       setTimeout(() => location.reload(), 700);
     } catch (e) { res.textContent = e.message; btn.disabled = false; }
   });

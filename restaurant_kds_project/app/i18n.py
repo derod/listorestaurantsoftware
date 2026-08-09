@@ -251,6 +251,46 @@ STRINGS = {
     # ── POS settings ──────────────────────────────────────────────────────
     "pset.title":         {"es": "POS – Configuración",   "pt": "POS – Configuração",     "fr": "POS – Configuration"},
     "pset.tasa":          {"es": "Tasa de impuestos (%)", "pt": "Taxa de impostos (%)",   "fr": "Taux de taxe (%)"},
+
+    # ── Compras ───────────────────────────────────────────────────────────
+    "cmp.registrar":      {"es": "Registrar compra",      "pt": "Registrar compra",       "fr": "Enregistrer un achat"},
+    "cmp.proveedor":      {"es": "Proveedor",             "pt": "Fornecedor",             "fr": "Fournisseur"},
+    "cmp.proveedor_ph":   {"es": "Ej: Distribuidora X",   "pt": "Ex: Distribuidora X",    "fr": "Ex : Distributeur X"},
+    "cmp.fecha":          {"es": "Fecha",                 "pt": "Data",                   "fr": "Date"},
+    "cmp.insumo":         {"es": "Insumo",                "pt": "Insumo",                 "fr": "Fourniture"},
+    "cmp.cantidad":       {"es": "Cantidad",              "pt": "Quantidade",             "fr": "Quantité"},
+    "cmp.precio_unit":    {"es": "Precio unit. ₡",        "pt": "Preço unit. ₡",          "fr": "Prix unit. ₡"},
+    "cmp.subtotal":       {"es": "Subtotal",              "pt": "Subtotal",               "fr": "Sous-total"},
+    "cmp.agregar_linea":  {"es": "Agregar línea",         "pt": "Adicionar linha",        "fr": "Ajouter une ligne"},
+    "cmp.total":          {"es": "Total:",                "pt": "Total:",                 "fr": "Total :"},
+    "cmp.guardar_compra": {"es": "Guardar compra",        "pt": "Salvar compra",          "fr": "Enregistrer l'achat"},
+    "cmp.recientes":      {"es": "Compras recientes",     "pt": "Compras recentes",       "fr": "Achats récents"},
+    "cmp.sin_compras":    {"es": "Aún no hay compras registradas.", "pt": "Ainda não há compras registradas.", "fr": "Aucun achat enregistré pour l'instant."},
+    "cmp.sel_insumo":     {"es": "— Selecciona insumo —", "pt": "— Selecione o insumo —", "fr": "— Sélectionnez une fourniture —"},
+    "cmp.sin_categoria":  {"es": "Sin categoría",         "pt": "Sem categoria",          "fr": "Sans catégorie"},
+    "cmp.presentacion":   {"es": "presentación",          "pt": "apresentação",           "fr": "présentation"},
+    "cmp.min_insumo":     {"es": "Agrega al menos un insumo con cantidad.", "pt": "Adicione ao menos um insumo com quantidade.", "fr": "Ajoutez au moins une fourniture avec quantité."},
+    "cmp.registrada":     {"es": "Compra registrada. Stock y costo actualizados.", "pt": "Compra registrada. Estoque e custo atualizados.", "fr": "Achat enregistré. Stock et coût mis à jour."},
+
+    # ── Editor de mesas ───────────────────────────────────────────────────
+    "mes.title":          {"es": "Editar plano de mesas", "pt": "Editar mapa de mesas",   "fr": "Modifier le plan des tables"},
+    "mes.ver_plano":      {"es": "Ver plano",             "pt": "Ver mapa",               "fr": "Voir le plan"},
+    "mes.agregar":        {"es": "➕ Agregar mesa",        "pt": "➕ Adicionar mesa",       "fr": "➕ Ajouter une table"},
+    "mes.plano_l":        {"es": "↺ Plano en L",          "pt": "↺ Layout em L",          "fr": "↺ Plan en L"},
+    "mes.sub":            {"es": "Arrastrá para mover · tocá una mesa para renombrar / capacidad / eliminar · Agregar mesa crea una nueva. Al final tocá Guardar.", "pt": "Arraste para mover · toque numa mesa para renomear / capacidade / excluir · Adicionar mesa cria uma nova. No final toque em Salvar.", "fr": "Glissez pour déplacer · touchez une table pour renommer / capacité / supprimer · Ajouter une table en crée une nouvelle. À la fin, touchez Enregistrer."},
+    "mes.mesa":           {"es": "Mesa",                  "pt": "Mesa",                   "fr": "Table"},
+    "mes.etiqueta":       {"es": "Etiqueta (lo que se muestra)", "pt": "Rótulo (o que aparece)", "fr": "Étiquette (ce qui s'affiche)"},
+    "mes.etiqueta_ph":    {"es": "Ej: 12, Terraza 1… (vacío = número)", "pt": "Ex: 12, Terraço 1… (vazio = número)", "fr": "Ex : 12, Terrasse 1… (vide = numéro)"},
+    "mes.capacidad":      {"es": "Capacidad",             "pt": "Capacidade",             "fr": "Capacité"},
+    "mes.cap2":           {"es": "2 personas (redonda)",  "pt": "2 pessoas (redonda)",    "fr": "2 personnes (ronde)"},
+    "mes.cap4":           {"es": "4 personas (rectangular)", "pt": "4 pessoas (retangular)", "fr": "4 personnes (rectangulaire)"},
+    "mes.cap6":           {"es": "6 personas (rectangular)", "pt": "6 pessoas (retangular)", "fr": "6 personnes (rectangulaire)"},
+    "mes.eliminar":       {"es": "Eliminar mesa",         "pt": "Excluir mesa",           "fr": "Supprimer la table"},
+    "mes.listo":          {"es": "Listo",                 "pt": "Pronto",                 "fr": "Terminé"},
+    "mes.pers":           {"es": "pers",                  "pt": "pess",                   "fr": "pers"},
+    "mes.conf_eliminar":  {"es": "¿Eliminar la mesa",     "pt": "Excluir a mesa",         "fr": "Supprimer la table"},
+    "mes.guardado":       {"es": "Plano guardado.",       "pt": "Mapa salvo.",            "fr": "Plan enregistré."},
+    "mes.no_guardar":     {"es": "No se pudo guardar.",   "pt": "Não foi possível salvar.", "fr": "Enregistrement impossible."},
 }
 
 

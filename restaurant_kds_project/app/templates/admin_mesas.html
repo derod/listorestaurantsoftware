@@ -43,45 +43,46 @@
 </style>
 
 <div class="em-head">
-  <h1>Editar plano de mesas</h1>
+  <h1>{{ t('mes.title') }}</h1>
   <div style="display:flex;gap:10px;flex-wrap:wrap;">
-    <a href="/mesas" class="em-btn em-back">Ver plano</a>
-    <button type="button" class="em-btn em-add" id="addBtn">➕ Agregar mesa</button>
-    <button type="button" class="em-btn em-back" id="resetBtn">↺ Plano en L</button>
-    <button type="button" class="em-btn em-save" id="saveBtn">💾 Guardar</button>
+    <a href="/mesas" class="em-btn em-back">{{ t('mes.ver_plano') }}</a>
+    <button type="button" class="em-btn em-add" id="addBtn">{{ t('mes.agregar') }}</button>
+    <button type="button" class="em-btn em-back" id="resetBtn">{{ t('mes.plano_l') }}</button>
+    <button type="button" class="em-btn em-save" id="saveBtn">💾 {{ t('common.guardar') }}</button>
   </div>
 </div>
-<div class="em-sub">Arrastrá para mover · tocá una mesa para <strong>renombrar / capacidad / eliminar</strong> · <strong>Agregar mesa</strong> crea una nueva. Al final tocá <strong>Guardar</strong>.</div>
+<div class="em-sub">{{ t('mes.sub') }}</div>
 
 <div class="floor" id="floor"></div>
 
 <div class="em-overlay" id="editModal">
   <div class="em-modal">
-    <h2 id="emTitle">Mesa</h2>
+    <h2 id="emTitle">{{ t('mes.mesa') }}</h2>
     <div class="em-field">
-      <label for="emLabel">Etiqueta (lo que se muestra)</label>
-      <input id="emLabel" type="text" maxlength="60" placeholder="Ej: 12, Terraza 1… (vacío = número)">
+      <label for="emLabel">{{ t('mes.etiqueta') }}</label>
+      <input id="emLabel" type="text" maxlength="60" placeholder="{{ t('mes.etiqueta_ph') }}">
     </div>
     <div class="em-field">
-      <label for="emCap">Capacidad</label>
+      <label for="emCap">{{ t('mes.capacidad') }}</label>
       <select id="emCap">
-        <option value="2">2 personas (redonda)</option>
-        <option value="4">4 personas (rectangular)</option>
-        <option value="6">6 personas (rectangular)</option>
+        <option value="2">{{ t('mes.cap2') }}</option>
+        <option value="4">{{ t('mes.cap4') }}</option>
+        <option value="6">{{ t('mes.cap6') }}</option>
       </select>
     </div>
     <div class="em-modal-actions" style="margin-bottom:12px;">
-      <button type="button" class="em-del" id="emDel">Eliminar mesa</button>
+      <button type="button" class="em-del" id="emDel">{{ t('mes.eliminar') }}</button>
     </div>
     <div class="em-modal-actions">
-      <button type="button" class="em-back" id="emCancel">Cancelar</button>
-      <button type="button" class="em-ok" id="emOk">Listo</button>
+      <button type="button" class="em-back" id="emCancel">{{ t('common.cancelar') }}</button>
+      <button type="button" class="em-ok" id="emOk">{{ t('mes.listo') }}</button>
     </div>
   </div>
 </div>
 
 <script>
 (function () {
+  const T = (k, fb) => (window.I18N && window.I18N[k]) || fb;
   const floor = document.getElementById("floor");
   const LAYOUT_L = {
     1:{x:15,y:8}, 2:{x:15,y:17}, 3:{x:15,y:26}, 4:{x:15,y:35}, 5:{x:15,y:44}, 6:{x:15,y:53}, 7:{x:15,y:62},
@@ -104,7 +105,7 @@
       el.style.left = t.x + "%";
       el.style.top = t.y + "%";
       el.dataset.idx = idx;
-      el.innerHTML = `<div class="lbl">${esc(labelOf(t))}</div><div class="cap">${t.capacity||4} pers</div>`;
+      el.innerHTML = `<div class="lbl">${esc(labelOf(t))}</div><div class="cap">${t.capacity||4} ${T("mes.pers","pers")}</div>`;
       floor.appendChild(el);
       wireDrag(el, t, idx);
     });
@@ -137,7 +138,7 @@
   function openEdit(idx) {
     editIdx = idx;
     const t = state[idx];
-    document.getElementById("emTitle").textContent = "Mesa " + labelOf(t);
+    document.getElementById("emTitle").textContent = T("mes.mesa","Mesa") + " " + labelOf(t);
     document.getElementById("emLabel").value = t.name || "";
     document.getElementById("emCap").value = String(t.capacity || 4);
     modal.classList.add("open");
@@ -155,7 +156,7 @@
   document.getElementById("emDel").addEventListener("click", async () => {
     if (editIdx == null) return;
     const t = state[editIdx];
-    const ok = await window.askConfirm(`¿Eliminar la mesa ${labelOf(t)}?`, { yes: "Eliminar" });
+    const ok = await window.askConfirm(`${T("mes.conf_eliminar","¿Eliminar la mesa")} ${labelOf(t)}?`, { yes: T("common.eliminar","Eliminar") });
     if (!ok) return;
     if (t.id != null) deletedIds.push(t.id);
     state.splice(editIdx, 1);
@@ -184,8 +185,8 @@
       });
       if (!res.ok) { const d = await res.json().catch(()=>({})); throw new Error(d.detail || "Error"); }
       deletedIds = [];
-      window.toast("Plano guardado.");
-    } catch (e) { window.toast(e.message || "No se pudo guardar.", false); }
+      window.toast(T("mes.guardado","Plano guardado."));
+    } catch (e) { window.toast(e.message || T("mes.no_guardar","No se pudo guardar."), false); }
   });
 
   async function load() {
