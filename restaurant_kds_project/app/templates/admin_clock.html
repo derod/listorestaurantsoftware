@@ -64,41 +64,41 @@
 </style>
 
 <div class="clk-head">
-  <h1>Reloj — Marcaciones</h1>
+  <h1>{{ t('clk.title') }}</h1>
   <div class="clk-tools">
-    <button class="clk-btn primary" onclick="openAdd()">&#43; Agregar turno</button>
+    <button class="clk-btn primary" onclick="openAdd()">&#43; {{ t('clk.agregar') }}</button>
     <a class="clk-btn" href="/admin/clock/export.csv?range={{ active_range }}&waiter={{ active_waiter }}">&#11015; CSV</a>
-    <a class="clk-btn" href="/admin">&#8592; Dashboard</a>
+    <a class="clk-btn" href="/admin">&#8592; {{ t('common.dashboard') }}</a>
   </div>
 </div>
 
 <div class="clk-sub">
-  {% if working_now %}<span class="live">&#9679; {{ working_now }} trabajando ahora</span>{% else %}Nadie con turno abierto ahora.{% endif %}
-  &nbsp;·&nbsp; Clock in = ingreso · Clock out = "Cambiar agente" / Salir · sin salida se cierra a medianoche.
+  {% if working_now %}<span class="live">&#9679; {{ working_now }} {{ t('clk.trabajando_now') }}</span>{% else %}{{ t('clk.nadie') }}{% endif %}
+  &nbsp;·&nbsp; {{ t('clk.leyenda') }}
 </div>
 
 {% if users %}
 <div class="clk-grand">
   <div class="clk-grand-card">
     <span class="clk-grand-val">{{ grand_total }}</span>
-    <span class="clk-grand-lbl">Total del período (todos)</span>
+    <span class="clk-grand-lbl">{{ t('clk.total_periodo') }}</span>
   </div>
   <div class="clk-grand-card">
     <span class="clk-grand-val">{{ grand_payroll }} h</span>
-    <span class="clk-grand-lbl">Horas nómina · redondeado a ¼ de hora</span>
+    <span class="clk-grand-lbl">{{ t('clk.horas_nomina') }}</span>
   </div>
 </div>
 {% endif %}
 
 <div class="clk-controls">
   <div class="clk-filters">
-    <a class="clk-filter {% if active_range == 'today' %}active{% endif %}" href="/admin/clock?range=today&waiter={{ active_waiter }}">Hoy</a>
-    <a class="clk-filter {% if active_range == 'week' %}active{% endif %}" href="/admin/clock?range=week&waiter={{ active_waiter }}">Semana</a>
-    <a class="clk-filter {% if active_range == 'biweekly' %}active{% endif %}" href="/admin/clock?range=biweekly&waiter={{ active_waiter }}">Quincena</a>
-    <a class="clk-filter {% if active_range == 'all' %}active{% endif %}" href="/admin/clock?range=all&waiter={{ active_waiter }}">Todo</a>
+    <a class="clk-filter {% if active_range == 'today' %}active{% endif %}" href="/admin/clock?range=today&waiter={{ active_waiter }}">{{ t('common.hoy') }}</a>
+    <a class="clk-filter {% if active_range == 'week' %}active{% endif %}" href="/admin/clock?range=week&waiter={{ active_waiter }}">{{ t('common.semana') }}</a>
+    <a class="clk-filter {% if active_range == 'biweekly' %}active{% endif %}" href="/admin/clock?range=biweekly&waiter={{ active_waiter }}">{{ t('clk.quincena') }}</a>
+    <a class="clk-filter {% if active_range == 'all' %}active{% endif %}" href="/admin/clock?range=all&waiter={{ active_waiter }}">{{ t('common.todo') }}</a>
   </div>
   <select class="clk-emp-sel" onchange="location='/admin/clock?range={{ active_range }}&waiter='+this.value">
-    <option value="0">Todos los empleados</option>
+    <option value="0">{{ t('clk.todos_emp') }}</option>
     {% for w in waiters %}
     <option value="{{ w.id }}" {% if active_waiter == w.id %}selected{% endif %}>{{ w.name }}</option>
     {% endfor %}
@@ -106,7 +106,7 @@
 </div>
 
 {% if not users %}
-  <div class="clk-empty">No hay marcaciones en este período.</div>
+  <div class="clk-empty">{{ t('clk.sin') }}</div>
 {% else %}
   {% for u in users %}
   <div class="clk-user">
@@ -115,30 +115,30 @@
         {% if u.working %}<span class="clk-live-dot" title="Trabajando ahora"></span>{% endif %}
         {{ u.name }}
       </div>
-      <div class="clk-total">{{ u.total }} · {{ u.payroll }} h <small>nómina</small></div>
+      <div class="clk-total">{{ u.total }} · {{ u.payroll }} h <small>{{ t('clk.nomina') }}</small></div>
     </div>
     <div class="clk-table-wrap">
       <table class="clk-table">
         <thead>
-          <tr><th>Fecha</th><th>Módulo</th><th>Entrada</th><th>Salida</th><th>Horas</th><th></th></tr>
+          <tr><th>{{ t('gto.th_fecha') }}</th><th>{{ t('acc.th_modulo') }}</th><th>{{ t('clk.th_entrada') }}</th><th>{{ t('clk.th_salida') }}</th><th>{{ t('clk.th_horas') }}</th><th></th></tr>
         </thead>
         <tbody>
           {% for r in u.rows %}
           <tr>
-            <td>{{ r.date }}{% if r.edited %} <span class="clk-edited" title="Editado manualmente">&#9998; editado</span>{% endif %}</td>
+            <td>{{ r.date }}{% if r.edited %} <span class="clk-edited" title="Editado manualmente">&#9998; {{ t('clk.editado') }}</span>{% endif %}</td>
             <td><span class="clk-tag tag-{{ r.role }}">{{ r.role_label }}</span></td>
             <td>{{ r.in }}</td>
             <td>
-              {% if r.open %}<span class="clk-open">En turno</span>
-              {% else %}{{ r.out }}{% if r.auto %} <span class="clk-auto">(auto)</span>{% endif %}{% endif %}
+              {% if r.open %}<span class="clk-open">{{ t('clk.en_turno') }}</span>
+              {% else %}{{ r.out }}{% if r.auto %} <span class="clk-auto">{{ t('clk.auto') }}</span>{% endif %}{% endif %}
             </td>
             <td>{{ r.hours }}</td>
             <td>
               <div class="clk-row-actions">
                 <button class="mini" onclick="openEdit(this)"
-                        data-id="{{ r.id }}" data-date="{{ r.date_iso }}" data-in="{{ r.in }}" data-out="{{ r.out_hhmm }}">Editar</button>
-                {% if r.open %}<button class="mini" onclick="closeSession({{ r.id }})">Cerrar</button>{% endif %}
-                <button class="mini danger" onclick="deleteSession({{ r.id }})">Eliminar</button>
+                        data-id="{{ r.id }}" data-date="{{ r.date_iso }}" data-in="{{ r.in }}" data-out="{{ r.out_hhmm }}">{{ t('common.editar') }}</button>
+                {% if r.open %}<button class="mini" onclick="closeSession({{ r.id }})">{{ t('clk.cerrar') }}</button>{% endif %}
+                <button class="mini danger" onclick="deleteSession({{ r.id }})">{{ t('common.eliminar') }}</button>
               </div>
             </td>
           </tr>
@@ -153,27 +153,27 @@
 <!-- Add modal -->
 <div class="clk-overlay" id="clkAddModal">
   <form class="clk-modal" id="clkAddForm" onsubmit="submitAdd(event)">
-    <h2>Agregar turno</h2>
+    <h2>{{ t('clk.agregar') }}</h2>
     <div class="clk-field">
-      <label>Empleado</label>
+      <label>{{ t('clk.empleado') }}</label>
       <select name="waiter_id" required>
-        <option value="">— Selecciona —</option>
+        <option value="">{{ t('clk.sel') }}</option>
         {% for w in waiters %}<option value="{{ w.id }}">{{ w.name }}</option>{% endfor %}
       </select>
     </div>
     <div class="clk-field">
-      <label>Módulo</label>
+      <label>{{ t('acc.th_modulo') }}</label>
       <select name="role" required>
         {% for r in roles %}<option value="{{ r }}">{{ role_labels[r] }}</option>{% endfor %}
       </select>
     </div>
-    <div class="clk-field"><label>Fecha</label><input type="date" name="date" required></div>
-    <div class="clk-field"><label>Entrada</label><input type="time" name="in_time" required></div>
-    <div class="clk-field"><label>Salida (opcional — vacío = turno abierto)</label><input type="time" name="out_time"></div>
+    <div class="clk-field"><label>{{ t('gto.th_fecha') }}</label><input type="date" name="date" required></div>
+    <div class="clk-field"><label>{{ t('clk.th_entrada') }}</label><input type="time" name="in_time" required></div>
+    <div class="clk-field"><label>{{ t('clk.salida_opcional') }}</label><input type="time" name="out_time"></div>
     <div class="clk-result" id="clkAddResult"></div>
     <div class="clk-modal-actions">
-      <button type="button" class="clk-btn" onclick="closeModal('clkAddModal')">Cancelar</button>
-      <button type="submit" class="clk-btn primary">Guardar</button>
+      <button type="button" class="clk-btn" onclick="closeModal('clkAddModal')">{{ t('common.cancelar') }}</button>
+      <button type="submit" class="clk-btn primary">{{ t('common.guardar') }}</button>
     </div>
   </form>
 </div>
@@ -181,20 +181,21 @@
 <!-- Edit modal -->
 <div class="clk-overlay" id="clkEditModal">
   <form class="clk-modal" id="clkEditForm" onsubmit="submitEdit(event)">
-    <h2>Editar turno</h2>
+    <h2>{{ t('clk.editar_turno') }}</h2>
     <input type="hidden" name="sid" id="editSid">
-    <div class="clk-field"><label>Fecha</label><input type="date" name="date" id="editDate" required></div>
-    <div class="clk-field"><label>Entrada</label><input type="time" name="in_time" id="editIn" required></div>
-    <div class="clk-field"><label>Salida (vacío = turno abierto)</label><input type="time" name="out_time" id="editOut"></div>
+    <div class="clk-field"><label>{{ t('gto.th_fecha') }}</label><input type="date" name="date" id="editDate" required></div>
+    <div class="clk-field"><label>{{ t('clk.th_entrada') }}</label><input type="time" name="in_time" id="editIn" required></div>
+    <div class="clk-field"><label>{{ t('clk.salida_vacio') }}</label><input type="time" name="out_time" id="editOut"></div>
     <div class="clk-result" id="clkEditResult"></div>
     <div class="clk-modal-actions">
-      <button type="button" class="clk-btn" onclick="closeModal('clkEditModal')">Cancelar</button>
-      <button type="submit" class="clk-btn primary">Guardar</button>
+      <button type="button" class="clk-btn" onclick="closeModal('clkEditModal')">{{ t('common.cancelar') }}</button>
+      <button type="submit" class="clk-btn primary">{{ t('common.guardar') }}</button>
     </div>
   </form>
 </div>
 
 <script>
+  const T = (k, fb) => (window.I18N && window.I18N[k]) || fb;
   function openModal(id) { document.getElementById(id).classList.add("open"); }
   function closeModal(id) { document.getElementById(id).classList.remove("open"); }
 
@@ -237,15 +238,15 @@
   }
 
   async function closeSession(id) {
-    if (!(await window.askConfirm("¿Cerrar este turno ahora?", { yes: "Cerrar" }))) return;
+    if (!(await window.askConfirm(T("clk.conf_cerrar","¿Cerrar este turno ahora?"), { yes: T("clk.cerrar","Cerrar") }))) return;
     const res = await fetch("/admin/clock/session/" + id + "/close", { method: "POST", credentials: "same-origin" });
-    if (res.ok) location.reload(); else window.toast("No se pudo cerrar.", false);
+    if (res.ok) location.reload(); else window.toast(T("clk.no_cerrar","No se pudo cerrar."), false);
   }
 
   async function deleteSession(id) {
-    if (!(await window.askConfirm("¿Eliminar este turno? No se puede deshacer.", { yes: "Eliminar" }))) return;
+    if (!(await window.askConfirm(T("clk.conf_eliminar","¿Eliminar este turno? No se puede deshacer."), { yes: T("common.eliminar","Eliminar") }))) return;
     const res = await fetch("/admin/clock/session/" + id + "/delete", { method: "POST", credentials: "same-origin" });
-    if (res.ok) location.reload(); else window.toast("No se pudo eliminar.", false);
+    if (res.ok) location.reload(); else window.toast(T("clk.no_eliminar","No se pudo eliminar."), false);
   }
 
   document.querySelectorAll(".clk-overlay").forEach(o => {

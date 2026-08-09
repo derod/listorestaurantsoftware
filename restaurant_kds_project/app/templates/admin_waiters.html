@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="section-header-row">
-  <h1>Agentes</h1>
+  <h1>{{ t('adm.agentes') }}</h1>
 </div>
 
 {% if error %}
@@ -9,30 +9,30 @@
 {% endif %}
 
 <div class="table-card" style="margin-bottom:28px;">
-  <h2>Agregar agente</h2>
+  <h2>{{ t('wt.agregar') }}</h2>
   <form method="post" action="/admin/waiters" style="display:grid;grid-template-columns:1fr 1fr auto;gap:16px;align-items:end;">
     <div>
-      <label style="display:block;font-size:22px;color:#b7becd;margin-bottom:8px;">Nombre</label>
+      <label style="display:block;font-size:22px;color:#b7becd;margin-bottom:8px;">{{ t('wt.nombre') }}</label>
       <input type="text" name="name" required style="width:100%;min-height:64px;border-radius:14px;border:1px solid var(--border);background:#10141b;color:var(--text);padding:12px 16px;font-size:26px;" />
     </div>
     <div>
-      <label style="display:block;font-size:22px;color:#b7becd;margin-bottom:8px;">PIN (solo números)</label>
+      <label style="display:block;font-size:22px;color:#b7becd;margin-bottom:8px;">{{ t('wt.pin') }}</label>
       <input type="text" name="pin" pattern="[0-9]+" inputmode="numeric" required style="width:100%;min-height:64px;border-radius:14px;border:1px solid var(--border);background:#10141b;color:var(--text);padding:12px 16px;font-size:26px;" />
     </div>
-    <button type="submit" style="min-height:64px;padding:0 32px;font-size:26px;font-weight:700;border:none;border-radius:14px;background:var(--accent);color:#111;cursor:pointer;">Agregar</button>
+    <button type="submit" style="min-height:64px;padding:0 32px;font-size:26px;font-weight:700;border:none;border-radius:14px;background:var(--accent);color:#111;cursor:pointer;">{{ t('wt.agregar_btn') }}</button>
   </form>
 </div>
 
 <div class="table-card">
-  <h2>Lista de agentes</h2>
+  <h2>{{ t('wt.lista') }}</h2>
   <table class="big-table">
     <thead>
       <tr>
-        <th>Nombre</th>
+        <th>{{ t('wt.nombre') }}</th>
         <th>PIN</th>
-        <th>Estado</th>
-        <th>Creado</th>
-        <th>Acciones</th>
+        <th>{{ t('wt.th_estado') }}</th>
+        <th>{{ t('wt.th_creado') }}</th>
+        <th>{{ t('wt.th_acciones') }}</th>
       </tr>
     </thead>
     <tbody>
@@ -40,19 +40,19 @@
       <tr>
         <td>{{ w.name }}</td>
         <td>{{ w.pin }}</td>
-        <td>{% if w.active %}<span style="color:var(--green);">Activo</span>{% else %}<span style="color:var(--gray);">Inactivo</span>{% endif %}</td>
+        <td>{% if w.active %}<span style="color:var(--green);">{{ t('wt.activo') }}</span>{% else %}<span style="color:var(--gray);">{{ t('wt.inactivo') }}</span>{% endif %}</td>
         <td>{{ w.created_at.strftime('%d/%m/%Y') }}</td>
         <td class="actions-cell">
-          <a href="/admin/waiters/{{ w.id }}/edit" style="display:inline-flex;align-items:center;justify-content:center;min-height:54px;padding:0 24px;font-size:22px;font-weight:700;border-radius:14px;background:var(--muted);color:var(--text);text-decoration:none;">Editar</a>
+          <a href="/admin/waiters/{{ w.id }}/edit" style="display:inline-flex;align-items:center;justify-content:center;min-height:54px;padding:0 24px;font-size:22px;font-weight:700;border-radius:14px;background:var(--muted);color:var(--text);text-decoration:none;">{{ t('common.editar') }}</a>
           <form method="post" action="/admin/waiters/{{ w.id }}/toggle" style="margin:0;">
             <button type="submit" class="small-action" style="background:{% if w.active %}rgba(228,91,91,0.2){% else %}rgba(76,175,80,0.2){% endif %};color:{% if w.active %}var(--red){% else %}var(--green){% endif %};">
-              {% if w.active %}Desactivar{% else %}Activar{% endif %}
+              {% if w.active %}{{ t('wt.desactivar') }}{% else %}{{ t('wt.activar') }}{% endif %}
             </button>
           </form>
         </td>
       </tr>
       {% else %}
-      <tr><td colspan="5" style="color:#b7becd;text-align:center;">No hay agentes registrados.</td></tr>
+      <tr><td colspan="5" style="color:#b7becd;text-align:center;">{{ t('wt.sin') }}</td></tr>
       {% endfor %}
     </tbody>
   </table>

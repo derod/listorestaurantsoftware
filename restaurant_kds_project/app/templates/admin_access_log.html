@@ -30,27 +30,27 @@
 </style>
 
 <div class="acc-head">
-  <h1>Accesos</h1>
+  <h1>{{ t('acc.title') }}</h1>
   <div class="acc-tools">
-    <a class="acc-btn" href="/admin/access-log/export.csv">&#11015; Exportar CSV</a>
-    <a class="acc-btn" href="/admin">&#8592; Dashboard</a>
+    <a class="acc-btn" href="/admin/access-log/export.csv">&#11015; {{ t('acc.exportar') }}</a>
+    <a class="acc-btn" href="/admin">&#8592; {{ t('common.dashboard') }}</a>
   </div>
 </div>
 
 <div class="acc-filters">
-  <a class="acc-filter {% if not active_role %}active{% endif %}" href="/admin/access-log">Todos <span class="cnt">{{ counts.all or 0 }}</span></a>
+  <a class="acc-filter {% if not active_role %}active{% endif %}" href="/admin/access-log">{{ t('common.todos') }} <span class="cnt">{{ counts.all or 0 }}</span></a>
   {% for r in roles %}
   <a class="acc-filter {% if active_role == r %}active{% endif %}" href="/admin/access-log?role={{ r }}">{{ role_labels[r] }} <span class="cnt">{{ counts.get(r, 0) }}</span></a>
   {% endfor %}
 </div>
 
 {% if not rows %}
-  <div class="acc-empty">No hay accesos registrados {% if active_role %}en "{{ role_labels[active_role] }}"{% endif %} todavía.</div>
+  <div class="acc-empty">{{ t('acc.sin_pre') }} {% if active_role %}{{ t('acc.sin_en') }} "{{ role_labels[active_role] }}"{% endif %} {{ t('acc.sin_post') }}</div>
 {% else %}
 <div class="acc-table-wrap">
   <table class="acc-table">
     <thead>
-      <tr><th>Fecha y hora</th><th>Módulo</th><th>Usuario</th><th>IP</th></tr>
+      <tr><th>{{ t('acc.th_fecha') }}</th><th>{{ t('acc.th_modulo') }}</th><th>{{ t('acc.th_usuario') }}</th><th>{{ t('acc.th_ip') }}</th></tr>
     </thead>
     <tbody>
       {% for r in rows %}

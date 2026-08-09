@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Admin Audio</h1>
+<h1>{{ t('aud.title') }}</h1>
 {% if error_msg %}
 <div style="background:rgba(228,91,91,0.15); border:1.5px solid rgba(228,91,91,0.5); border-radius:14px; padding:16px 20px; margin-bottom:18px; color:var(--red); font-weight:700; font-size:18px;">
   {{ error_msg }}
@@ -8,17 +8,17 @@
 {% endif %}
 <div class="panel form-panel">
   <form method="post" action="/admin/audio" enctype="multipart/form-data" class="audio-form">
-    <p style="margin:0 0 6px; color:#b7becd; font-size:15px;">Cada pantalla tiene su propio sonido de alerta.</p>
-    <label>🛎️ Sonido pantalla SALÓN <span style="color:#8a95a8;font-size:13px;">(suena en Salón: pedido de cocina entrante y pedido listo)</span> <input type="file" name="station_sound" accept=".mp3,.wav,.m4a"></label>
-    <label>🍳 Sonido pantalla COCINA <span style="color:#8a95a8;font-size:13px;">(suena en Cocina: cualquier pedido nuevo)</span> <input type="file" name="kitchen_sound" accept=".mp3,.wav,.m4a"></label>
-    <label>🚫 Sonido de cancelación <span style="color:#8a95a8;font-size:13px;">(al cancelar una orden)</span> <input type="file" name="cancel_sound" accept=".mp3,.wav,.m4a"></label>
-    <label>Volumen <input type="range" min="0" max="1" step="0.1" name="master_volume" value="{{ settings.master_volume if settings else 1.0 }}"></label>
-    <label class="checkbox-row"><input type="checkbox" name="voice_enabled_for_station_orders" {% if settings and settings.voice_enabled_for_station_orders %}checked{% endif %}> Leer los pedidos en voz alta</label>
-    <button class="action primary" type="submit">Guardar audio</button>
+    <p style="margin:0 0 6px; color:#b7becd; font-size:15px;">{{ t('aud.cada') }}</p>
+    <label>{{ t('aud.salon') }} <span style="color:#8a95a8;font-size:13px;">{{ t('aud.salon_hint') }}</span> <input type="file" name="station_sound" accept=".mp3,.wav,.m4a"></label>
+    <label>{{ t('aud.cocina') }} <span style="color:#8a95a8;font-size:13px;">{{ t('aud.cocina_hint') }}</span> <input type="file" name="kitchen_sound" accept=".mp3,.wav,.m4a"></label>
+    <label>{{ t('aud.cancel') }} <span style="color:#8a95a8;font-size:13px;">{{ t('aud.cancel_hint') }}</span> <input type="file" name="cancel_sound" accept=".mp3,.wav,.m4a"></label>
+    <label>{{ t('aud.volumen') }} <input type="range" min="0" max="1" step="0.1" name="master_volume" value="{{ settings.master_volume if settings else 1.0 }}"></label>
+    <label class="checkbox-row"><input type="checkbox" name="voice_enabled_for_station_orders" {% if settings and settings.voice_enabled_for_station_orders %}checked{% endif %}> {{ t('aud.leer') }}</label>
+    <button class="action primary" type="submit">{{ t('aud.guardar') }}</button>
   </form>
 </div>
 <div class="table-card">
-  <h2>Rutas actuales</h2>
+  <h2>{{ t('aud.rutas') }}</h2>
   {% macro row(label, path, exists) %}
     <div style="display:flex; gap:14px; align-items:center; padding:10px 0; flex-wrap:wrap; border-bottom:1px solid rgba(255,255,255,0.08);">
       <strong style="min-width:120px;">{{ label }}:</strong>
@@ -26,22 +26,22 @@
         <span style="padding:4px 10px; border-radius:999px; font-size:14px; font-weight:800;
                      {% if exists %}background:rgba(76,175,80,0.15); color:var(--green);
                      {% else %}background:rgba(228,91,91,0.18); color:var(--red);{% endif %}">
-          {% if exists %}✓ OK{% else %}✗ Archivo no existe{% endif %}
+          {% if exists %}{{ t('aud.ok') }}{% else %}{{ t('aud.no_existe') }}{% endif %}
         </span>
         <code style="font-size:14px; color:#b7becd;">{{ path }}</code>
         {% if exists %}
           <audio controls preload="none" src="{{ path }}" style="height:32px;"></audio>
         {% endif %}
       {% else %}
-        <span style="color:#b7becd;">— sin archivo —</span>
+        <span style="color:#b7becd;">{{ t('aud.sin_archivo') }}</span>
       {% endif %}
     </div>
   {% endmacro %}
-  {{ row("Pantalla Salón", settings.station_order_sound_path if settings else None, file_status.station) }}
-  {{ row("Pantalla Cocina", settings.kitchen_order_sound_path if settings else None, file_status.kitchen) }}
-  {{ row("Cancelación", settings.cancel_sound_path if settings else None, file_status.cancel) }}
+  {{ row(t('aud.r_salon'), settings.station_order_sound_path if settings else None, file_status.station) }}
+  {{ row(t('aud.r_cocina'), settings.kitchen_order_sound_path if settings else None, file_status.kitchen) }}
+  {{ row(t('aud.r_cancel'), settings.cancel_sound_path if settings else None, file_status.cancel) }}
   <p style="margin-top:16px; font-size:13px; color:#6c757d;">
-    Directorio en disco: <code>{{ upload_dir }}</code>
+    {{ t('aud.dir') }} <code>{{ upload_dir }}</code>
   </p>
 </div>
 {% endblock %}

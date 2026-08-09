@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Logs de usuarios</h1>
+<h1>{{ t('lg.title') }}</h1>
 <div class="table-card">
   <table class="big-table">
-    <thead><tr><th>Fecha</th><th>Producto</th><th>Anterior</th><th>Nueva</th><th>Usuario</th></tr></thead>
+    <thead><tr><th>{{ t('gto.th_fecha') }}</th><th>{{ t('lg.th_producto') }}</th><th>{{ t('lg.th_anterior') }}</th><th>{{ t('lg.th_nueva') }}</th><th>{{ t('lg.th_usuario') }}</th></tr></thead>
     <tbody>
       {% for log in logs %}
       <tr>
@@ -14,7 +14,7 @@
         <td>{{ log.actor_name or '-' }}</td>
       </tr>
       {% else %}
-      <tr><td colspan="5" style="text-align:center;color:#6c757d;">Sin registros.</td></tr>
+      <tr><td colspan="5" style="text-align:center;color:#6c757d;">{{ t('lg.sin') }}</td></tr>
       {% endfor %}
     </tbody>
   </table>
