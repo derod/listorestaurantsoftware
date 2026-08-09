@@ -26,6 +26,42 @@ PRODUCT_IMG_DIR = DATA_DIR / "uploads" / "products"
 PRODUCT_IMG_DIR.mkdir(parents=True, exist_ok=True)
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
+# ── i18n: globals disponibles en todas las plantillas ─────────────────────────
+from jinja2 import pass_context as _pass_context
+from ..i18n import t as _i18n_t, dict_for as _i18n_dict, LANGS as _I18N_LANGS, LANG_LABELS as _I18N_LABELS
+
+
+def _cur_lang(request):
+    lang = None
+    try:
+        lang = request.cookies.get("lang")
+    except Exception:
+        pass
+    return lang if lang in _I18N_LANGS else "es"
+
+
+@_pass_context
+def _jinja_t(context, key):
+    req = context.get("request")
+    return _i18n_t(_cur_lang(req) if req else "es", key)
+
+
+templates.env.globals["t"] = _jinja_t
+templates.env.globals["cur_lang"] = _cur_lang
+templates.env.globals["i18n_dict"] = _i18n_dict
+templates.env.globals["i18n_langs"] = _I18N_LANGS
+templates.env.globals["i18n_labels"] = _I18N_LABELS
+
+
+@router.get("/idioma/{lang}")
+def set_language(lang: str, request: Request, next: str = "/"):
+    if lang not in _I18N_LANGS:
+        lang = "es"
+    target = next if (next and next.startswith("/")) else "/"
+    resp = RedirectResponse(url=target, status_code=303)
+    resp.set_cookie("lang", lang, max_age=60 * 60 * 24 * 365, samesite="lax")
+    return resp
+
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "rodgabriel12@gmail.com")
 ADMIN_PASSCODE = os.getenv("ADMIN_PASSCODE")
 if not ADMIN_PASSCODE:

@@ -1,3 +1,6 @@
+// i18n: texto traducido con fallback en español.
+const T = (k, fb) => (window.I18N && window.I18N[k]) || fb;
+
 const kitchenMap = new Map();
 const kitchenSequence = [];
 let knownOrderIds = new Set((window.INITIAL_ORDERS || []).map(o => o.id));
@@ -18,7 +21,7 @@ function renderKitchenSummary() {
   const el = document.getElementById("kitchenOrderSummary");
   const entries = [...kitchenMap.values()];
   if (!entries.length) {
-    el.innerHTML = "No hay productos.";
+    el.innerHTML = T("salon.no_productos", "No hay productos.");
     el.classList.add("empty-state");
     return;
   }
@@ -64,19 +67,19 @@ function toast(message, type) {
 async function submitKitchenOrder() {
   const items = [...kitchenMap.values()].filter(x => x.quantity > 0)
     .map(x => ({ product_id: x.product_id, quantity: x.quantity }));
-  if (!items.length) return toast("Agrega productos primero.", "error");
+  if (!items.length) return toast(T("msg.agrega_productos", "Agrega productos primero."), "error");
   const res = await fetch("/api/orders", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ source_role: "kitchen", items })
   });
-  if (!res.ok) return toast("No se pudo enviar.", "error");
+  if (!res.ok) return toast(T("msg.no_enviar", "No se pudo enviar."), "error");
   kitchenMap.clear();
   kitchenSequence.length = 0;
   renderKitchenSummary();
   document.getElementById("createModal").classList.remove("open");
   pollOrders();
-  toast("Pedido enviado.");
+  toast(T("msg.pedido_enviado", "Pedido enviado."));
 }
 
 /* ─── Safari autoplay guard ─────────────────────────────────────────── */
@@ -396,7 +399,7 @@ function renderOrders(orders) {
   const container = document.getElementById("ordersContainer");
 
   if (!orders.length) {
-    container.innerHTML = '<div class="empty-kitchen">No hay pedidos activos</div>';
+    container.innerHTML = `<div class="empty-kitchen">${T("kitchen.no_activos", "No hay pedidos activos")}</div>`;
     return;
   }
 
@@ -413,11 +416,11 @@ function renderOrders(orders) {
     const timerHtml = "";
 
     /* Status label */
-    const statusLabel = status.toUpperCase();
+    const statusLabel = T("st." + status, status.toUpperCase());
 
     /* Waiter */
     const waiterHtml = order.waiter_name
-      ? `<div class="order-waiter-big">Agente: <strong>${order.waiter_name}</strong></div>`
+      ? `<div class="order-waiter-big">${T("lbl.agente", "Agente")}: <strong>${order.waiter_name}</strong></div>`
       : "";
 
     /* Uber (pedido de delivery con nombre) — etiqueta naranja neón */
@@ -435,18 +438,18 @@ function renderOrders(orders) {
     let buttonsHtml = "";
     if (status === "nuevo" || status === "aceptado") {
       buttonsHtml = `
-        <button class="btn-aceptado" data-action="accept" data-order-id="${order.id}">ACEPTAR</button>
-        <button class="btn-cancelado" data-action="cancel" data-order-id="${order.id}">CANCELAR</button>
+        <button class="btn-aceptado" data-action="accept" data-order-id="${order.id}">${T("act.aceptar", "ACEPTAR")}</button>
+        <button class="btn-cancelado" data-action="cancel" data-order-id="${order.id}">${T("act.cancelar", "CANCELAR")}</button>
       `;
     } else if (status === "preparando") {
       buttonsHtml = `
-        <button class="btn-listo" data-action="despachar" data-order-id="${order.id}">LISTO</button>
-        <button class="btn-cancelado" data-action="cancel" data-order-id="${order.id}">CANCELAR</button>
+        <button class="btn-listo" data-action="despachar" data-order-id="${order.id}">${T("act.listo", "LISTO")}</button>
+        <button class="btn-cancelado" data-action="cancel" data-order-id="${order.id}">${T("act.cancelar", "CANCELAR")}</button>
       `;
     } else if (status === "listo") {
       buttonsHtml = `
-        <button class="btn-despachado" data-action="despachar" data-order-id="${order.id}">DESPACHAR</button>
-        <button class="btn-cancelado" data-action="cancel" data-order-id="${order.id}">CANCELAR</button>
+        <button class="btn-despachado" data-action="despachar" data-order-id="${order.id}">${T("act.despachar", "DESPACHAR")}</button>
+        <button class="btn-cancelado" data-action="cancel" data-order-id="${order.id}">${T("act.cancelar", "CANCELAR")}</button>
       `;
     }
 
@@ -525,7 +528,7 @@ function showCancelledAlert(o) {
       '<div class="ca-title">🚫 CANCELADO · #' + o.id + '</div>' +
       '<div class="ca-items">' + items + '</div>' +
     '</div>' +
-    '<button class="ca-dismiss">Entendido</button>';
+    '<button class="ca-dismiss">'+T("act.entendido","Entendido")+'</button>';
   el.querySelector(".ca-dismiss").addEventListener("click", () => el.remove());
   host.prepend(el);
 }
@@ -537,7 +540,7 @@ async function pollOrders() {
   const newOrders = orders.filter(o => !knownOrderIds.has(o.id));
   newOrders.forEach(order => {
     knownOrderIds.add(order.id);
-    flashPageTitle("🔔 NUEVO PEDIDO");
+    flashPageTitle(T("msg.nuevo_pedido","🔔 NUEVO PEDIDO"));
     if (order.source_role === "station_a") {
       if (!playSound(window.KITCHEN_AUDIO.kitchenSound)) beep(880, 400);
       speakSpanish(`Nuevo pedido. ${formatSpeech(order.items)}.`);
@@ -652,7 +655,7 @@ setInterval(() => renderOrders(visibleOrders()), 1000);
         knownOrderIds.add(order.id);
 
         // Immediate audio alert — also flash the page title so the cook sees it
-        flashPageTitle("🔔 NUEVO PEDIDO");
+        flashPageTitle(T("msg.nuevo_pedido","🔔 NUEVO PEDIDO"));
         if (order.source_role === "station_a") {
           if (!playSound(window.KITCHEN_AUDIO.kitchenSound)) beep(880, 400);
           speakSpanish(`Nuevo pedido. ${formatSpeech(order.items)}.`);

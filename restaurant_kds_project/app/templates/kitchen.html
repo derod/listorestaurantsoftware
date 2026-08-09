@@ -54,20 +54,20 @@
 
 <div class="kitchen-header">
   <div class="kitchen-header-left">
-    <div style="font-size:42px;font-weight:800;color:var(--blue);">KITCHEN</div>
-    <div style="font-size:28px;color:#b7becd;">AGENTE: <strong style="color:var(--blue);">{{ waiter_name }}</strong></div>
+    <div style="font-size:42px;font-weight:800;color:var(--blue);">{{ t('kitchen.title') }}</div>
+    <div style="font-size:28px;color:#b7becd;">{{ t('salon.agente') }} <strong style="color:var(--blue);">{{ waiter_name }}</strong></div>
   </div>
   <div class="kitchen-header-actions">
-    <button class="action" id="audioUnlockBtn" onclick="window.unlockAudio()" style="background:rgba(255,210,77,0.2);color:var(--yellow);">🔔 Activar alertas</button>
-    <button class="action primary" id="openCreateBtn" style="background:var(--accent);color:#111;">Crear pedido salon</button>
-    <a href="/kitchen/logout" style="background:rgba(228,91,91,0.18);color:var(--red);">CAMBIAR AGENTE</a>
+    <button class="action" id="audioUnlockBtn" onclick="window.unlockAudio()" style="background:rgba(255,210,77,0.2);color:var(--yellow);">{{ t('common.activar_alertas') }}</button>
+    <button class="action primary" id="openCreateBtn" style="background:var(--accent);color:#111;">{{ t('kitchen.crear_pedido') }}</button>
+    <a href="/kitchen/logout" style="background:rgba(228,91,91,0.18);color:var(--red);">{{ t('salon.cambiar_agente') }}</a>
   </div>
 </div>
 
 <div id="cancelledAlerts"></div>
 
 <div id="ordersContainer" class="orders-full">
-  <div class="empty-kitchen">Cargando pedidos...</div>
+  <div class="empty-kitchen">{{ t('kitchen.cargando') }}</div>
 </div>
 
 <style>
@@ -84,11 +84,11 @@
 <div class="modal-overlay" id="createModal">
   <div class="modal-box">
     <div class="modal-header">
-      <h2 style="margin:0;">Crear pedido salon</h2>
-      <button class="modal-close" id="closeCreateBtn">CERRAR</button>
+      <h2 style="margin:0;">{{ t('kitchen.crear_pedido') }}</h2>
+      <button class="modal-close" id="closeCreateBtn">{{ t('kitchen.cerrar') }}</button>
     </div>
     <div style="margin-bottom:16px;">
-      <button class="action" id="kitchenNewProductBtn" style="background:rgba(77,163,255,0.18);color:var(--blue);min-height:56px;font-size:22px;">+ Nuevo producto</button>
+      <button class="action" id="kitchenNewProductBtn" style="background:rgba(77,163,255,0.18);color:var(--blue);min-height:56px;font-size:22px;">{{ t('common.nuevo_producto') }}</button>
     </div>
     <div class="kitchen-create-grid" id="kitchenProductsGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:24px;">
       {% for product in products %}
@@ -98,10 +98,10 @@
       </button>
       {% endfor %}
     </div>
-    <div id="kitchenOrderSummary" class="summary-list empty-state" style="margin-bottom:18px;">No hay productos.</div>
+    <div id="kitchenOrderSummary" class="summary-list empty-state" style="margin-bottom:18px;">{{ t('salon.no_productos') }}</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-      <button class="action primary" id="kitchenSendBtn" style="min-height:80px;font-size:30px;">Enviar</button>
-      <button class="action" id="kitchenClearBtn" style="min-height:80px;font-size:30px;">Borrar</button>
+      <button class="action primary" id="kitchenSendBtn" style="min-height:80px;font-size:30px;">{{ t('salon.enviar') }}</button>
+      <button class="action" id="kitchenClearBtn" style="min-height:80px;font-size:30px;">{{ t('salon.borrar') }}</button>
     </div>
   </div>
 </div>
@@ -109,13 +109,13 @@
 <div class="modal-overlay" id="kitchenNewProductModal">
   <div class="modal-box" style="max-width:520px;">
     <div class="modal-header">
-      <h2 style="margin:0;">Nuevo producto</h2>
-      <button class="modal-close" id="kitchenNewProductCancelBtn">CERRAR</button>
+      <h2 style="margin:0;">{{ t('common.nuevo_producto_t') }}</h2>
+      <button class="modal-close" id="kitchenNewProductCancelBtn">{{ t('kitchen.cerrar') }}</button>
     </div>
-    <input id="kitchenNewProductName" type="text" placeholder="Nombre del producto" autocomplete="off" style="width:100%;padding:18px;font-size:24px;border-radius:14px;border:1px solid var(--border);background:#10141b;color:#fff;margin-bottom:20px;" />
+    <input id="kitchenNewProductName" type="text" placeholder="{{ t('common.nombre_producto') }}" autocomplete="off" style="width:100%;padding:18px;font-size:24px;border-radius:14px;border:1px solid var(--border);background:#10141b;color:#fff;margin-bottom:20px;" />
     <div style="display:flex;gap:14px;">
-      <button class="action primary" id="kitchenNewProductSaveBtn" style="flex:1;min-height:64px;font-size:24px;">Crear</button>
-      <button class="action" id="kitchenNewProductCancelBtn2" style="flex:1;min-height:64px;font-size:24px;background:rgba(228,91,91,0.18);color:var(--red);">Cancelar</button>
+      <button class="action primary" id="kitchenNewProductSaveBtn" style="flex:1;min-height:64px;font-size:24px;">{{ t('common.crear') }}</button>
+      <button class="action" id="kitchenNewProductCancelBtn2" style="flex:1;min-height:64px;font-size:24px;background:rgba(228,91,91,0.18);color:var(--red);">{{ t('common.cancelar') }}</button>
     </div>
   </div>
 </div>
@@ -130,5 +130,5 @@ window.KITCHEN_AUDIO = {
 };
 window.INITIAL_ORDERS = {{ orders_json|safe }};
 </script>
-<script src="/static/js/kitchen.js?v=cancelprod"></script>
+<script src="/static/js/kitchen.js?v=i18n"></script>
 {% endblock %}

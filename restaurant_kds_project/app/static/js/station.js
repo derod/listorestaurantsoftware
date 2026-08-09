@@ -5,11 +5,14 @@
 let lines = [];      // [{product_id, name, quantity}]
 let addStack = [];   // refs de línea, una por unidad agregada (para "Quitar último")
 
+// i18n: texto traducido con fallback en español.
+const T = (k, fb) => (window.I18N && window.I18N[k]) || fb;
+
 function renderSummary() {
   const summary = document.getElementById("orderSummary");
   const total = document.getElementById("totalItems");
   if (!lines.length) {
-    summary.innerHTML = "No hay productos.";
+    summary.innerHTML = T("salon.no_productos", "No hay productos.");
     summary.classList.add("empty-state");
     total.textContent = "0";
     return;
@@ -67,7 +70,7 @@ function toast(message, type) {
 
 async function submitOrder() {
   const items = lines.filter(x => x.quantity > 0).map(x => ({ product_id: x.product_id, quantity: x.quantity }));
-  if (!items.length) return toast("Agrega productos primero.", "error");
+  if (!items.length) return toast(T("msg.agrega_productos", "Agrega productos primero."), "error");
   // En modo Uber el nombre de la orden es obligatorio.
   let orderLabel = null;
   if (stationCategory === "Uber") {
@@ -82,13 +85,13 @@ async function submitOrder() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ source_role: window.KDS_CONFIG.sourceRole, items, waiter_id: window.KDS_CONFIG.waiterId, waiter_name: window.KDS_CONFIG.waiterName, order_label: orderLabel, table_id: tableId })
   });
-  if (!res.ok) return toast("No se pudo enviar.", "error");
+  if (!res.ok) return toast(T("msg.no_enviar", "No se pudo enviar."), "error");
   lines = [];
   addStack = [];
   renderSummary();
   const nameEl = document.getElementById("uberOrderName");
   if (nameEl) nameEl.value = "";
-  toast("Pedido enviado.");
+  toast(T("msg.pedido_enviado", "Pedido enviado."));
   fetchRecent();
 }
 
@@ -316,14 +319,14 @@ if (_reorderBtn) {
   _reorderBtn.addEventListener("click", () => {
     stationReorder = !stationReorder;
     _reorderBtn.classList.toggle("on", stationReorder);
-    _reorderBtn.textContent = stationReorder ? "✓ Listo" : "↕ Ordenar";
+    _reorderBtn.textContent = stationReorder ? T("salon.listo_orden", "✓ Listo") : T("salon.ordenar", "↕ Ordenar");
     if (stationReorder) {
       stationSort = "manual";
       document.querySelectorAll(".sort-btn").forEach(x => x.classList.toggle("active", x.dataset.sort === "manual"));
       // salir del modo Quitar si estaba activo
       stationQuitar = false;
       const qb = document.getElementById("quitarBtn");
-      if (qb) { qb.classList.remove("on"); qb.textContent = "✕ Quitar"; }
+      if (qb) { qb.classList.remove("on"); qb.textContent = T("salon.quitar", "✕ Quitar"); }
       document.getElementById("productsGrid").classList.remove("quitar-on");
     }
     document.querySelectorAll(".sort-btn").forEach(x => { x.disabled = stationReorder; });
@@ -337,13 +340,13 @@ if (_quitarBtn) {
   _quitarBtn.addEventListener("click", () => {
     if (stationReorder) {   // salir de Ordenar primero
       stationReorder = false;
-      if (_reorderBtn) { _reorderBtn.classList.remove("on"); _reorderBtn.textContent = "↕ Ordenar"; }
+      if (_reorderBtn) { _reorderBtn.classList.remove("on"); _reorderBtn.textContent = T("salon.ordenar", "↕ Ordenar"); }
       document.querySelectorAll(".sort-btn").forEach(x => { x.disabled = false; });
       renderProducts();
     }
     stationQuitar = !stationQuitar;
     _quitarBtn.classList.toggle("on", stationQuitar);
-    _quitarBtn.textContent = stationQuitar ? "✓ Listo" : "✕ Quitar";
+    _quitarBtn.textContent = stationQuitar ? T("salon.listo_orden", "✓ Listo") : T("salon.quitar", "✕ Quitar");
     document.getElementById("productsGrid").classList.toggle("quitar-on", stationQuitar);
     applyCategoryFilter();
   });
@@ -383,7 +386,7 @@ function openNewProductModal() {
 function closeNewProductModal() { newProductModal.style.display = "none"; }
 async function saveNewProduct() {
   const name = newProductInput.value.trim();
-  if (!name) return toast("Escribe un nombre.", "error");
+  if (!name) return toast(T("msg.escribe_nombre", "Escribe un nombre."), "error");
   // El producto nuevo toma la pestaña activa (Uber reutiliza los de Desayuno).
   const cat = (stationCategory === "Uber") ? "Desayuno" : stationCategory;
   // ¿Existe (activo) pero oculto en esta tablet? Ofrecer mostrarlo en vez de crear.
@@ -810,7 +813,7 @@ function renderRecent() {
   }).join("");
   if (recentOrders.length > RECENT_COLLAPSED) {
     toggle.style.display = "block";
-    toggle.textContent = recentExpanded ? "Ver menos" : `Ver más (${recentOrders.length - RECENT_COLLAPSED})`;
+    toggle.textContent = recentExpanded ? T("salon.ver_menos", "Ver menos") : `${T("salon.ver_mas", "Ver más")} (${recentOrders.length - RECENT_COLLAPSED})`;
   } else {
     toggle.style.display = "none";
   }

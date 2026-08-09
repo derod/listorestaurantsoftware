@@ -3,13 +3,13 @@
 <div class="station-wrap">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
   <div>
-    <div style="font-size:38px;font-weight:800;">SALON</div>
-    <div style="font-size:28px;color:#b7becd;margin-top:4px;">AGENTE: <strong style="color:var(--accent);">{{ waiter_name }}</strong></div>
+    <div style="font-size:38px;font-weight:800;">{{ t('salon.title') }}</div>
+    <div style="font-size:28px;color:#b7becd;margin-top:4px;">{{ t('salon.agente') }} <strong style="color:var(--accent);">{{ waiter_name }}</strong></div>
   </div>
   <div style="display:flex;gap:12px;flex-wrap:wrap;">
-    <a href="/mesas" style="display:inline-flex;align-items:center;justify-content:center;min-height:60px;padding:0 28px;font-size:24px;font-weight:700;border-radius:16px;background:rgba(255,140,66,0.2);color:#ff8c42;text-decoration:none;">🍽️ Mesas</a>
-    <button type="button" id="audioUnlockBtn" onclick="window.unlockAudio()" style="display:inline-flex;align-items:center;justify-content:center;min-height:60px;padding:0 28px;font-size:24px;font-weight:700;border-radius:16px;background:rgba(255,210,77,0.2);color:var(--yellow);border:none;cursor:pointer;">🔔 Activar alertas</button>
-    <a href="/station-a/logout" style="display:inline-flex;align-items:center;justify-content:center;min-height:60px;padding:0 28px;font-size:24px;font-weight:700;border-radius:16px;background:rgba(228,91,91,0.18);color:var(--red);text-decoration:none;">CAMBIAR AGENTE</a>
+    <a href="/mesas" style="display:inline-flex;align-items:center;justify-content:center;min-height:60px;padding:0 28px;font-size:24px;font-weight:700;border-radius:16px;background:rgba(255,140,66,0.2);color:#ff8c42;text-decoration:none;">{{ t('salon.mesas') }}</a>
+    <button type="button" id="audioUnlockBtn" onclick="window.unlockAudio()" style="display:inline-flex;align-items:center;justify-content:center;min-height:60px;padding:0 28px;font-size:24px;font-weight:700;border-radius:16px;background:rgba(255,210,77,0.2);color:var(--yellow);border:none;cursor:pointer;">{{ t('common.activar_alertas') }}</button>
+    <a href="/station-a/logout" style="display:inline-flex;align-items:center;justify-content:center;min-height:60px;padding:0 28px;font-size:24px;font-weight:700;border-radius:16px;background:rgba(228,91,91,0.18);color:var(--red);text-decoration:none;">{{ t('salon.cambiar_agente') }}</a>
   </div>
 </div>
 <div class="screen two-panel">
@@ -22,7 +22,7 @@
       <button type="button" class="cat-tab cat-tab-uber" data-cat="Uber">🛵 Uber</button>
     </div>
     <div class="uber-name-wrap" id="uberNameWrap" style="display:none;">
-      <label for="uberOrderName">Nombre de la orden (Uber)</label>
+      <label for="uberOrderName">{{ t('salon.uber_nombre') }}</label>
       <input type="text" id="uberOrderName" maxlength="120" autocomplete="off" placeholder="Ej: Juan / #Uber123">
     </div>
     <div class="products-grid" id="productsGrid">
@@ -34,41 +34,41 @@
       {% endfor %}
     </div>
     <div class="prod-controls">
-      <button class="action" id="newProductBtn" style="background:rgba(77,163,255,0.18);color:var(--blue);min-height:56px;font-size:22px;">+ Nuevo producto</button>
+      <button class="action" id="newProductBtn" style="background:rgba(77,163,255,0.18);color:var(--blue);min-height:56px;font-size:22px;">{{ t('common.nuevo_producto') }}</button>
       <div class="sort-toggle">
-        <button type="button" class="sort-btn active" data-sort="manual">Manual</button>
-        <button type="button" class="sort-btn" data-sort="az">A–Z</button>
+        <button type="button" class="sort-btn active" data-sort="manual">{{ t('salon.manual') }}</button>
+        <button type="button" class="sort-btn" data-sort="az">{{ t('salon.az') }}</button>
       </div>
-      <button type="button" class="action" id="reorderBtn" style="min-height:56px;font-size:22px;">↕ Ordenar</button>
-      <button type="button" class="action" id="quitarBtn" style="min-height:56px;font-size:22px;">✕ Quitar</button>
+      <button type="button" class="action" id="reorderBtn" style="min-height:56px;font-size:22px;">{{ t('salon.ordenar') }}</button>
+      <button type="button" class="action" id="quitarBtn" style="min-height:56px;font-size:22px;">{{ t('salon.quitar') }}</button>
     </div>
   </section>
   <aside class="panel summary-panel">
-    <h2>Pedido actual</h2>
-    <div id="orderSummary" class="summary-list empty-state">No hay productos.</div>
-    <div class="summary-total">Total productos: <span id="totalItems">0</span></div>
+    <h2>{{ t('salon.pedido_actual') }}</h2>
+    <div id="orderSummary" class="summary-list empty-state">{{ t('salon.no_productos') }}</div>
+    <div class="summary-total">{{ t('salon.total') }} <span id="totalItems">0</span></div>
     <div class="big-actions">
-      <button class="action primary" id="sendBtn">Enviar</button>
-      <button class="action" id="clearBtn">Borrar</button>
-      <button class="action" id="undoBtn">Quitar último producto</button>
+      <button class="action primary" id="sendBtn">{{ t('salon.enviar') }}</button>
+      <button class="action" id="clearBtn">{{ t('salon.borrar') }}</button>
+      <button class="action" id="undoBtn">{{ t('salon.quitar_ultimo') }}</button>
     </div>
     <div class="table-pick" id="tablePick">
-      <label for="tableSelect">Mesa</label>
+      <label for="tableSelect">{{ t('salon.mesa') }}</label>
       <select id="tableSelect">
-        <option value="">Sin mesa (para llevar / Uber)</option>
-        {% for t in tables %}
-        <option value="{{ t.id }}">Mesa {{ t.number }}{% if t.name %} · {{ t.name }}{% endif %}</option>
+        <option value="">{{ t('salon.sin_mesa') }}</option>
+        {% for tb in tables %}
+        <option value="{{ tb.id }}">{{ t('salon.mesa') }} {{ tb.number }}{% if tb.name %} · {{ tb.name }}{% endif %}</option>
         {% endfor %}
       </select>
     </div>
 
     <div class="recent-card">
-      <h3 class="recent-title">Órdenes recientes</h3>
+      <h3 class="recent-title">{{ t('salon.recientes') }}</h3>
       <div id="recentList" class="recent-list">
-        <div class="recent-empty">Aún no has enviado órdenes.</div>
+        <div class="recent-empty">{{ t('salon.sin_ordenes') }}</div>
       </div>
-      <button type="button" id="recentToggle" class="recent-toggle" style="display:none;">Ver más</button>
-      <button type="button" id="cancelLastBtn" class="recent-cancel-last">🚫 Cancelar última orden enviada</button>
+      <button type="button" id="recentToggle" class="recent-toggle" style="display:none;">{{ t('salon.ver_mas') }}</button>
+      <button type="button" id="cancelLastBtn" class="recent-cancel-last">{{ t('salon.cancelar_ultima') }}</button>
     </div>
   </aside>
 </div>
@@ -224,19 +224,19 @@
 </style>
 
 <section style="margin-top:32px;">
-  <h2 style="font-size:32px;margin-bottom:16px;">Pedidos de salón</h2>
+  <h2 style="font-size:32px;margin-bottom:16px;">{{ t('salon.pedidos_salon') }}</h2>
   <div id="kitchenInternalOrders" style="display:flex;flex-direction:column;gap:16px;">
-    <div style="text-align:center;padding:30px;font-size:24px;color:#6c757d;">No hay pedidos de salón.</div>
+    <div style="text-align:center;padding:30px;font-size:24px;color:#6c757d;">{{ t('salon.no_pedidos_salon') }}</div>
   </div>
 </section>
 </div><!-- /.station-wrap -->
 <div class="modal-overlay" id="newProductModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;">
   <div style="background:var(--bg);border:1px solid var(--border);border-radius:24px;padding:32px;width:90%;max-width:520px;">
-    <h2 style="margin:0 0 20px;">Nuevo producto</h2>
-    <input id="newProductName" type="text" placeholder="Nombre del producto" autocomplete="off" style="width:100%;padding:18px;font-size:24px;border-radius:14px;border:1px solid var(--border);background:#10141b;color:#fff;margin-bottom:20px;" />
+    <h2 style="margin:0 0 20px;">{{ t('common.nuevo_producto_t') }}</h2>
+    <input id="newProductName" type="text" placeholder="{{ t('common.nombre_producto') }}" autocomplete="off" style="width:100%;padding:18px;font-size:24px;border-radius:14px;border:1px solid var(--border);background:#10141b;color:#fff;margin-bottom:20px;" />
     <div style="display:flex;gap:14px;">
-      <button class="action primary" id="newProductSaveBtn" style="flex:1;min-height:64px;font-size:24px;">Crear</button>
-      <button class="action" id="newProductCancelBtn" style="flex:1;min-height:64px;font-size:24px;background:rgba(228,91,91,0.18);color:var(--red);">Cancelar</button>
+      <button class="action primary" id="newProductSaveBtn" style="flex:1;min-height:64px;font-size:24px;">{{ t('common.crear') }}</button>
+      <button class="action" id="newProductCancelBtn" style="flex:1;min-height:64px;font-size:24px;background:rgba(228,91,91,0.18);color:var(--red);">{{ t('common.cancelar') }}</button>
     </div>
   </div>
 </div>
@@ -251,5 +251,5 @@ window.STATION_AUDIO = {
   volume: {{ settings.master_volume if settings else 1.0 }}
 };
 </script>
-<script src="/static/js/station.js?v=reactivar"></script>
+<script src="/static/js/station.js?v=i18n"></script>
 {% endblock %}
