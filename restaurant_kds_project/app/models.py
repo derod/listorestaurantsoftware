@@ -500,3 +500,21 @@ class PestControlRecord(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now, index=True)
 
     area = relationship("CleaningArea")
+
+
+class SanitaryInspection(Base):
+    """Snapshot de una autoinspección (basada en la Guía de Inspección, DAC anexo
+    9 del Decreto 37308-S). Guarda la calificación y las respuestas para dejar
+    evidencia y ver la evolución. Auditable: no se edita ni borra desde la UI."""
+    __tablename__ = "sanitary_inspections"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    score: Mapped[int] = mapped_column(Integer, default=0)          # puntos obtenidos
+    possible: Mapped[int] = mapped_column(Integer, default=0)       # puntos aplicables (excluye "no aplica")
+    score_pct: Mapped[int] = mapped_column(Integer, default=0)      # 0..100
+    rating: Mapped[str | None] = mapped_column(String(40), nullable=True)  # etiqueta del rango
+    critical_fail: Mapped[bool] = mapped_column(Boolean, default=False)    # falló algún punto crítico
+    answers_json: Mapped[str | None] = mapped_column(Text, nullable=True)  # {"A#0":"cumple", ...}
+    section_json: Mapped[str | None] = mapped_column(Text, nullable=True)  # resumen por sección
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now, index=True)

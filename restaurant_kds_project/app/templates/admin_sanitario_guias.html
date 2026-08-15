@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Guías y Cumplimiento</h1>
+{% include '_sanitario_admin_nav.html' %}
+
+<style>
+  .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px 22px; margin-bottom:20px; }
+  .card h2 { margin:0 0 12px; font-size:20px; }
+  .doc { border:1px solid var(--border); border-radius:14px; padding:16px 18px; margin-bottom:14px; }
+  .doc .kind { font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; color:var(--green); }
+  .doc .dt { font-size:19px; font-weight:800; margin:4px 0 6px; }
+  .doc .sum { color:#c8cfdb; font-size:15px; line-height:1.5; }
+  .doc .maps { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .doc .maps span { font-size:13px; background:var(--muted); border:1px solid var(--border); border-radius:999px; padding:5px 12px; }
+  .doc .dl { display:inline-flex; align-items:center; gap:8px; margin-top:12px; min-height:46px; padding:0 18px; border-radius:12px; background:rgba(76,175,80,0.16); color:var(--green); border:1px solid rgba(76,175,80,0.4); font-weight:800; text-decoration:none; }
+  .doc .missing { color:var(--muted); font-size:13px; margin-top:10px; }
+  .tips { list-style:none; padding:0; margin:0; }
+  .tips li { padding:10px 0 10px 30px; position:relative; border-bottom:1px solid var(--border); font-size:16px; }
+  .tips li:last-child { border-bottom:none; }
+  .tips li::before { content:"✓"; position:absolute; left:4px; color:var(--green); font-weight:900; }
+
+  .calc { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; align-items:end; }
+  .calc label { display:block; font-size:13px; color:#9aa6bd; margin-bottom:5px; font-weight:700; }
+  .calc input { width:100%; min-height:52px; border-radius:12px; border:1px solid var(--border); background:#10141b; color:var(--text); padding:10px 14px; font-size:18px; }
+  .calc-out { background:#10141b; border:2px solid rgba(76,175,80,0.4); border-radius:14px; padding:16px; text-align:center; }
+  .calc-out .big { font-size:38px; font-weight:900; color:var(--green); }
+  .calc-out .sub { color:#9aa6bd; font-size:14px; }
+  table.ref { width:100%; border-collapse:collapse; margin-top:14px; }
+  table.ref th, table.ref td { text-align:left; padding:10px; border-bottom:1px solid var(--border); font-size:14px; }
+  table.ref th { color:#9aa6bd; font-size:12px; text-transform:uppercase; }
+  .warn { background:rgba(255,210,77,0.08); border:1px solid rgba(255,210,77,0.3); border-radius:10px; padding:12px 14px; font-size:14px; color:#d9cfa3; margin-top:14px; }
+</style>
+
+<div class="card">
+  <h2>Documentos oficiales</h2>
+  {% for d in docs %}
+  <div class="doc">
+    <div class="kind">{{ d.kind }}</div>
+    <div class="dt">{{ d.title }}</div>
+    <div class="sum">{{ d.summary }}</div>
+    <div class="maps">{% for m in d.maps %}<span>→ {{ m }}</span>{% endfor %}</div>
+    {% if d.exists %}
+    <a class="dl" href="{{ d.url }}" target="_blank" rel="noopener">⬇ Descargar / ver</a>
+    {% else %}
+    <div class="missing">Archivo no encontrado en el servidor ({{ d.file }}).</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <h2>🧪 Calculadora de cloro (hipoclorito de sodio)</h2>
+  <p style="color:#9aa6bd;font-size:15px;margin:0 0 14px;">{{ chlorine.commercial_range }} Fórmula: <strong>ml de cloro por litro = solución deseada % ÷ concentración del cloro % × 1000</strong>.</p>
+  <div class="calc">
+    <div><label>Concentración del cloro (%)</label><input type="number" id="bleach" step="0.1" value="5" /></div>
+    <div><label>Solución deseada (%)</label><input type="number" id="target" step="0.01" value="0.1" /></div>
+    <div class="calc-out"><div class="big" id="mlOut">20</div><div class="sub">ml de cloro por 1 litro de agua</div></div>
+  </div>
+  <table class="ref">
+    <thead><tr><th>Uso</th><th>Solución</th><th>Referencia</th></tr></thead>
+    <tbody>
+      {% for ex in chlorine.examples %}
+      <tr><td>{{ ex.use }}</td><td>{{ ex.target }}%</td><td>{{ ex.hint }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="warn">⚠️ {{ chlorine.note }}</div>
+</div>
+
+<div class="card">
+  <h2>Procedimiento correcto (recordatorios)</h2>
+  <ul class="tips">
+    {% for t in tips %}<li>{{ t }}</li>{% endfor %}
+  </ul>
+</div>
+
+<script>
+  (function () {
+    const b = document.getElementById("bleach");
+    const t = document.getElementById("target");
+    const out = document.getElementById("mlOut");
+    function calc() {
+      const bv = parseFloat(b.value), tv = parseFloat(t.value);
+      if (!bv || bv <= 0 || !tv || tv <= 0) { out.textContent = "—"; return; }
+      const ml = tv / bv * 1000;
+      out.textContent = (ml >= 100 ? Math.round(ml) : Math.round(ml * 10) / 10);
+    }
+    b.addEventListener("input", calc); t.addEventListener("input", calc); calc();
+  })();
+</script>
+{% endblock %}

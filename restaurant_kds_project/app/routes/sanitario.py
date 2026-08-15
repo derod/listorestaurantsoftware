@@ -14,6 +14,7 @@ originales (created_at/started_at/completed_at/verified_at) no se editan.
 from __future__ import annotations
 
 import io as _io
+import json as _json
 from datetime import datetime, date, timedelta
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
@@ -26,10 +27,13 @@ from ..database import get_db
 from ..models import (
     Waiter, FacturaConfig,
     CleaningArea, CleaningTask, CleaningRecord, CleaningIncident,
-    TemperatureEquipment, TemperatureRecord, PestControlRecord,
+    TemperatureEquipment, TemperatureRecord, PestControlRecord, SanitaryInspection,
     cr_now, cr_today,
     CLEANING_FREQUENCIES, CLEANING_MOMENTS, CLEANING_RECORD_STATES,
     INCIDENT_PRIORITIES, INCIDENT_STATES, TEMP_EQUIPMENT_KINDS, PEST_STATES,
+)
+from ..sanitario_data import (
+    INSPECTION_SECTIONS, INSPECTION_RANGES, CHLORINE_REFERENCE, PROCEDURE_TIPS, GUIDE_DOCS,
 )
 # Reutiliza plantillas (con globals i18n) y helpers de auth/auditoría existentes.
 from .web import templates, require_admin, require_waiter, record_access, clock_in, clock_out
@@ -1143,6 +1147,118 @@ def admin_reportes_pdf(request: Request, desde: str = "", hasta: str = "", db: S
         _io.BytesIO(pdf), media_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename={fname}"},
     )
+
+
+# ─── guías y cumplimiento ─────────────────────────────────────────────────────
+
+@router.get("/admin/sanitario/guias")
+def admin_guias(request: Request, db: Session = Depends(get_db)):
+    g = _admin_guard(request)
+    if g:
+        return g
+    # ¿Qué documentos existen físicamente? (para no mostrar enlaces rotos)
+    from ..database import DATA_DIR
+    docdir = DATA_DIR / "uploads" / "documentation"
+    docs = []
+    for d in GUIDE_DOCS:
+        exists = (docdir / d["file"]).exists()
+        docs.append({**d, "exists": exists, "url": f"/uploads/documentation/{d['file']}"})
+    return templates.TemplateResponse(
+        "admin_sanitario_guias.html",
+        {
+            "request": request, "page_title": "Guías y Cumplimiento",
+            "docs": docs, "tips": PROCEDURE_TIPS, "chlorine": CHLORINE_REFERENCE,
+        },
+    )
+
+
+# ─── autoinspección (Guía de Inspección DAC anexo 9) ──────────────────────────
+
+def _score_inspection(answers: dict):
+    """Recalcula la calificación en el servidor a partir de las respuestas.
+    answers: { 'A-0': 'cumple'|'no_cumple'|'no_aplica', ... }. Devuelve el
+    resumen total y por sección (no confía en el cálculo del cliente)."""
+    score = 0
+    possible = 0
+    critical_fail = False
+    sections = []
+    for s in INSPECTION_SECTIONS:
+        s_score = s_possible = 0
+        for i, item in enumerate(s["items"]):
+            ans = answers.get(f"{s['letter']}-{i}", "")
+            pts = int(item.get("points") or 0)
+            if ans == "cumple":
+                s_score += pts
+                s_possible += pts
+            elif ans == "no_cumple":
+                s_possible += pts
+                if item.get("critical"):
+                    critical_fail = True
+        score += s_score
+        possible += s_possible
+        sections.append({
+            "letter": s["letter"], "title": s["title"],
+            "score": s_score, "possible": s_possible,
+            "pct": round(s_score / s_possible * 100) if s_possible else None,
+        })
+    pct = round(score / possible * 100) if possible else 0
+    rating = next((r for r in INSPECTION_RANGES if r["min"] <= pct <= r["max"]), None)
+    return {
+        "score": score, "possible": possible, "pct": pct,
+        "rating": rating["label"] if rating else None,
+        "color": rating["color"] if rating else "red",
+        "critical_fail": critical_fail, "sections": sections,
+    }
+
+
+@router.get("/admin/sanitario/autoinspeccion")
+def admin_autoinspeccion(request: Request, db: Session = Depends(get_db)):
+    g = _admin_guard(request)
+    if g:
+        return g
+    last = db.query(SanitaryInspection).order_by(SanitaryInspection.created_at.desc()).first()
+    history = (
+        db.query(SanitaryInspection).order_by(SanitaryInspection.created_at.desc()).limit(10).all()
+    )
+    last_answers = {}
+    if last and last.answers_json:
+        try:
+            last_answers = _json.loads(last.answers_json)
+        except (ValueError, TypeError):
+            last_answers = {}
+    return templates.TemplateResponse(
+        "admin_sanitario_autoinspeccion.html",
+        {
+            "request": request, "page_title": "Autoinspección",
+            "sections": INSPECTION_SECTIONS, "ranges": INSPECTION_RANGES,
+            "last_answers": last_answers, "last": last, "history": history,
+        },
+    )
+
+
+class InspectionSave(BaseModel):
+    answers: dict
+    notes: str | None = None
+
+
+@router.post("/admin/sanitario/autoinspeccion/guardar")
+def admin_autoinspeccion_guardar(payload: InspectionSave, request: Request, db: Session = Depends(get_db)):
+    if not require_admin(request):
+        raise HTTPException(401, "Admin session required")
+    valid = {"cumple", "no_cumple", "no_aplica"}
+    answers = {str(k): str(v) for k, v in (payload.answers or {}).items() if str(v) in valid}
+    res = _score_inspection(answers)
+    snap = SanitaryInspection(
+        score=res["score"], possible=res["possible"], score_pct=res["pct"],
+        rating=res["rating"], critical_fail=res["critical_fail"],
+        answers_json=_json.dumps(answers, ensure_ascii=False),
+        section_json=_json.dumps(res["sections"], ensure_ascii=False),
+        notes=(payload.notes or "").strip() or None,
+        created_by="Admin",
+    )
+    db.add(snap)
+    db.commit()
+    return {"ok": True, **res, "id": snap.id}
 
 
 # ─── utilidades ───────────────────────────────────────────────────────────────
