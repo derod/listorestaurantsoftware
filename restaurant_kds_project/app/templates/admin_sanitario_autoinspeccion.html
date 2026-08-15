@@ -45,6 +45,16 @@
   .hist th { color:#9aa6bd; font-size:12px; text-transform:uppercase; }
   .pill { font-size:12px; font-weight:800; padding:3px 10px; border-radius:999px; }
   .pill.green { background:rgba(76,175,80,0.16); color:var(--green); } .pill.yellow { background:rgba(255,210,77,0.16); color:var(--yellow); } .pill.red { background:rgba(228,91,91,0.18); color:var(--red); }
+
+  @media (max-width: 760px) {
+    /* No fijar la barra de puntaje en móvil (ocupa mucho alto al envolverse) */
+    .scorebar { position:static; }
+    .score-pct { font-size:40px; }
+    .save-btn { flex:1 0 100%; }         /* botón a ancho completo, fácil de tocar */
+    .item .txt { min-width:0; flex:1 1 100%; }
+    .btns { width:100%; }
+    .btns button { flex:1; }             /* Cumple / No cumple / N/A repartidos */
+  }
 </style>
 
 <p class="intro">Basado en la <strong>Guía de Inspección oficial</strong> (DAC anexo 9, Decreto 37308-S). Marca cada ítem como <strong>Cumple</strong>, <strong>No cumple</strong> o <strong>No aplica</strong>. La nota se calcula sola. Sirve para <strong>pre-inspeccionarte</strong> antes de la visita del Ministerio de Salud. Los puntos críticos exactos deben confirmarse contra la guía oficial.</p>

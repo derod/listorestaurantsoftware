@@ -1,8 +1,22 @@
 <style>
   .san-nav { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:22px; }
-  .san-nav a { padding:9px 16px; border-radius:10px; background:var(--muted); color:var(--text); text-decoration:none; font-size:15px; font-weight:700; border:1px solid var(--border); }
+  .san-nav a { padding:9px 16px; border-radius:10px; background:var(--muted); color:var(--text); text-decoration:none; font-size:15px; font-weight:700; border:1px solid var(--border); white-space:nowrap; }
   .san-nav a.on { background:var(--green); color:#08210c; border-color:var(--green); }
   .san-nav a:hover { border-color:var(--green); }
+
+  /* ── Responsive del módulo sanitario (tablet/iPad y teléfono) ───────────
+     Se incluye en todas las páginas admin del módulo. */
+  @media (max-width: 760px) {
+    /* Pestañas en una sola fila deslizable en lugar de apilarse */
+    .san-nav { flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:6px; margin-bottom:16px; }
+    .san-nav a { flex:0 0 auto; }
+    /* Formularios de 2 y 3 columnas → una sola columna */
+    .grid2, .grid3 { grid-template-columns: 1fr !important; }
+    /* Tablas anchas → scroll horizontal propio (body tiene overflow-x:hidden) */
+    table.tbl, table.ref, .hist table { display:block; overflow-x:auto; -webkit-overflow-scrolling:touch; max-width:100%; }
+    /* Tarjetas: permiten desborde horizontal de su contenido */
+    .card { overflow-x:auto; }
+  }
 </style>
 {% set _p = request.url.path %}
 <div class="san-nav">

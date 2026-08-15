@@ -70,6 +70,15 @@
 
     .saved { position:fixed; top:18px; left:50%; transform:translateX(-50%) translateY(-20px); background:var(--green); color:#08210c; font-weight:800; padding:10px 20px; border-radius:12px; opacity:0; transition:opacity .2s, transform .2s; z-index:100; pointer-events:none; }
     .saved.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+    @media (max-width: 600px) {
+      .area-body { padding:14px 14px 6px; }
+      .tcfg { flex-direction:column; }
+      .tcfg label, .tcfg select, .tcfg input { width:100%; }
+      .tcfg label[data-role="times-wrap"] { max-width:none; }
+      .actions { padding:12px 14px; }
+      .btn { font-size:17px; }
+    }
   </style>
 </head>
 <body>
