@@ -1,0 +1,18 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Logs
+*.log
+
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Sistema operativo / editor
+.DS_Store
+Thumbs.db
+
+# Nota: restaurant_kds.db SÍ se versiona a propósito (datos demo de SODA SILVIA),
+# por eso NO se ignora aquí.
