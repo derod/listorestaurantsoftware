@@ -1,5 +1,5 @@
-from datetime import datetime, timedelta
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, Float
+from datetime import datetime, timedelta, date
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .database import Base
 
@@ -347,3 +347,156 @@ class Table(Base):
     pos_x: Mapped[float | None] = mapped_column(Float, nullable=True)  # posición en el plano (0-100 %)
     pos_y: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
+
+
+# ─── Control Sanitario / Higiene y Limpieza ──────────────────────────────────
+# Programa de Higiene y Desinfección (concepto operativo Reglamento 37308-S CR).
+# Módulo single-tenant, coherente con el resto de LISTO (un solo negocio).
+
+def cr_today() -> date:
+    """Fecha actual en zona de Costa Rica (UTC-6)."""
+    return cr_now().date()
+
+
+# Enums (whitelists validadas también en el backend).
+CLEANING_FREQUENCIES = ["diaria", "varias_dia", "semanal", "segun_programacion"]
+CLEANING_MOMENTS = ["apertura", "durante", "cierre", "otro"]
+CLEANING_RECORD_STATES = ["pendiente", "en_proceso", "completada", "vencida", "verificada"]
+INCIDENT_PRIORITIES = ["baja", "media", "alta", "critica"]
+INCIDENT_STATES = ["abierta", "en_proceso", "resuelta"]
+TEMP_EQUIPMENT_KINDS = ["refrigerador", "congelador", "equipo", "bano_maria"]
+PEST_STATES = ["sin_evidencia", "activo", "controlado", "resuelto"]
+
+
+class CleaningArea(Base):
+    """Área física del establecimiento (Cocina, Baños, Campana…)."""
+    __tablename__ = "cleaning_areas"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    display_order: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
+
+    tasks = relationship("CleaningTask", back_populates="area")
+
+
+class CleaningTask(Base):
+    """Definición del protocolo: una tarea de limpieza/desinfección de un área.
+    La concentración y el tiempo de contacto se configuran según la ficha técnica
+    del producto (no se inventan)."""
+    __tablename__ = "cleaning_tasks"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    area_id: Mapped[int] = mapped_column(ForeignKey("cleaning_areas.id"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    procedure: Mapped[str | None] = mapped_column(Text, nullable=True)  # pasos, uno por línea
+    frequency: Mapped[str] = mapped_column(String(30), default="diaria")  # ver CLEANING_FREQUENCIES
+    times_per_day: Mapped[int] = mapped_column(Integer, default=1)  # para "varias_dia"
+    weekday: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 0=Lun … 6=Dom (para "semanal")
+    moment: Mapped[str | None] = mapped_column(String(20), nullable=True)  # ver CLEANING_MOMENTS
+    responsible: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    product: Mapped[str | None] = mapped_column(String(200), nullable=True)      # producto de limpieza
+    concentration: Mapped[str | None] = mapped_column(String(120), nullable=True)  # según ficha técnica
+    contact_time: Mapped[str | None] = mapped_column(String(120), nullable=True)   # según ficha técnica
+    observations: Mapped[str | None] = mapped_column(Text, nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now, onupdate=cr_now)
+
+    area = relationship("CleaningArea", back_populates="tasks")
+    records = relationship("CleaningRecord", back_populates="task")
+
+
+class CleaningRecord(Base):
+    """Ejecución (o programación) de una tarea en un día. Auditable: los tiempos
+    originales (created_at, started_at, completed_at, verified_at) no se editan."""
+    __tablename__ = "cleaning_records"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    task_id: Mapped[int] = mapped_column(ForeignKey("cleaning_tasks.id"), nullable=False, index=True)
+    scheduled_date: Mapped[date] = mapped_column(Date, default=cr_today, index=True)
+    slot: Mapped[int] = mapped_column(Integer, default=0)  # turno del día (0..times_per_day-1)
+    status: Mapped[str] = mapped_column(String(20), default="pendiente", index=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    confirmed: Mapped[bool] = mapped_column(Boolean, default=False)  # confirmó el procedimiento
+    observations: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(200), nullable=True)  # snapshot del nombre
+    # Verificación (solo Admin) — fusiona el concepto CleaningVerification.
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    verified_by: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    verified_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now, onupdate=cr_now)
+
+    task = relationship("CleaningTask", back_populates="records")
+
+
+class CleaningIncident(Base):
+    """Incidencia sanitaria y su acción correctiva."""
+    __tablename__ = "cleaning_incidents"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    area_id: Mapped[int | None] = mapped_column(ForeignKey("cleaning_areas.id"), nullable=True, index=True)
+    problem: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    priority: Mapped[str] = mapped_column(String(20), default="media", index=True)  # ver INCIDENT_PRIORITIES
+    reported_by_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    reported_by: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    corrective_action: Mapped[str | None] = mapped_column(Text, nullable=True)
+    responsible: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="abierta", index=True)  # ver INCIDENT_STATES
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now, index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now, onupdate=cr_now)
+
+    area = relationship("CleaningArea")
+
+
+class TemperatureEquipment(Base):
+    """Equipo con control de temperatura y su rango configurable (no hardcodeado)."""
+    __tablename__ = "temperature_equipments"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    kind: Mapped[str] = mapped_column(String(20), default="refrigerador")  # ver TEMP_EQUIPMENT_KINDS
+    min_temp: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_temp: Mapped[float | None] = mapped_column(Float, nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
+
+    records = relationship("TemperatureRecord", back_populates="equipment")
+
+
+class TemperatureRecord(Base):
+    """Lectura de temperatura de un equipo. out_of_range se calcula al guardar."""
+    __tablename__ = "temperature_records"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    equipment_id: Mapped[int] = mapped_column(ForeignKey("temperature_equipments.id"), nullable=False, index=True)
+    temperature: Mapped[float] = mapped_column(Float, nullable=False)
+    out_of_range: Mapped[bool] = mapped_column(Boolean, default=False)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now, index=True)
+    created_by_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    observations: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
+
+    equipment = relationship("TemperatureEquipment", back_populates="records")
+
+
+class PestControlRecord(Base):
+    """Registro de inspección/control de plagas."""
+    __tablename__ = "pest_control_records"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    inspection_date: Mapped[date] = mapped_column(Date, default=cr_today, index=True)
+    area_id: Mapped[int | None] = mapped_column(ForeignKey("cleaning_areas.id"), nullable=True, index=True)
+    pest_type: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    evidence: Mapped[str | None] = mapped_column(Text, nullable=True)
+    action_taken: Mapped[str | None] = mapped_column(Text, nullable=True)
+    responsible: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="sin_evidencia", index=True)  # ver PEST_STATES
+    observations: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now, index=True)
+
+    area = relationship("CleaningArea")

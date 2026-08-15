@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Verificaciones</h1>
+{% include '_sanitario_admin_nav.html' %}
+
+<style>
+  .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:18px 20px; margin-bottom:20px; }
+  .card h2 { margin:0 0 14px; font-size:20px; }
+  .ver-row { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; padding:14px; border:1px solid var(--border); border-radius:12px; margin-bottom:12px; }
+  .ver-row .info .name { font-size:18px; font-weight:800; }
+  .ver-row .info .sub { font-size:14px; color:#9aa6bd; margin-top:3px; }
+  .ver-row form { display:flex; gap:10px; align-items:center; }
+  .ver-row input[type=text] { min-height:44px; border-radius:10px; border:1px solid var(--border); background:#10141b; color:var(--text); padding:8px 12px; font-size:15px; width:220px; }
+  .btn { min-height:44px; padding:0 18px; border:none; border-radius:10px; font-size:15px; font-weight:800; cursor:pointer; }
+  .btn.ok { background:var(--green); color:#08210c; }
+  .empty { color:#9aa6bd; }
+  .recent li { display:flex; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); list-style:none; font-size:15px; }
+  .recent { padding:0; margin:0; }
+  .note { color:#9aa6bd; font-size:13px; margin-top:6px; }
+</style>
+
+<div class="card">
+  <h2>Pendientes de verificar ({{ pendientes|length }})</h2>
+  <p class="note">Solo el administrador puede verificar. Verificar registra fecha, hora y "Admin" como verificador.</p>
+  {% for r in pendientes %}
+  <div class="ver-row">
+    <div class="info">
+      <div class="name">{{ r.task.area.name if r.task and r.task.area else '—' }} — {{ r.task.name if r.task else '—' }}</div>
+      <div class="sub">Realizada por {{ r.created_by or '—' }}{% if r.completed_at %} · {{ r.completed_at.strftime('%d/%m/%Y %H:%M') }}{% endif %}{% if r.observations %} · 📝 {{ r.observations }}{% endif %}</div>
+    </div>
+    <form method="post" action="/admin/sanitario/registro/{{ r.id }}/verificar">
+      <input type="text" name="notes" placeholder="Observación (opcional)" />
+      <button type="submit" class="btn ok">✓ Verificar</button>
+    </form>
+  </div>
+  {% else %}
+  <p class="empty">No hay limpiezas completadas pendientes de verificación.</p>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <h2>Verificaciones recientes</h2>
+  <ul class="recent">
+    {% for r in recientes %}
+    <li>
+      <span>{{ r.task.area.name if r.task and r.task.area else '—' }} — {{ r.task.name if r.task else '—' }}
+        <div class="note">Realizó {{ r.created_by or '—' }}{% if r.completed_at %} ({{ r.completed_at.strftime('%H:%M') }}){% endif %}{% if r.verified_notes %} · {{ r.verified_notes }}{% endif %}</div>
+      </span>
+      <span style="color:var(--green);font-weight:700;white-space:nowrap;">✓ {{ r.verified_by }} · {{ r.verified_at.strftime('%d/%m %H:%M') }}</span>
+    </li>
+    {% else %}
+    <li class="empty">Sin verificaciones aún.</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

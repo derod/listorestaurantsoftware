@@ -129,6 +129,7 @@
   .hub-card.admin   { --hue: #f87171; }
   .hub-card.inv     { --hue: #38bdf8; }
   .hub-card.pos     { --hue: #a78bfa; }
+  .hub-card.sanitario { --hue: #34d399; }
 
   /* ── Icon ───────────────────────────────────────────────────────── */
   .hub-icon {
@@ -366,6 +367,18 @@
         </div>
         <div class="hub-label">{{ t('hub.pos') }}</div>
         <div class="hub-desc">{{ t('hub.pos_desc') }}</div>
+        <div class="hub-card-footer">
+          <span class="hub-enter">{{ t('hub.abrir') }}</span>
+          <div class="hub-chevron"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+        </div>
+      </a>
+
+      <a href="/sanitario" class="hub-card sanitario">
+        <div class="hub-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2l7 3v6c0 4.5-3 8-7 11-4-3-7-6.5-7-11V5l7-3z"/><path d="M9 12l2 2 4-4"/></svg>
+        </div>
+        <div class="hub-label">Control Sanitario</div>
+        <div class="hub-desc">Higiene y limpieza · registra tus tareas del día</div>
         <div class="hub-card-footer">
           <span class="hub-enter">{{ t('hub.abrir') }}</span>
           <div class="hub-chevron"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>

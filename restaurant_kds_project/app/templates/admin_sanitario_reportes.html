@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Reporte sanitario</h1>
+{% include '_sanitario_admin_nav.html' %}
+
+<style>
+  .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:24px; max-width:620px; }
+  .card h2 { margin:0 0 8px; }
+  .card p { color:#9aa6bd; font-size:15px; }
+  .row { display:flex; gap:16px; flex-wrap:wrap; align-items:end; margin:18px 0; }
+  .fld label { display:block; font-size:14px; color:#9aa6bd; margin-bottom:6px; }
+  .fld input { min-height:50px; border-radius:12px; border:1px solid var(--border); background:#10141b; color:var(--text); padding:10px 14px; font-size:17px; }
+  .btn { min-height:56px; padding:0 28px; border:none; border-radius:14px; font-size:19px; font-weight:800; cursor:pointer; background:var(--green); color:#08210c; text-decoration:none; display:inline-flex; align-items:center; }
+  .included { margin-top:20px; }
+  .included ul { columns:2; color:#c8cfdb; font-size:15px; line-height:1.9; }
+  @media(max-width:520px){ .included ul { columns:1; } }
+</style>
+
+<div class="card">
+  <h2>Generar reporte sanitario (PDF)</h2>
+  <p>Documento con el establecimiento, período, protocolo vigente, registros de limpieza,
+     verificaciones, incidencias, temperaturas y control de plagas.</p>
+  <form method="get" action="/admin/sanitario/reportes/pdf" target="_blank">
+    <div class="row">
+      <div class="fld"><label>Desde</label><input type="date" name="desde" value="{{ default_from }}" /></div>
+      <div class="fld"><label>Hasta</label><input type="date" name="hasta" value="{{ default_to }}" /></div>
+      <button type="submit" class="btn">📄 Generar reporte sanitario</button>
+    </div>
+  </form>
+  <div class="included">
+    <strong style="color:#c8cfdb;">El reporte incluye:</strong>
+    <ul>
+      <li>Nombre del establecimiento</li>
+      <li>Período</li>
+      <li>Protocolo vigente</li>
+      <li>Áreas y tareas</li>
+      <li>Frecuencias</li>
+      <li>Registros realizados</li>
+      <li>Usuarios responsables</li>
+      <li>Verificaciones</li>
+      <li>Incidencias y acciones</li>
+      <li>Temperaturas</li>
+      <li>Control de plagas</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

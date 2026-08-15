@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Control de plagas</h1>
+{% include '_sanitario_admin_nav.html' %}
+
+<style>
+  .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:18px 20px; margin-bottom:22px; }
+  .card h2 { margin:0 0 14px; font-size:20px; }
+  .fld { margin-bottom:12px; }
+  .fld label { display:block; font-size:13px; color:#9aa6bd; margin-bottom:5px; }
+  .fld input, .fld select, .fld textarea { width:100%; min-height:46px; border-radius:10px; border:1px solid var(--border); background:#10141b; color:var(--text); padding:9px 12px; font-size:15px; }
+  .grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .btn { min-height:46px; padding:0 18px; border:none; border-radius:10px; font-size:15px; font-weight:800; cursor:pointer; }
+  .btn.primary { background:var(--green); color:#08210c; }
+  table.tbl { width:100%; border-collapse:collapse; }
+  table.tbl th, table.tbl td { text-align:left; padding:10px; border-bottom:1px solid var(--border); font-size:14px; vertical-align:top; }
+  table.tbl th { color:#9aa6bd; font-size:12px; text-transform:uppercase; }
+  .badge { font-size:12px; font-weight:800; padding:3px 10px; border-radius:999px; }
+  .badge.sin_evidencia { background:rgba(76,175,80,0.16); color:var(--green); }
+  .badge.activo { background:rgba(228,91,91,0.2); color:var(--red); }
+  .badge.controlado { background:rgba(255,210,77,0.16); color:var(--yellow); }
+  .badge.resuelto { background:rgba(77,163,255,0.16); color:var(--blue); }
+  .inline-form select { min-height:36px; border-radius:8px; border:1px solid var(--border); background:#10141b; color:var(--text); font-size:13px; }
+</style>
+
+<div class="card">
+  <h2>Registrar inspección</h2>
+  <form method="post" action="/admin/sanitario/plagas">
+    <div class="grid3">
+      <div class="fld"><label>Fecha de inspección</label><input type="date" name="inspection_date" /></div>
+      <div class="fld"><label>Área</label><select name="area_id"><option value="">General</option>{% for a in areas %}<option value="{{ a.id }}">{{ a.name }}</option>{% endfor %}</select></div>
+      <div class="fld"><label>Tipo de plaga</label><input type="text" name="pest_type" placeholder="Ej. roedores, insectos" /></div>
+    </div>
+    <div class="grid2">
+      <div class="fld"><label>Evidencia encontrada</label><textarea name="evidence"></textarea></div>
+      <div class="fld"><label>Acción tomada</label><textarea name="action_taken"></textarea></div>
+    </div>
+    <div class="grid3">
+      <div class="fld"><label>Responsable</label><input type="text" name="responsible" /></div>
+      <div class="fld"><label>Estado</label><select name="status">{% for s in states %}<option value="{{ s }}">{{ state_labels[s] }}</option>{% endfor %}</select></div>
+      <div class="fld"><label>Observaciones</label><input type="text" name="observations" /></div>
+    </div>
+    <button type="submit" class="btn primary">Registrar</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Historial de inspecciones</h2>
+  <table class="tbl">
+    <thead><tr><th>Fecha</th><th>Área</th><th>Tipo</th><th>Evidencia</th><th>Acción</th><th>Responsable</th><th>Estado</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.inspection_date.strftime('%d/%m/%Y') }}</td>
+        <td>{{ r.area.name if r.area else 'General' }}</td>
+        <td>{{ r.pest_type or '—' }}</td>
+        <td>{{ r.evidence or '—' }}</td>
+        <td>{{ r.action_taken or '—' }}</td>
+        <td>{{ r.responsible or '—' }}</td>
+        <td>
+          <form method="post" action="/admin/sanitario/plagas/{{ r.id }}/estado" class="inline-form" style="display:flex;gap:6px;align-items:center;">
+            <span class="badge {{ r.status }}">{{ state_labels.get(r.status, r.status) }}</span>
+            <select name="status" onchange="this.form.submit()">{% for s in states %}<option value="{{ s }}" {{ 'selected' if s==r.status else '' }}>{{ state_labels[s] }}</option>{% endfor %}</select>
+          </form>
+        </td>
+      </tr>
+      {% else %}<tr><td colspan="7" style="color:#9aa6bd;">Sin registros de control de plagas.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Control Sanitario</h1>
+{% include '_sanitario_admin_nav.html' %}
+
+<style>
+  .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:16px; margin-bottom:26px; }
+  .kpi { background:var(--card); border:2px solid var(--border); border-radius:18px; padding:22px; }
+  .kpi .lbl { font-size:15px; color:#9aa6bd; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; }
+  .kpi .val { font-size:44px; font-weight:900; line-height:1.1; margin-top:6px; }
+  .kpi.green { border-color:rgba(76,175,80,0.45); } .kpi.green .val { color:var(--green); }
+  .kpi.yellow { border-color:rgba(255,210,77,0.45); } .kpi.yellow .val { color:var(--yellow); }
+  .kpi.blue { border-color:rgba(77,163,255,0.45); } .kpi.blue .val { color:var(--blue); }
+  .kpi.red { border-color:rgba(228,91,91,0.5); } .kpi.red .val { color:var(--red); }
+  .prog-bar { height:18px; border-radius:10px; background:#10141b; overflow:hidden; margin-top:10px; border:1px solid var(--border); }
+  .prog-fill { height:100%; background:var(--green); }
+  .cols { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px,1fr)); gap:18px; }
+  .panel { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:18px 20px; }
+  .panel h2 { margin:0 0 12px; font-size:19px; }
+  .mini { list-style:none; padding:0; margin:0; }
+  .mini li { display:flex; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); font-size:16px; }
+  .mini li:last-child { border-bottom:none; }
+  .mini .sub { color:#9aa6bd; font-size:14px; }
+  .tag { font-size:12px; font-weight:800; padding:3px 10px; border-radius:999px; }
+  .tag.oor { background:rgba(228,91,91,0.2); color:var(--red); }
+  .tag.ok { background:rgba(76,175,80,0.18); color:var(--green); }
+</style>
+
+<div class="kpi-grid">
+  <div class="kpi"><div class="lbl">Programadas hoy</div><div class="val">{{ total }}</div></div>
+  <div class="kpi green"><div class="lbl">Completadas</div><div class="val">{{ completed }}</div></div>
+  <div class="kpi yellow"><div class="lbl">Pendientes</div><div class="val">{{ pending }}</div></div>
+  <div class="kpi blue"><div class="lbl">En proceso</div><div class="val">{{ in_proc }}</div></div>
+  <div class="kpi red"><div class="lbl">Vencidas</div><div class="val">{{ overdue }}</div></div>
+</div>
+
+<div class="panel" style="margin-bottom:26px;">
+  <div style="display:flex;align-items:baseline;justify-content:space-between;">
+    <h2 style="margin:0;">Cumplimiento de hoy</h2>
+    <div style="font-size:34px;font-weight:900;color:var(--green);">{{ pct }}%</div>
+  </div>
+  <div class="prog-bar"><div class="prog-fill" style="width:{{ pct }}%;"></div></div>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi {{ 'red' if inc_open else '' }}"><div class="lbl">Incidencias abiertas</div><div class="val">{{ inc_open }}</div></div>
+  <div class="kpi {{ 'red' if inc_crit else '' }}"><div class="lbl">Incidencias críticas</div><div class="val">{{ inc_crit }}</div></div>
+</div>
+
+<div class="cols">
+  <div class="panel">
+    <h2>Últimas verificaciones</h2>
+    <ul class="mini">
+      {% for r in last_verified %}
+      <li><span>{{ r.task.area.name if r.task and r.task.area else '—' }} · {{ r.task.name if r.task else '—' }}<div class="sub">✓ {{ r.verified_by }} — {{ r.verified_at.strftime('%d/%m %H:%M') }}</div></span></li>
+      {% else %}<li class="sub">Sin verificaciones aún.</li>{% endfor %}
+    </ul>
+  </div>
+  <div class="panel">
+    <h2>Últimas temperaturas</h2>
+    <ul class="mini">
+      {% for tr in last_temps %}
+      <li><span>{{ tr.equipment.name if tr.equipment else '—' }}<div class="sub">{{ tr.recorded_at.strftime('%d/%m %H:%M') }} · {{ tr.created_by or '—' }}</div></span>
+        <span>{{ tr.temperature }}°C {% if tr.out_of_range %}<span class="tag oor">FUERA</span>{% else %}<span class="tag ok">OK</span>{% endif %}</span></li>
+      {% else %}<li class="sub">Sin lecturas aún.</li>{% endfor %}
+    </ul>
+  </div>
+  <div class="panel">
+    <h2>Control de plagas</h2>
+    <ul class="mini">
+      {% for p in last_pests %}
+      <li><span>{{ p.area.name if p.area else 'General' }} · {{ p.pest_type or '—' }}<div class="sub">{{ p.inspection_date.strftime('%d/%m/%Y') }}</div></span>
+        <span class="sub">{{ pest_state_labels.get(p.status, p.status) }}</span></li>
+      {% else %}<li class="sub">Sin registros aún.</li>{% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

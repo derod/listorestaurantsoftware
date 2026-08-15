@@ -1,0 +1,49 @@
+{# Campos compartidos por el form de crear y editar tarea. Requiere en contexto:
+   areas, frequencies, freq_labels, moments, moment_labels, weekdays. #}
+<div class="grid2">
+  <div class="fld">
+    <label>Área *</label>
+    <select name="area_id" required>
+      <option value="">— Selecciona —</option>
+      {% for a in areas %}<option value="{{ a.id }}">{{ a.name }}{{ '' if a.active else ' (inactiva)' }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="fld"><label>Nombre de la tarea *</label><input type="text" name="name" required maxlength="200" placeholder="Ej. Limpieza y desinfección de superficies" /></div>
+</div>
+<div class="fld"><label>Descripción</label><input type="text" name="description" placeholder="Resumen corto" /></div>
+<div class="fld"><label>Procedimiento paso a paso (uno por línea)</label><textarea name="procedure" placeholder="Retirar residuos&#10;Lavar&#10;Enjuagar&#10;Desinfectar&#10;Respetar tiempo de contacto&#10;Secar&#10;Verificar"></textarea></div>
+<div class="grid3">
+  <div class="fld">
+    <label>Frecuencia</label>
+    <select name="frequency">
+      {% for f in frequencies %}<option value="{{ f }}">{{ freq_labels.get(f, f) }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="fld wrap-times">
+    <label>Veces al día</label>
+    <input type="number" name="times_per_day" min="1" max="12" value="1" />
+  </div>
+  <div class="fld wrap-weekday">
+    <label>Día (semanal)</label>
+    <select name="weekday">
+      <option value="">Cualquiera</option>
+      {% for i in range(7) %}<option value="{{ i }}">{{ weekdays[i] }}</option>{% endfor %}
+    </select>
+  </div>
+</div>
+<div class="grid3">
+  <div class="fld">
+    <label>Momento del día</label>
+    <select name="moment">
+      <option value="">—</option>
+      {% for m in moments %}<option value="{{ m }}">{{ moment_labels.get(m, m) }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="fld"><label>Responsable</label><input type="text" name="responsible" maxlength="200" /></div>
+  <div class="fld"><label>Producto de limpieza</label><input type="text" name="product" maxlength="200" /></div>
+</div>
+<div class="grid2">
+  <div class="fld"><label>Concentración (según ficha técnica)</label><input type="text" name="concentration" maxlength="120" placeholder="Ej. según fabricante" /></div>
+  <div class="fld"><label>Tiempo de contacto (según ficha técnica)</label><input type="text" name="contact_time" maxlength="120" /></div>
+</div>
+<div class="fld"><label>Observaciones</label><input type="text" name="observations" /></div>

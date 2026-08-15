@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .san-head { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; margin-bottom:18px; }
+  .san-head h1 { margin:0; }
+  .san-user { font-size:18px; color:#b7becd; }
+  .san-actions { display:flex; flex-wrap:wrap; gap:10px; }
+  .san-btn { display:inline-flex; align-items:center; gap:8px; min-height:52px; padding:0 20px; border-radius:14px; font-size:18px; font-weight:800; text-decoration:none; border:none; cursor:pointer; }
+  .san-btn.ghost { background:var(--muted); color:var(--text); }
+  .san-btn.warn { background:rgba(255,210,77,0.16); color:var(--yellow); border:1px solid rgba(255,210,77,0.4); }
+  .san-btn.blue { background:rgba(77,163,255,0.16); color:var(--blue); border:1px solid rgba(77,163,255,0.4); }
+  .san-btn.red  { background:rgba(228,91,91,0.16); color:var(--red); border:1px solid rgba(228,91,91,0.4); }
+
+  .prog-card { background:var(--card); border:2px solid var(--border); border-radius:20px; padding:22px 24px; margin-bottom:24px; }
+  .prog-top { display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .prog-num { font-size:44px; font-weight:900; }
+  .prog-pct { font-size:44px; font-weight:900; color:var(--green); }
+  .prog-bar { height:16px; border-radius:10px; background:#10141b; overflow:hidden; margin-top:14px; border:1px solid var(--border); }
+  .prog-fill { height:100%; background:var(--green); border-radius:10px; transition:width .3s; }
+
+  .san-section-title { font-size:20px; font-weight:900; letter-spacing:0.06em; text-transform:uppercase; margin:26px 0 14px; color:#9aa6bd; }
+  .task-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:14px; }
+  .task-card { display:flex; flex-direction:column; gap:6px; padding:20px; border-radius:18px; text-decoration:none; color:var(--text); background:var(--card); border:2px solid var(--border); transition:transform .12s, border-color .15s; }
+  .task-card:hover { transform:translateY(-2px); }
+  .task-card.pendiente { border-color:rgba(255,210,77,0.45); }
+  .task-card.en_proceso { border-color:rgba(77,163,255,0.6); }
+  .task-card.vencida { border-color:rgba(228,91,91,0.7); }
+  .task-area { font-size:14px; font-weight:800; letter-spacing:0.05em; text-transform:uppercase; color:#9aa6bd; }
+  .task-name { font-size:24px; font-weight:800; line-height:1.15; }
+  .task-meta { font-size:14px; color:#b7becd; margin-top:4px; }
+  .pill { display:inline-block; font-size:13px; font-weight:800; padding:4px 12px; border-radius:999px; margin-top:8px; align-self:flex-start; }
+  .pill.pendiente { background:rgba(255,210,77,0.18); color:var(--yellow); }
+  .pill.en_proceso { background:rgba(77,163,255,0.18); color:var(--blue); }
+  .pill.vencida { background:rgba(228,91,91,0.2); color:var(--red); }
+  .pill.completada, .pill.verificada { background:rgba(76,175,80,0.18); color:var(--green); }
+
+  .done-list { display:flex; flex-direction:column; gap:8px; }
+  .done-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 18px; background:var(--card); border:1px solid var(--border); border-radius:14px; }
+  .done-row .lbl { font-size:18px; font-weight:700; }
+  .done-row .sub { font-size:14px; color:#b7becd; }
+
+  .modal-ov { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:5000; align-items:center; justify-content:center; padding:20px; }
+  .modal-ov.open { display:flex; }
+  .modal-box { background:var(--bg); border:1px solid var(--border); border-radius:20px; padding:26px; width:100%; max-width:440px; }
+  .modal-box h3 { margin:0 0 16px; }
+  .fld { display:block; margin-bottom:14px; }
+  .fld label { display:block; font-size:15px; color:#b7becd; margin-bottom:6px; }
+  .fld input, .fld select, .fld textarea { width:100%; min-height:54px; border-radius:12px; border:1px solid var(--border); background:#10141b; color:var(--text); padding:10px 14px; font-size:18px; }
+</style>
+
+<div class="san-head">
+  <div>
+    <h1>Limpiezas de hoy</h1>
+    <div class="san-user">👤 {{ waiter_name }} · {{ today.strftime('%d/%m/%Y') }}</div>
+  </div>
+  <div class="san-actions">
+    <button class="san-btn blue" onclick="document.getElementById('tempModal').classList.add('open')">🌡️ Temperatura</button>
+    <a class="san-btn warn" href="/sanitario/incidencias/nueva">⚠️ Incidencia</a>
+    <a class="san-btn red" href="/sanitario/logout">Salir</a>
+  </div>
+</div>
+
+<div class="prog-card">
+  <div class="prog-top">
+    <div><div style="font-size:15px;color:#9aa6bd;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">Cumplimiento</div>
+      <div class="prog-num">{{ done }} / {{ total }} <span style="font-size:20px;color:#9aa6bd;font-weight:700;">completadas</span></div>
+    </div>
+    <div class="prog-pct">{{ pct }}%</div>
+  </div>
+  <div class="prog-bar"><div class="prog-fill" style="width:{{ pct }}%;"></div></div>
+</div>
+
+<div class="san-section-title">Pendientes ({{ pending|length }})</div>
+{% if pending %}
+<div class="task-grid">
+  {% for v in pending %}
+  <a class="task-card {{ v.status }}" href="/sanitario/tarea/{{ v.id }}">
+    <div class="task-area">{{ v.area }}</div>
+    <div class="task-name">{{ v.task }}</div>
+    <div class="task-meta">{{ v.frequency }}{% if v.moment %} · {{ v.moment }}{% endif %}{% if v.slot %} · Turno {{ v.slot + 1 }}{% endif %}</div>
+    <span class="pill {{ v.status }}">{{ v.status_label }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<p style="color:var(--green);font-size:20px;font-weight:700;">✓ ¡Todo al día! No hay limpiezas pendientes.</p>
+{% endif %}
+
+{% if completed %}
+<div class="san-section-title">Completadas ({{ completed|length }})</div>
+<div class="done-list">
+  {% for v in completed %}
+  <div class="done-row">
+    <div>
+      <div class="lbl">{{ v.area }} — {{ v.task }}</div>
+      <div class="sub">
+        {% if v.created_by %}{{ v.created_by }}{% endif %}
+        {% if v.completed_at %} · {{ v.completed_at.strftime('%H:%M') }}{% endif %}
+        {% if v.verified_by %} · ✓ Verificada por {{ v.verified_by }}{% endif %}
+      </div>
+    </div>
+    <span class="pill {{ v.status }}">{{ v.status_label }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Modal: registrar temperatura -->
+<div class="modal-ov" id="tempModal">
+  <div class="modal-box">
+    <h3>🌡️ Registrar temperatura</h3>
+    <form method="post" action="/sanitario/temperatura">
+      <div class="fld">
+        <label>Equipo</label>
+        <select name="equipment_id" id="tempEqSelect" required>
+          <option value="">Selecciona…</option>
+          {% for eq in equipos %}
+          <option value="{{ eq.id }}">{{ eq.name }}{% if eq.min_temp is not none or eq.max_temp is not none %} ({{ eq.min_temp if eq.min_temp is not none else '—' }} a {{ eq.max_temp if eq.max_temp is not none else '—' }} °C){% endif %}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="fld">
+        <label>Temperatura (°C)</label>
+        <input type="number" step="0.1" name="temperature" required inputmode="decimal" />
+      </div>
+      <div class="fld">
+        <label>Observaciones (opcional)</label>
+        <input type="text" name="observations" />
+      </div>
+      <div style="display:flex;gap:12px;">
+        <button type="button" class="san-btn ghost" style="flex:1;justify-content:center;" onclick="document.getElementById('tempModal').classList.remove('open')">Cancelar</button>
+        <button type="submit" class="san-btn blue" style="flex:1;justify-content:center;">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

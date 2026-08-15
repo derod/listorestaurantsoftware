@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .i-wrap { max-width:620px; margin:0 auto; }
+  .i-wrap h1 { margin-bottom:6px; }
+  .i-sub { color:#b7becd; font-size:17px; margin-bottom:20px; }
+  .fld { display:block; margin-bottom:16px; }
+  .fld label { display:block; font-size:16px; color:#b7becd; margin-bottom:6px; font-weight:700; }
+  .fld input, .fld select, .fld textarea { width:100%; min-height:56px; border-radius:12px; border:1px solid var(--border); background:#10141b; color:var(--text); padding:12px 14px; font-size:18px; }
+  .fld textarea { min-height:100px; }
+  .row-btns { display:flex; gap:12px; margin-top:8px; }
+  .btn { flex:1; min-height:60px; border:none; border-radius:14px; font-size:20px; font-weight:800; cursor:pointer; text-decoration:none; display:flex; align-items:center; justify-content:center; }
+  .btn.ghost { background:var(--muted); color:var(--text); }
+  .btn.warn { background:var(--yellow); color:#2a2100; }
+</style>
+
+<div class="i-wrap">
+  <a href="/sanitario/hoy" style="color:#b7becd;text-decoration:none;font-weight:700;">← Volver</a>
+  <h1>⚠️ Reportar incidencia</h1>
+  <div class="i-sub">Reporta un problema sanitario para que sea atendido.</div>
+
+  <form method="post" action="/sanitario/incidencias/nueva">
+    <div class="fld">
+      <label>Área</label>
+      <select name="area_id">
+        <option value="">— Sin área específica —</option>
+        {% for a in areas %}<option value="{{ a.id }}">{{ a.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="fld">
+      <label>Problema *</label>
+      <input type="text" name="problem" required maxlength="200" placeholder="Ej. Acumulación de grasa en campana" />
+    </div>
+    <div class="fld">
+      <label>Descripción</label>
+      <textarea name="description" placeholder="Detalles del problema…"></textarea>
+    </div>
+    <div class="fld">
+      <label>Prioridad</label>
+      <select name="priority">
+        {% for p in priorities %}<option value="{{ p }}" {% if p == 'media' %}selected{% endif %}>{{ priority_labels[p] }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="row-btns">
+      <a href="/sanitario/hoy" class="btn ghost">Cancelar</a>
+      <button type="submit" class="btn warn">Reportar</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

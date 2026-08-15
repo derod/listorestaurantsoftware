@@ -99,9 +99,10 @@ def record_access(db: Session, request: Request, role: str, actor_name=None, wai
 
 # ─── time clock (clock in / clock out) ────────────────────────────────────────
 
-CLOCK_ROLES = ["station", "kitchen", "inventory", "pos"]
+CLOCK_ROLES = ["station", "kitchen", "inventory", "pos", "sanitario"]
 CLOCK_ROLE_LABELS = {
     "station": "Salón", "kitchen": "Cocina", "inventory": "Inventario", "pos": "Punto de Venta",
+    "sanitario": "Control Sanitario",
 }
 
 

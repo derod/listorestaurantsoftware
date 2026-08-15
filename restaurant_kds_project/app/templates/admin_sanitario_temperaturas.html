@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Control de temperaturas</h1>
+{% include '_sanitario_admin_nav.html' %}
+
+<style>
+  .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:18px 20px; margin-bottom:22px; }
+  .card h2 { margin:0 0 14px; font-size:20px; }
+  .fld label { display:block; font-size:13px; color:#9aa6bd; margin-bottom:5px; }
+  .fld input, .fld select { width:100%; min-height:46px; border-radius:10px; border:1px solid var(--border); background:#10141b; color:var(--text); padding:9px 12px; font-size:15px; }
+  .row { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; align-items:end; }
+  .btn { min-height:46px; padding:0 18px; border:none; border-radius:10px; font-size:15px; font-weight:800; cursor:pointer; }
+  .btn.primary { background:var(--green); color:#08210c; }
+  .btn.ghost { background:var(--muted); color:var(--text); }
+  .btn.small { min-height:38px; padding:0 12px; font-size:13px; }
+  table.tbl { width:100%; border-collapse:collapse; }
+  table.tbl th, table.tbl td { text-align:left; padding:10px; border-bottom:1px solid var(--border); font-size:14px; }
+  table.tbl th { color:#9aa6bd; font-size:12px; text-transform:uppercase; }
+  .tag { font-size:12px; font-weight:800; padding:3px 10px; border-radius:999px; }
+  .tag.oor { background:rgba(228,91,91,0.2); color:var(--red); }
+  .tag.ok { background:rgba(76,175,80,0.16); color:var(--green); }
+  .note { color:#9aa6bd; font-size:13px; }
+</style>
+
+<div class="card">
+  <h2>Registrar lectura</h2>
+  <form method="post" action="/admin/sanitario/temperaturas/registro" class="row">
+    <div class="fld"><label>Equipo</label><select name="equipment_id" required><option value="">—</option>{% for e in equipos %}{% if e.active %}<option value="{{ e.id }}">{{ e.name }}</option>{% endif %}{% endfor %}</select></div>
+    <div class="fld"><label>Temperatura (°C)</label><input type="number" step="0.1" name="temperature" required /></div>
+    <div class="fld"><label>Observaciones</label><input type="text" name="observations" /></div>
+    <button type="submit" class="btn primary">Guardar</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Equipos y rangos</h2>
+  <p class="note">Los rangos son <strong>configurables</strong> por equipo (recomendación operativa, no requisito legal). Una lectura fuera de rango se marca automáticamente.</p>
+  <form method="post" action="/admin/sanitario/temperaturas/equipo" class="row" style="margin:12px 0 18px;">
+    <div class="fld"><label>Nombre</label><input type="text" name="name" required /></div>
+    <div class="fld"><label>Tipo</label><select name="kind">{% for k in kinds %}<option value="{{ k }}">{{ kind_labels[k] }}</option>{% endfor %}</select></div>
+    <div class="fld"><label>Mín °C</label><input type="number" step="0.1" name="min_temp" /></div>
+    <div class="fld"><label>Máx °C</label><input type="number" step="0.1" name="max_temp" /></div>
+    <button type="submit" class="btn primary">Agregar equipo</button>
+  </form>
+  <table class="tbl">
+    <thead><tr><th>Equipo</th><th>Tipo</th><th>Rango</th><th>Estado</th><th></th></tr></thead>
+    <tbody>
+      {% for e in equipos %}
+      <tr>
+        <td><strong>{{ e.name }}</strong></td>
+        <td>{{ kind_labels.get(e.kind, e.kind) }}</td>
+        <td>{{ e.min_temp if e.min_temp is not none else '—' }} a {{ e.max_temp if e.max_temp is not none else '—' }} °C</td>
+        <td>{% if e.active %}<span class="tag ok">Activo</span>{% else %}<span class="tag oor">Inactivo</span>{% endif %}</td>
+        <td style="white-space:nowrap;">
+          <button type="button" class="btn ghost small" onclick='editEq({{ e.id }}, {{ e.name|tojson }}, {{ e.kind|tojson }}, {{ (e.min_temp if e.min_temp is not none else "")|tojson }}, {{ (e.max_temp if e.max_temp is not none else "")|tojson }})'>Editar</button>
+          <form method="post" action="/admin/sanitario/temperaturas/equipo/{{ e.id }}/toggle" style="display:inline;"><button class="btn small ghost">{{ 'Desactivar' if e.active else 'Activar' }}</button></form>
+        </td>
+      </tr>
+      {% else %}<tr><td colspan="5" style="color:#9aa6bd;">Sin equipos configurados.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2>Lecturas recientes</h2>
+  <table class="tbl">
+    <thead><tr><th>Fecha/Hora</th><th>Equipo</th><th>Temp.</th><th>Estado</th><th>Registró</th><th>Obs.</th></tr></thead>
+    <tbody>
+      {% for l in lecturas %}
+      <tr>
+        <td>{{ l.recorded_at.strftime('%d/%m/%Y %H:%M') }}</td>
+        <td>{{ l.equipment.name if l.equipment else '—' }}</td>
+        <td><strong>{{ l.temperature }} °C</strong></td>
+        <td>{% if l.out_of_range %}<span class="tag oor">FUERA DE RANGO</span>{% else %}<span class="tag ok">OK</span>{% endif %}</td>
+        <td>{{ l.created_by or '—' }}</td>
+        <td>{{ l.observations or '' }}</td>
+      </tr>
+      {% else %}<tr><td colspan="6" style="color:#9aa6bd;">Sin lecturas.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="modal-ov" id="eqModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:6000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--bg);border:1px solid var(--border);border-radius:18px;padding:24px;width:100%;max-width:480px;">
+    <h2 style="margin-top:0;">Editar equipo</h2>
+    <form method="post" id="eqForm">
+      <div class="fld"><label>Nombre</label><input type="text" name="name" id="eqName" required /></div>
+      <div class="row">
+        <div class="fld"><label>Tipo</label><select name="kind" id="eqKind">{% for k in kinds %}<option value="{{ k }}">{{ kind_labels[k] }}</option>{% endfor %}</select></div>
+        <div class="fld"><label>Mín °C</label><input type="number" step="0.1" name="min_temp" id="eqMin" /></div>
+        <div class="fld"><label>Máx °C</label><input type="number" step="0.1" name="max_temp" id="eqMax" /></div>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;">
+        <button type="button" class="btn ghost" onclick="document.getElementById('eqModal').style.display='none'">Cancelar</button>
+        <button type="submit" class="btn primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function editEq(id, name, kind, mn, mx) {
+    var f = document.getElementById('eqForm');
+    f.action = '/admin/sanitario/temperaturas/equipo/' + id + '/edit';
+    document.getElementById('eqName').value = name;
+    document.getElementById('eqKind').value = kind;
+    document.getElementById('eqMin').value = mn;
+    document.getElementById('eqMax').value = mx;
+    document.getElementById('eqModal').style.display = 'flex';
+  }
+</script>
+{% endblock %}

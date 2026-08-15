@@ -1,6 +1,9 @@
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from .models import Product, AudioSettings, Ingredient, Table, Order
+from .models import (
+    Product, AudioSettings, Ingredient, Table, Order,
+    CleaningArea, CleaningTask, TemperatureEquipment,
+)
 
 # Real master inventory data (loaded once). name, category, base unit, purchase
 # presentation, pack content (base units per presentation), purchase price,
@@ -244,6 +247,75 @@ def seed_table_capacities(db: Session):
     db.commit()
 
 
+# ─── Control Sanitario: datos demo de SODA SILVIA ────────────────────────────
+# Áreas del establecimiento. El orden define su presentación.
+SANITARIO_AREAS = [
+    "Cocina", "Baño María", "Baños", "Mesas", "Utensilios", "Refrigeradores",
+    "Pisos", "Desagües", "Campana", "Área de atención", "Recipientes de residuos",
+]
+
+# Procedimiento estándar de limpieza y desinfección (recomendación operativa).
+_PROC_LD = (
+    "Retirar residuos\n"
+    "Lavar con agua y jabón\n"
+    "Enjuagar\n"
+    "Aplicar desinfectante\n"
+    "Respetar el tiempo de contacto según la ficha técnica del producto\n"
+    "Secar\n"
+    "Verificar"
+)
+
+# Tareas razonables por área (basadas en un Programa de Higiene y Desinfección).
+# No se imponen concentraciones ni tiempos de contacto: se configuran según la
+# ficha técnica del producto que use el negocio.
+# (área, nombre, frecuencia, momento, veces/día, procedimiento)
+SANITARIO_TASKS = [
+    ("Cocina", "Limpieza y desinfección de superficies", "diaria", "cierre", 1, _PROC_LD),
+    ("Baño María", "Limpieza y desinfección", "diaria", "cierre", 1, _PROC_LD),
+    ("Baños", "Limpieza y desinfección", "varias_dia", "durante", 3, _PROC_LD),
+    ("Mesas", "Limpieza y desinfección", "varias_dia", "durante", 4, _PROC_LD),
+    ("Utensilios", "Lavado y desinfección de utensilios", "diaria", "cierre", 1, _PROC_LD),
+    ("Refrigeradores", "Limpieza interna", "semanal", "apertura", 1, _PROC_LD),
+    ("Pisos", "Barrido y trapeado", "diaria", "cierre", 1, "Barrer\nTrapear con solución de limpieza\nDesinfectar\nDejar secar"),
+    ("Desagües", "Limpieza de desagües", "diaria", "cierre", 1, "Retirar rejilla\nRetirar residuos sólidos\nLavar\nDesinfectar\nColocar rejilla"),
+    ("Campana", "Limpieza de campana y filtros", "segun_programacion", None, 1, "Retirar filtros\nDesengrasar\nLavar\nEnjuagar\nSecar\nColocar filtros"),
+    ("Área de atención", "Limpieza y desinfección", "diaria", "apertura", 1, _PROC_LD),
+    ("Recipientes de residuos", "Vaciado y desinfección", "diaria", "cierre", 1, "Vaciar\nLavar\nDesinfectar\nColocar bolsa nueva"),
+]
+
+# Equipos de temperatura de ejemplo con rangos EDITABLES (recomendación
+# operativa, no requisito legal). El negocio ajusta los valores.
+SANITARIO_TEMP_EQUIPMENT = [
+    ("Refrigerador principal", "refrigerador", 0.0, 5.0),
+    ("Congelador", "congelador", -18.0, -12.0),
+]
+
+
+def seed_sanitario_soda_silvia(db: Session):
+    """Crea áreas, tareas y equipos de temperatura demo una sola vez.
+    Guardado por: no existen áreas de limpieza. No toca datos existentes."""
+    if db.query(CleaningArea.id).first():
+        return
+    areas = {}
+    for idx, name in enumerate(SANITARIO_AREAS):
+        a = CleaningArea(name=name, active=True, display_order=idx)
+        db.add(a)
+        areas[name] = a
+    db.flush()  # asigna ids
+    for area_name, tname, freq, moment, tpd, proc in SANITARIO_TASKS:
+        a = areas.get(area_name)
+        if not a:
+            continue
+        db.add(CleaningTask(
+            area_id=a.id, name=tname, frequency=freq, moment=moment,
+            times_per_day=tpd, procedure=proc, active=True,
+        ))
+    if db.query(TemperatureEquipment.id).first() is None:
+        for name, kind, mn, mx in SANITARIO_TEMP_EQUIPMENT:
+            db.add(TemperatureEquipment(name=name, kind=kind, min_temp=mn, max_temp=mx, active=True))
+    db.commit()
+
+
 def seed_initial_data(db: Session):
     if db.query(Product).count() == 0:
         for idx, name in enumerate(DEFAULT_PRODUCTS):
@@ -257,3 +329,4 @@ def seed_initial_data(db: Session):
     seed_tables(db)
     reconfigure_tables_v2(db)
     seed_table_capacities(db)
+    seed_sanitario_soda_silvia(db)

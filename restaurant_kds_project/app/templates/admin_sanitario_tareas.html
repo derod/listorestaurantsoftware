@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Tareas de limpieza</h1>
+{% include '_sanitario_admin_nav.html' %}
+
+<style>
+  .area-block { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:18px 20px; margin-bottom:18px; }
+  .area-block h2 { margin:0 0 12px; font-size:20px; color:var(--green); }
+  .task-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); }
+  .task-row:last-child { border-bottom:none; }
+  .task-row .name { font-size:18px; font-weight:700; }
+  .task-row .meta { font-size:14px; color:#9aa6bd; }
+  .btn { min-height:44px; padding:0 16px; border:none; border-radius:10px; font-size:15px; font-weight:800; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
+  .btn.qr { background:rgba(77,163,255,0.16); color:var(--blue); border:1px solid rgba(77,163,255,0.4); }
+  .empty { color:#9aa6bd; }
+  .modal-ov { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:6000; align-items:center; justify-content:center; padding:20px; }
+  .modal-ov.open { display:flex; }
+  .modal-box { background:#fff; color:#111; border-radius:18px; padding:26px; width:100%; max-width:380px; text-align:center; }
+  .modal-box h3 { margin:0 0 6px; font-size:22px; }
+  .modal-box .qr-sub { color:#555; font-size:15px; margin-bottom:16px; }
+  #qrCanvas { margin:0 auto; }
+  .qr-url { font-size:12px; color:#888; word-break:break-all; margin-top:14px; }
+  .btn.close { background:#e8eaee; color:#111; margin-top:16px; }
+  .print-hint { color:#9aa6bd; font-size:14px; margin-bottom:16px; }
+</style>
+
+<p class="print-hint">Genera un código QR por tarea. Al escanearlo, el trabajador entra (con su PIN) directo a registrar esa limpieza. El QR nunca salta la autenticación.</p>
+
+{% for a in areas %}
+  {% if by_area.get(a.id) %}
+  <div class="area-block">
+    <h2>{{ a.name }}</h2>
+    {% for t in by_area.get(a.id) %}
+    <div class="task-row">
+      <div>
+        <div class="name">{{ t.name }}</div>
+        <div class="meta">{{ freq_labels.get(t.frequency, t.frequency) }}{% if t.moment %} · {{ moment_labels.get(t.moment, t.moment) }}{% endif %}{% if t.product %} · {{ t.product }}{% endif %}</div>
+      </div>
+      <button type="button" class="btn qr" onclick="showQR({{ t.id }}, {{ (a.name ~ ' — ' ~ t.name)|tojson }}, {{ freq_labels.get(t.frequency, t.frequency)|tojson }})">&#9635; Ver QR</button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% else %}
+  <p class="empty">No hay áreas configuradas. Ve a <a href="/admin/sanitario/protocolo">Protocolo</a>.</p>
+{% endfor %}
+
+<div class="modal-ov" id="qrModal">
+  <div class="modal-box">
+    <h3>LISTO</h3>
+    <div class="qr-sub" id="qrTitle"></div>
+    <div id="qrCanvas"><img id="qrImg" alt="QR" width="240" height="240" style="display:block;margin:0 auto;" /></div>
+    <div class="qr-sub" id="qrFreq" style="margin-top:12px;font-weight:700;"></div>
+    <div class="qr-url" id="qrUrl"></div>
+    <button type="button" class="btn close" onclick="document.getElementById('qrModal').classList.remove('open')">Cerrar</button>
+    <button type="button" class="btn qr" onclick="window.print()">Imprimir</button>
+  </div>
+</div>
+
+<script>
+  function showQR(taskId, title, freq) {
+    var url = window.location.origin + '/sanitario/qr/' + taskId;
+    document.getElementById('qrImg').src = '/admin/sanitario/qr/' + taskId + '.png';
+    document.getElementById('qrTitle').textContent = title;
+    document.getElementById('qrFreq').textContent = freq;
+    document.getElementById('qrUrl').textContent = url;
+    document.getElementById('qrModal').classList.add('open');
+  }
+</script>
+{% endblock %}

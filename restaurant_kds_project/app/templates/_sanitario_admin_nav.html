@@ -1,0 +1,18 @@
+<style>
+  .san-nav { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:22px; }
+  .san-nav a { padding:9px 16px; border-radius:10px; background:var(--muted); color:var(--text); text-decoration:none; font-size:15px; font-weight:700; border:1px solid var(--border); }
+  .san-nav a.on { background:var(--green); color:#08210c; border-color:var(--green); }
+  .san-nav a:hover { border-color:var(--green); }
+</style>
+{% set _p = request.url.path %}
+<div class="san-nav">
+  <a href="/admin/sanitario" class="{{ 'on' if _p == '/admin/sanitario' else '' }}">Dashboard</a>
+  <a href="/admin/sanitario/protocolo" class="{{ 'on' if _p == '/admin/sanitario/protocolo' else '' }}">Protocolo</a>
+  <a href="/admin/sanitario/tareas" class="{{ 'on' if _p == '/admin/sanitario/tareas' else '' }}">Tareas / QR</a>
+  <a href="/admin/sanitario/historial" class="{{ 'on' if _p == '/admin/sanitario/historial' else '' }}">Historial</a>
+  <a href="/admin/sanitario/verificaciones" class="{{ 'on' if _p == '/admin/sanitario/verificaciones' else '' }}">Verificaciones</a>
+  <a href="/admin/sanitario/incidencias" class="{{ 'on' if _p == '/admin/sanitario/incidencias' else '' }}">Incidencias</a>
+  <a href="/admin/sanitario/temperaturas" class="{{ 'on' if _p == '/admin/sanitario/temperaturas' else '' }}">Temperaturas</a>
+  <a href="/admin/sanitario/plagas" class="{{ 'on' if _p == '/admin/sanitario/plagas' else '' }}">Plagas</a>
+  <a href="/admin/sanitario/reportes" class="{{ 'on' if _p == '/admin/sanitario/reportes' else '' }}">Reportes</a>
+</div>

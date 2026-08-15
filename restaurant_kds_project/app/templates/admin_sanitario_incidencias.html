@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Incidencias</h1>
+{% include '_sanitario_admin_nav.html' %}
+
+<style>
+  .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:18px 20px; margin-bottom:22px; }
+  .card h2 { margin:0 0 14px; font-size:20px; }
+  .fld { margin-bottom:12px; }
+  .fld label { display:block; font-size:13px; color:#9aa6bd; margin-bottom:5px; }
+  .fld input, .fld select, .fld textarea { width:100%; min-height:46px; border-radius:10px; border:1px solid var(--border); background:#10141b; color:var(--text); padding:9px 12px; font-size:15px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .btn { min-height:46px; padding:0 20px; border:none; border-radius:10px; font-size:15px; font-weight:800; cursor:pointer; }
+  .btn.primary { background:var(--green); color:#08210c; }
+  .inc { border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:14px; }
+  .inc.critica { border-color:rgba(228,91,91,0.6); }
+  .inc-head { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; }
+  .inc-title { font-size:18px; font-weight:800; }
+  .badge { font-size:12px; font-weight:800; padding:3px 10px; border-radius:999px; }
+  .badge.baja { background:var(--muted); } .badge.media { background:rgba(255,210,77,0.16); color:var(--yellow); }
+  .badge.alta { background:rgba(255,140,66,0.18); color:var(--accent); } .badge.critica { background:rgba(228,91,91,0.2); color:var(--red); }
+  .badge.abierta { background:rgba(228,91,91,0.16); color:var(--red); } .badge.en_proceso { background:rgba(77,163,255,0.16); color:var(--blue); }
+  .badge.resuelta { background:rgba(76,175,80,0.16); color:var(--green); }
+  .inc-sub { color:#9aa6bd; font-size:14px; margin:6px 0; }
+  .inc-form { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; align-items:end; margin-top:10px; }
+  .inc-form select, .inc-form input { min-height:42px; border-radius:8px; border:1px solid var(--border); background:#10141b; color:var(--text); padding:7px 10px; font-size:14px; }
+</style>
+
+<div class="card">
+  <h2>Registrar incidencia</h2>
+  <form method="post" action="/admin/sanitario/incidencias">
+    <div class="grid2">
+      <div class="fld"><label>Área</label><select name="area_id"><option value="">— Sin área —</option>{% for a in areas %}<option value="{{ a.id }}">{{ a.name }}</option>{% endfor %}</select></div>
+      <div class="fld"><label>Prioridad</label><select name="priority">{% for p in priorities %}<option value="{{ p }}" {{ 'selected' if p=='media' else '' }}>{{ priority_labels[p] }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="fld"><label>Problema *</label><input type="text" name="problem" required maxlength="200" /></div>
+    <div class="fld"><label>Descripción</label><textarea name="description"></textarea></div>
+    <div class="grid2">
+      <div class="fld"><label>Acción correctiva</label><input type="text" name="corrective_action" /></div>
+      <div class="fld"><label>Responsable</label><input type="text" name="responsible" /></div>
+    </div>
+    <button type="submit" class="btn primary">Registrar</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Incidencias ({{ rows|length }})</h2>
+  {% for i in rows %}
+  <div class="inc {{ i.priority }}">
+    <div class="inc-head">
+      <div class="inc-title">{{ i.problem }}</div>
+      <div style="display:flex;gap:8px;">
+        <span class="badge {{ i.priority }}">{{ priority_labels.get(i.priority, i.priority) }}</span>
+        <span class="badge {{ i.status }}">{{ state_labels.get(i.status, i.status) }}</span>
+      </div>
+    </div>
+    <div class="inc-sub">
+      {{ i.area.name if i.area else 'Sin área' }} · Reportó: {{ i.reported_by or '—' }} · {{ i.created_at.strftime('%d/%m/%Y %H:%M') }}
+      {% if i.resolved_at %} · Resuelta: {{ i.resolved_at.strftime('%d/%m/%Y %H:%M') }}{% endif %}
+    </div>
+    {% if i.description %}<div class="inc-sub">{{ i.description }}</div>{% endif %}
+    {% if i.corrective_action %}<div class="inc-sub">🛠️ Acción: {{ i.corrective_action }}{% if i.responsible %} · {{ i.responsible }}{% endif %}</div>{% endif %}
+    <form method="post" action="/admin/sanitario/incidencias/{{ i.id }}/update" class="inc-form">
+      <div><label style="font-size:12px;color:#9aa6bd;">Estado</label><select name="status">{% for s in states %}<option value="{{ s }}" {{ 'selected' if s==i.status else '' }}>{{ state_labels[s] }}</option>{% endfor %}</select></div>
+      <div><label style="font-size:12px;color:#9aa6bd;">Prioridad</label><select name="priority">{% for p in priorities %}<option value="{{ p }}" {{ 'selected' if p==i.priority else '' }}>{{ priority_labels[p] }}</option>{% endfor %}</select></div>
+      <input type="text" name="corrective_action" placeholder="Acción correctiva" value="{{ i.corrective_action or '' }}" />
+      <input type="text" name="responsible" placeholder="Responsable" value="{{ i.responsible or '' }}" />
+      <button type="submit" class="btn primary" style="min-height:42px;">Actualizar</button>
+    </form>
+  </div>
+  {% else %}
+  <p style="color:#9aa6bd;">No hay incidencias registradas.</p>
+  {% endfor %}
+</div>
+{% endblock %}

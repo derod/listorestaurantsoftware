@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .t-wrap { max-width:720px; margin:0 auto; }
+  .t-back { display:inline-flex; align-items:center; gap:8px; color:#b7becd; text-decoration:none; font-size:17px; font-weight:700; margin-bottom:14px; }
+  .t-area { font-size:15px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--green); }
+  .t-name { font-size:34px; font-weight:900; line-height:1.1; margin:4px 0 10px; }
+  .t-status { display:inline-block; font-size:14px; font-weight:800; padding:5px 14px; border-radius:999px; }
+  .t-status.pendiente { background:rgba(255,210,77,0.18); color:var(--yellow); }
+  .t-status.en_proceso { background:rgba(77,163,255,0.18); color:var(--blue); }
+  .t-status.vencida { background:rgba(228,91,91,0.2); color:var(--red); }
+  .t-status.completada, .t-status.verificada { background:rgba(76,175,80,0.18); color:var(--green); }
+
+  .card { background:var(--card); border:1px solid var(--border); border-radius:18px; padding:20px 22px; margin-top:18px; }
+  .card h2 { margin:0 0 12px; font-size:20px; }
+  .meta-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:12px; }
+  .meta-item .k { font-size:13px; color:#9aa6bd; text-transform:uppercase; letter-spacing:0.05em; }
+  .meta-item .v { font-size:19px; font-weight:700; }
+  .steps { list-style:none; padding:0; margin:0; counter-reset:step; }
+  .steps li { position:relative; padding:14px 14px 14px 58px; margin-bottom:10px; background:#10141b; border:1px solid var(--border); border-radius:12px; font-size:19px; }
+  .steps li::before { counter-increment:step; content:counter(step); position:absolute; left:14px; top:50%; transform:translateY(-50%); width:32px; height:32px; border-radius:50%; background:var(--green); color:#08210c; font-weight:900; display:flex; align-items:center; justify-content:center; }
+  .confirm-box { display:flex; gap:12px; align-items:flex-start; background:rgba(76,175,80,0.08); border:1px solid rgba(76,175,80,0.35); border-radius:14px; padding:16px; margin:16px 0; }
+  .confirm-box input { width:26px; height:26px; margin-top:3px; flex-shrink:0; }
+  .confirm-box label { font-size:17px; line-height:1.4; }
+  .big-btn { width:100%; min-height:72px; border:none; border-radius:16px; font-size:24px; font-weight:900; cursor:pointer; }
+  .big-btn.start { background:var(--blue); color:#04182e; }
+  .big-btn.done { background:var(--green); color:#08210c; }
+  .fld label { display:block; font-size:15px; color:#b7becd; margin:14px 0 6px; }
+  .fld textarea { width:100%; min-height:80px; border-radius:12px; border:1px solid var(--border); background:#10141b; color:var(--text); padding:10px 14px; font-size:18px; }
+  .err-banner { background:rgba(228,91,91,0.15); border:1px solid var(--red); color:var(--red); border-radius:12px; padding:14px; font-size:17px; margin-bottom:14px; }
+</style>
+
+<div class="t-wrap">
+  <a class="t-back" href="/sanitario/hoy">← Volver a limpiezas de hoy</a>
+
+  {% if request.query_params.get('err') == 'confirm' %}
+  <div class="err-banner">Debes marcar la confirmación del procedimiento antes de registrar.</div>
+  {% endif %}
+
+  <div class="t-area">{{ area.name if area else '—' }}</div>
+  <div class="t-name">{{ task.name if task else '—' }}</div>
+  <span class="t-status {{ status }}">
+    {% if status == 'pendiente' %}Pendiente{% elif status == 'en_proceso' %}En proceso{% elif status == 'vencida' %}Vencida{% elif status == 'completada' %}Completada{% elif status == 'verificada' %}Verificada{% endif %}
+  </span>
+
+  {% if task and (task.description or task.frequency or task.product or task.concentration or task.contact_time) %}
+  <div class="card">
+    <h2>Detalle</h2>
+    {% if task.description %}<p style="margin-top:0;font-size:18px;color:#d6dbe6;">{{ task.description }}</p>{% endif %}
+    <div class="meta-grid">
+      <div class="meta-item"><div class="k">Frecuencia</div><div class="v">{{ {'diaria':'Diaria','varias_dia':'Varias veces al día','semanal':'Semanal','segun_programacion':'Según programación'}.get(task.frequency, task.frequency) }}</div></div>
+      {% if task.moment %}<div class="meta-item"><div class="k">Momento</div><div class="v">{{ {'apertura':'Apertura','durante':'Durante el día','cierre':'Cierre','otro':'Otro'}.get(task.moment, task.moment) }}</div></div>{% endif %}
+      {% if task.product %}<div class="meta-item"><div class="k">Producto</div><div class="v">{{ task.product }}</div></div>{% endif %}
+      {% if task.concentration %}<div class="meta-item"><div class="k">Concentración</div><div class="v">{{ task.concentration }}</div></div>{% endif %}
+      {% if task.contact_time %}<div class="meta-item"><div class="k">Tiempo de contacto</div><div class="v">{{ task.contact_time }}</div></div>{% endif %}
+      {% if task.responsible %}<div class="meta-item"><div class="k">Responsable</div><div class="v">{{ task.responsible }}</div></div>{% endif %}
+    </div>
+    {% if task.observations %}<p style="margin-bottom:0;color:#b7becd;font-size:16px;">📝 {{ task.observations }}</p>{% endif %}
+  </div>
+  {% endif %}
+
+  {% if steps %}
+  <div class="card">
+    <h2>Procedimiento</h2>
+    <ol class="steps">
+      {% for s in steps %}<li>{{ s }}</li>{% endfor %}
+    </ol>
+  </div>
+  {% endif %}
+
+  {% if status in ('pendiente', 'vencida') %}
+  <form method="post" action="/sanitario/registro/{{ r.id }}/iniciar" style="margin-top:18px;">
+    <button type="submit" class="big-btn start">▶ INICIAR LIMPIEZA</button>
+  </form>
+  {% endif %}
+
+  {% if status in ('en_proceso', 'pendiente', 'vencida') %}
+  <div class="card">
+    <h2>Completar limpieza</h2>
+    {% if r.started_at %}<p style="margin-top:0;color:#b7becd;">Iniciada: {{ r.started_at.strftime('%H:%M') }}{% if r.created_by %} · {{ r.created_by }}{% endif %}</p>{% endif %}
+    <form method="post" action="/sanitario/registro/{{ r.id }}/completar" id="completeForm">
+      <div class="fld">
+        <label>Observaciones (opcional)</label>
+        <textarea name="observations" placeholder="Novedades, faltantes, etc."></textarea>
+      </div>
+      <div class="confirm-box">
+        <input type="checkbox" name="confirm" value="on" id="confirmChk" />
+        <label for="confirmChk">Confirmo que realicé el procedimiento de limpieza y desinfección de acuerdo con el protocolo establecido.</label>
+      </div>
+      <button type="submit" class="big-btn done" id="completeBtn">✓ CONFIRMAR Y REGISTRAR</button>
+    </form>
+  </div>
+  {% elif status in ('completada', 'verificada') %}
+  <div class="card">
+    <h2 style="color:var(--green);">✓ Limpieza registrada</h2>
+    {% if r.created_by %}<p style="font-size:18px;">Realizada por <strong>{{ r.created_by }}</strong>{% if r.completed_at %} — {{ r.completed_at.strftime('%d/%m/%Y %H:%M') }}{% endif %}</p>{% endif %}
+    {% if r.observations %}<p style="color:#b7becd;">📝 {{ r.observations }}</p>{% endif %}
+    {% if r.verified_by %}<p style="font-size:18px;color:var(--green);">✓ Verificada por <strong>{{ r.verified_by }}</strong>{% if r.verified_at %} — {{ r.verified_at.strftime('%d/%m/%Y %H:%M') }}{% endif %}</p>{% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<script>
+  (function () {
+    var form = document.getElementById('completeForm');
+    if (!form) return;
+    form.addEventListener('submit', function (e) {
+      if (!document.getElementById('confirmChk').checked) {
+        e.preventDefault();
+        window.toast && window.toast('Marca la confirmación del procedimiento.', false);
+      }
+    });
+  })();
+</script>
+{% endblock %}

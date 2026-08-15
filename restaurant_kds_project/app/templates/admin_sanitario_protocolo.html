@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Protocolo de Higiene y Desinfección</h1>
+{% include '_sanitario_admin_nav.html' %}
+
+<style>
+  .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px 22px; margin-bottom:22px; }
+  .card h2 { margin:0 0 14px; font-size:20px; }
+  .fld { margin-bottom:12px; }
+  .fld label { display:block; font-size:14px; color:#9aa6bd; margin-bottom:5px; font-weight:700; }
+  .fld input, .fld select, .fld textarea { width:100%; min-height:48px; border-radius:10px; border:1px solid var(--border); background:#10141b; color:var(--text); padding:9px 12px; font-size:16px; }
+  .fld textarea { min-height:80px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .btn { min-height:50px; padding:0 22px; border:none; border-radius:12px; font-size:17px; font-weight:800; cursor:pointer; }
+  .btn.primary { background:var(--green); color:#08210c; }
+  .btn.ghost { background:var(--muted); color:var(--text); }
+  .btn.small { min-height:42px; padding:0 14px; font-size:14px; }
+  .btn.danger { background:rgba(228,91,91,0.18); color:var(--red); }
+  .note { font-size:13px; color:#9aa6bd; margin-top:4px; }
+  table.tbl { width:100%; border-collapse:collapse; }
+  table.tbl th, table.tbl td { text-align:left; padding:11px 10px; border-bottom:1px solid var(--border); font-size:15px; vertical-align:top; }
+  table.tbl th { color:#9aa6bd; font-size:13px; text-transform:uppercase; letter-spacing:0.04em; }
+  .chip { font-size:12px; font-weight:800; padding:3px 10px; border-radius:999px; background:var(--muted); }
+  .chip.off { background:rgba(228,91,91,0.15); color:var(--red); }
+  .chip.on { background:rgba(76,175,80,0.15); color:var(--green); }
+  .modal-ov { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.78); z-index:6000; align-items:flex-start; justify-content:center; padding:24px; overflow:auto; }
+  .modal-ov.open { display:flex; }
+  .modal-box { background:var(--bg); border:1px solid var(--border); border-radius:18px; padding:24px; width:100%; max-width:680px; }
+  .area-off td { opacity:0.5; }
+  .warn-box { background:rgba(255,210,77,0.08); border:1px solid rgba(255,210,77,0.3); border-radius:10px; padding:12px 14px; font-size:14px; color:#d9cfa3; margin-top:10px; }
+</style>
+
+<!-- ÁREAS -->
+<div class="card">
+  <h2>Áreas</h2>
+  <form method="post" action="/admin/sanitario/areas" class="grid2" style="align-items:end;">
+    <div class="fld" style="margin:0;"><label>Nueva área *</label><input type="text" name="name" required placeholder="Ej. Cocina" /></div>
+    <div class="fld" style="margin:0;display:flex;gap:10px;align-items:end;">
+      <input type="text" name="description" placeholder="Descripción (opcional)" style="flex:1;" />
+      <button type="submit" class="btn primary">Agregar</button>
+    </div>
+  </form>
+  <table class="tbl" style="margin-top:16px;">
+    <thead><tr><th>Área</th><th>Descripción</th><th>Estado</th><th>Tareas</th><th></th></tr></thead>
+    <tbody>
+      {% for a in areas %}
+      <tr class="{{ 'area-off' if not a.active else '' }}">
+        <td><strong>{{ a.name }}</strong></td>
+        <td>{{ a.description or '—' }}</td>
+        <td><span class="chip {{ 'on' if a.active else 'off' }}">{{ 'Activa' if a.active else 'Inactiva' }}</span></td>
+        <td>{{ a.tasks|selectattr('active')|list|length }}</td>
+        <td style="white-space:nowrap;">
+          <button type="button" class="btn ghost small" onclick='editArea({{ a.id }}, {{ a.name|tojson }}, {{ (a.description or "")|tojson }})'>Editar</button>
+          <form method="post" action="/admin/sanitario/areas/{{ a.id }}/toggle" style="display:inline;"><button class="btn small {{ 'danger' if a.active else 'ghost' }}">{{ 'Desactivar' if a.active else 'Activar' }}</button></form>
+        </td>
+      </tr>
+      {% else %}<tr><td colspan="5" style="color:#9aa6bd;">Aún no hay áreas.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- NUEVA TAREA -->
+<div class="card">
+  <h2>Nueva tarea del protocolo</h2>
+  <form method="post" action="/admin/sanitario/tareas">
+    {% include '_sanitario_task_fields.html' %}
+    <button type="submit" class="btn primary" style="margin-top:6px;">Crear tarea</button>
+  </form>
+  <div class="warn-box">La <strong>concentración</strong> y el <strong>tiempo de contacto</strong> se configuran según la ficha técnica del producto utilizado. LISTO no impone valores químicos.</div>
+</div>
+
+<!-- LISTA DE TAREAS -->
+<div class="card">
+  <h2>Tareas configuradas</h2>
+  <table class="tbl">
+    <thead><tr><th>Área</th><th>Tarea</th><th>Frecuencia</th><th>Momento</th><th>Responsable</th><th>Estado</th><th></th></tr></thead>
+    <tbody>
+      {% for t in tasks %}
+      <tr>
+        <td>{{ t.area.name if t.area else '—' }}</td>
+        <td><strong>{{ t.name }}</strong></td>
+        <td>{{ freq_labels.get(t.frequency, t.frequency) }}{% if t.frequency == 'varias_dia' %} ({{ t.times_per_day }}×){% endif %}</td>
+        <td>{{ moment_labels.get(t.moment, '—') if t.moment else '—' }}</td>
+        <td>{{ t.responsible or '—' }}</td>
+        <td><span class="chip {{ 'on' if t.active else 'off' }}">{{ 'Activa' if t.active else 'Inactiva' }}</span></td>
+        <td style="white-space:nowrap;">
+          <button type="button" class="btn ghost small" onclick="editTask({{ t.id }})">Editar</button>
+          <form method="post" action="/admin/sanitario/tareas/{{ t.id }}/toggle" style="display:inline;"><button class="btn small {{ 'danger' if t.active else 'ghost' }}">{{ 'Desactivar' if t.active else 'Activar' }}</button></form>
+        </td>
+      </tr>
+      {% else %}<tr><td colspan="7" style="color:#9aa6bd;">Aún no hay tareas.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Modal editar área -->
+<div class="modal-ov" id="areaModal">
+  <div class="modal-box">
+    <h2 style="margin-top:0;">Editar área</h2>
+    <form method="post" id="areaForm">
+      <div class="fld"><label>Nombre *</label><input type="text" name="name" id="areaName" required /></div>
+      <div class="fld"><label>Descripción</label><input type="text" name="description" id="areaDesc" /></div>
+      <div style="display:flex;gap:12px;justify-content:flex-end;">
+        <button type="button" class="btn ghost" onclick="document.getElementById('areaModal').classList.remove('open')">Cancelar</button>
+        <button type="submit" class="btn primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal editar tarea -->
+<div class="modal-ov" id="taskModal">
+  <div class="modal-box">
+    <h2 style="margin-top:0;">Editar tarea</h2>
+    <form method="post" id="taskForm">
+      {% include '_sanitario_task_fields.html' %}
+      <div style="display:flex;gap:12px;justify-content:space-between;align-items:center;">
+        <button type="button" class="btn danger small" id="taskDeleteBtn">Eliminar</button>
+        <div style="display:flex;gap:12px;">
+          <button type="button" class="btn ghost" onclick="document.getElementById('taskModal').classList.remove('open')">Cancelar</button>
+          <button type="submit" class="btn primary">Guardar cambios</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script id="tasksData" type="application/json">
+[
+{% for t in tasks %}{"id": {{ t.id }}, "area_id": {{ t.area_id }}, "name": {{ t.name|tojson }}, "description": {{ (t.description or "")|tojson }}, "procedure": {{ (t.procedure or "")|tojson }}, "frequency": {{ t.frequency|tojson }}, "times_per_day": {{ t.times_per_day }}, "weekday": {{ t.weekday if t.weekday is not none else 'null' }}, "moment": {{ (t.moment or "")|tojson }}, "responsible": {{ (t.responsible or "")|tojson }}, "product": {{ (t.product or "")|tojson }}, "concentration": {{ (t.concentration or "")|tojson }}, "contact_time": {{ (t.contact_time or "")|tojson }}, "observations": {{ (t.observations or "")|tojson }}}{{ "," if not loop.last else "" }}
+{% endfor %}
+]
+</script>
+
+<script>
+  var tasksById = {};
+  (JSON.parse(document.getElementById('tasksData').textContent) || []).forEach(function (t) { tasksById[t.id] = t; });
+
+  function editArea(id, name, desc) {
+    var f = document.getElementById('areaForm');
+    f.action = '/admin/sanitario/areas/' + id + '/edit';
+    document.getElementById('areaName').value = name;
+    document.getElementById('areaDesc').value = desc || '';
+    document.getElementById('areaModal').classList.add('open');
+  }
+
+  function setVal(form, name, value) {
+    var el = form.querySelector('[name="' + name + '"]');
+    if (el) el.value = (value === null || value === undefined) ? '' : value;
+  }
+
+  function editTask(id) {
+    var t = tasksById[id];
+    if (!t) return;
+    var form = document.getElementById('taskForm');
+    form.action = '/admin/sanitario/tareas/' + id + '/edit';
+    ['area_id','name','description','procedure','frequency','times_per_day','weekday','moment','responsible','product','concentration','contact_time','observations'].forEach(function (k) {
+      setVal(form, k, t[k]);
+    });
+    // dispara el toggle de campos condicionales
+    var fEv = new Event('change');
+    form.querySelector('[name="frequency"]').dispatchEvent(fEv);
+    var del = document.getElementById('taskDeleteBtn');
+    del.onclick = function () {
+      window.askConfirm('¿Eliminar esta tarea? Si ya tiene registros, se desactivará para preservar el historial.', { yes: 'Eliminar' }).then(function (ok) {
+        if (!ok) return;
+        var df = document.createElement('form');
+        df.method = 'post';
+        df.action = '/admin/sanitario/tareas/' + id + '/delete';
+        var i = document.createElement('input'); i.name = 'confirm'; i.value = 'CONFIRMAR'; df.appendChild(i);
+        document.body.appendChild(df); df.submit();
+      });
+    };
+    document.getElementById('taskModal').classList.add('open');
+  }
+
+  // Muestra times_per_day sólo para "varias_dia" y weekday sólo para "semanal".
+  document.querySelectorAll('select[name="frequency"]').forEach(function (sel) {
+    function sync() {
+      var form = sel.closest('form');
+      var tpd = form.querySelector('.wrap-times'); var wd = form.querySelector('.wrap-weekday');
+      if (tpd) tpd.style.display = (sel.value === 'varias_dia') ? '' : 'none';
+      if (wd) wd.style.display = (sel.value === 'semanal') ? '' : 'none';
+    }
+    sel.addEventListener('change', sync); sync();
+  });
+</script>
+{% endblock %}

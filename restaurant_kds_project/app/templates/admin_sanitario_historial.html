@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Historial sanitario</h1>
+{% include '_sanitario_admin_nav.html' %}
+
+<style>
+  .filters { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:12px; background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:18px; align-items:end; }
+  .filters label { display:block; font-size:13px; color:#9aa6bd; margin-bottom:4px; }
+  .filters input, .filters select { width:100%; min-height:44px; border-radius:10px; border:1px solid var(--border); background:#10141b; color:var(--text); padding:8px 10px; font-size:15px; }
+  .btn { min-height:44px; padding:0 18px; border:none; border-radius:10px; font-size:15px; font-weight:800; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
+  .btn.primary { background:var(--green); color:#08210c; }
+  .btn.ghost { background:var(--muted); color:var(--text); }
+  table.tbl { width:100%; border-collapse:collapse; }
+  table.tbl th, table.tbl td { text-align:left; padding:11px 10px; border-bottom:1px solid var(--border); font-size:14px; }
+  table.tbl th { color:#9aa6bd; font-size:12px; text-transform:uppercase; }
+  .chip { font-size:12px; font-weight:800; padding:3px 10px; border-radius:999px; }
+  .chip.completada, .chip.verificada { background:rgba(76,175,80,0.16); color:var(--green); }
+  .chip.pendiente { background:rgba(255,210,77,0.16); color:var(--yellow); }
+  .chip.en_proceso { background:rgba(77,163,255,0.16); color:var(--blue); }
+  .chip.vencida { background:rgba(228,91,91,0.18); color:var(--red); }
+  .note { color:#9aa6bd; font-size:13px; margin-top:10px; }
+</style>
+
+<form method="get" action="/admin/sanitario/historial" class="filters">
+  <div><label>Desde</label><input type="date" name="desde" value="{{ f.desde }}" /></div>
+  <div><label>Hasta</label><input type="date" name="hasta" value="{{ f.hasta }}" /></div>
+  <div><label>Área</label>
+    <select name="area_id"><option value="">Todas</option>
+      {% for a in areas %}<option value="{{ a.id }}" {{ 'selected' if f.area_id == a.id|string else '' }}>{{ a.name }}</option>{% endfor %}
+    </select>
+  </div>
+  <div><label>Estado</label>
+    <select name="estado"><option value="">Todos</option>
+      {% for s in states %}<option value="{{ s }}" {{ 'selected' if f.estado == s else '' }}>{{ state_labels.get(s, s) }}</option>{% endfor %}
+    </select>
+  </div>
+  <div><label>Verificado</label>
+    <select name="verificado"><option value="">Todos</option>
+      <option value="si" {{ 'selected' if f.verificado == 'si' else '' }}>Verificados</option>
+      <option value="no" {{ 'selected' if f.verificado == 'no' else '' }}>No verificados</option>
+    </select>
+  </div>
+  <div><label>Buscar (usuario/tarea)</label><input type="text" name="q" value="{{ f.q }}" /></div>
+  <div style="display:flex;gap:8px;">
+    <button type="submit" class="btn primary">Filtrar</button>
+    <a href="/admin/sanitario/historial" class="btn ghost">Limpiar</a>
+  </div>
+</form>
+
+<table class="tbl">
+  <thead><tr><th>Fecha</th><th>Hora</th><th>Área</th><th>Tarea</th><th>Realizó</th><th>Verificó</th><th>Estado</th></tr></thead>
+  <tbody>
+    {% for r in rows %}
+    {% set st = effective_status(r) %}
+    <tr>
+      <td>{{ r.scheduled_date.strftime('%d/%m/%Y') }}</td>
+      <td>{{ r.completed_at.strftime('%H:%M') if r.completed_at else (r.started_at.strftime('%H:%M') if r.started_at else '—') }}</td>
+      <td>{{ r.task.area.name if r.task and r.task.area else '—' }}</td>
+      <td>{{ r.task.name if r.task else '—' }}</td>
+      <td>{{ r.created_by or '—' }}</td>
+      <td>{{ r.verified_by or '—' }}</td>
+      <td><span class="chip {{ st }}">{{ state_labels.get(st, st) }}</span></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" style="color:#9aa6bd;text-align:center;">Sin registros para los filtros seleccionados.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p class="note">Los registros históricos son auditables y no pueden eliminarse desde la interfaz. Se muestran hasta 500 resultados.</p>
+{% endblock %}
