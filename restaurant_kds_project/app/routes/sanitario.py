@@ -16,8 +16,9 @@ from __future__ import annotations
 import io as _io
 from datetime import datetime, date, timedelta
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse, StreamingResponse
+from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
@@ -664,6 +665,146 @@ def admin_task_qr_png(task_id: int, request: Request, db: Session = Depends(get_
     img.save(buf, format="PNG")
     buf.seek(0)
     return StreamingResponse(buf, media_type="image/png", headers={"Cache-Control": "no-store"})
+
+
+# ─── cuestionario: activador rápido del protocolo (guiado, por área) ──────────
+
+# Procedimiento estándar de limpieza y desinfección para tareas creadas desde el
+# activador. Concentración/tiempo de contacto quedan vacíos (según ficha técnica).
+_PROC_LD = (
+    "Retirar residuos\n"
+    "Lavar con agua y jabón\n"
+    "Enjuagar\n"
+    "Aplicar desinfectante\n"
+    "Respetar el tiempo de contacto según la ficha técnica del producto\n"
+    "Secar\n"
+    "Verificar"
+)
+
+# Tareas sugeridas por nombre de área: (nombre, frecuencia, momento, veces/día, procedimiento).
+SUGGESTED_TASKS = {
+    "Cocina": [
+        ("Limpieza y desinfección de superficies", "diaria", "cierre", 1, _PROC_LD),
+        ("Limpieza de equipos y utensilios", "diaria", "cierre", 1, _PROC_LD),
+        ("Limpieza de paredes", "semanal", "cierre", 1, _PROC_LD),
+    ],
+    "Baño María": [("Limpieza y desinfección", "diaria", "cierre", 1, _PROC_LD)],
+    "Baños": [
+        ("Limpieza y desinfección", "varias_dia", "durante", 3, _PROC_LD),
+        ("Reposición de insumos (jabón/papel)", "varias_dia", "durante", 3, None),
+    ],
+    "Mesas": [("Limpieza y desinfección", "varias_dia", "durante", 4, _PROC_LD)],
+    "Utensilios": [("Lavado y desinfección de utensilios", "diaria", "cierre", 1, _PROC_LD)],
+    "Refrigeradores": [
+        ("Limpieza interna", "semanal", "apertura", 1, _PROC_LD),
+        ("Control de temperatura", "diaria", "apertura", 1, None),
+    ],
+    "Pisos": [("Barrido y trapeado", "diaria", "cierre", 1, "Barrer\nTrapear con solución de limpieza\nDesinfectar\nDejar secar")],
+    "Desagües": [("Limpieza de desagües", "diaria", "cierre", 1, "Retirar rejilla\nRetirar residuos sólidos\nLavar\nDesinfectar\nColocar rejilla")],
+    "Campana": [("Limpieza de campana y filtros", "segun_programacion", None, 1, "Retirar filtros\nDesengrasar\nLavar\nEnjuagar\nSecar\nColocar filtros")],
+    "Área de atención": [("Limpieza y desinfección", "diaria", "apertura", 1, _PROC_LD)],
+    "Recipientes de residuos": [("Vaciado y desinfección", "diaria", "cierre", 1, "Vaciar\nLavar\nDesinfectar\nColocar bolsa nueva")],
+}
+# Sugerencia por defecto para áreas sin catálogo (p.ej. áreas creadas a mano).
+_DEFAULT_SUGGESTION = [("Limpieza y desinfección", "diaria", "cierre", 1, _PROC_LD)]
+
+
+def _suggestions_for(area_name: str):
+    return SUGGESTED_TASKS.get(area_name, _DEFAULT_SUGGESTION)
+
+
+@router.get("/admin/sanitario/cuestionario")
+def admin_cuestionario(request: Request, db: Session = Depends(get_db)):
+    g = _admin_guard(request)
+    if g:
+        return g
+    areas = db.query(CleaningArea).filter(CleaningArea.active == True).order_by(CleaningArea.display_order, CleaningArea.name).all()  # noqa: E712
+    tasks = db.query(CleaningTask).all()
+    # index tareas existentes por (area_id, nombre en minúscula)
+    by_key = {}
+    for t in tasks:
+        by_key[(t.area_id, (t.name or "").strip().lower())] = t
+    data = []
+    for a in areas:
+        items = []
+        for name, freq, moment, tpd, _proc in _suggestions_for(a.name):
+            existing = by_key.get((a.id, name.strip().lower()))
+            items.append({
+                "name": name,
+                "frequency": existing.frequency if existing else freq,
+                "moment": (existing.moment if existing else moment) or "",
+                "times_per_day": (existing.times_per_day if existing else tpd) or 1,
+                "enabled": bool(existing and existing.active),
+                "exists": bool(existing),
+            })
+        data.append({"id": a.id, "name": a.name, "tasks": items})
+    return templates.TemplateResponse(
+        "sanitario_cuestionario.html",
+        {
+            "request": request, "page_title": "Cuestionario · Higiene y Limpieza",
+            "areas_data": data,
+            "frequencies": CLEANING_FREQUENCIES, "freq_labels": FREQUENCY_LABELS,
+            "moments": CLEANING_MOMENTS, "moment_labels": MOMENT_LABELS,
+        },
+    )
+
+
+class ProtocolQuizApply(BaseModel):
+    area_id: int
+    name: str
+    enabled: bool
+    frequency: str = "diaria"
+    moment: str | None = None
+    times_per_day: int = 1
+
+
+@router.post("/admin/sanitario/cuestionario/apply")
+def admin_cuestionario_apply(payload: ProtocolQuizApply, request: Request, db: Session = Depends(get_db)):
+    """Activa/actualiza o desactiva una tarea sugerida. Idempotente: no duplica
+    (empareja por área + nombre). Desactivar preserva el historial (no borra)."""
+    if not require_admin(request):
+        raise HTTPException(401, "Admin session required")
+    area = db.query(CleaningArea).filter(CleaningArea.id == payload.area_id).first()
+    if not area:
+        raise HTTPException(404, "Área no encontrada")
+    name = (payload.name or "").strip()
+    if not name:
+        raise HTTPException(400, "Nombre requerido")
+    freq = payload.frequency if payload.frequency in CLEANING_FREQUENCIES else "diaria"
+    moment = payload.moment if payload.moment in CLEANING_MOMENTS else None
+    try:
+        tpd = max(1, min(12, int(payload.times_per_day or 1)))
+    except (TypeError, ValueError):
+        tpd = 1
+    existing = (
+        db.query(CleaningTask)
+        .filter(CleaningTask.area_id == area.id, func.lower(CleaningTask.name) == name.lower())
+        .first()
+    )
+    if payload.enabled:
+        if existing:
+            existing.active = True
+            existing.frequency = freq
+            existing.moment = moment
+            existing.times_per_day = tpd
+        else:
+            # procedimiento sugerido del catálogo (si lo hay)
+            proc = None
+            for sname, _f, _m, _t, sproc in _suggestions_for(area.name):
+                if sname.strip().lower() == name.lower():
+                    proc = sproc
+                    break
+            db.add(CleaningTask(
+                area_id=area.id, name=name[:200], frequency=freq, moment=moment,
+                times_per_day=tpd, procedure=proc, active=True,
+            ))
+        db.commit()
+        return {"ok": True, "enabled": True, "exists": True}
+    # deshabilitar
+    if existing:
+        existing.active = False
+        db.commit()
+    return {"ok": True, "enabled": False, "exists": bool(existing)}
 
 
 # ─── admin historial ──────────────────────────────────────────────────────────

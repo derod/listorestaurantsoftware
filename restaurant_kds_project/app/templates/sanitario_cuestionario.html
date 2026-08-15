@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="{{ cur_lang(request) }}">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Cuestionario · Higiene y Limpieza</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/static/favicon.ico" sizes="any" />
+  <style>
+    *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#0f1115; --card:#171b22; --border:#252c38; --text:#eef2f8; --muted:#8a95a8;
+      --accent:#ff8c42; --blue:#4da3ff; --green:#4caf50; --yellow:#ffd24d; --red:#e45b5b;
+    }
+    html,body { height:100%; }
+    body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; -webkit-font-smoothing:antialiased; overflow:hidden; }
+    .screen { position:fixed; inset:0; display:none; flex-direction:column; }
+    .screen.active { display:flex; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; padding:16px 22px; border-bottom:1px solid var(--border); flex:0 0 auto; }
+    .topbar .title { font-size:16px; font-weight:800; }
+    .topbar .title span { color:var(--green); }
+    .exit { background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:12px; padding:8px 16px; font-size:15px; font-weight:700; text-decoration:none; cursor:pointer; }
+    .exit:hover { color:var(--red); border-color:var(--red); }
+
+    .hub { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:30px; padding:24px; text-align:center; }
+    .hub h1 { font-size:clamp(28px,6vw,50px); font-weight:900; letter-spacing:-1px; }
+    .hub h1 span { color:var(--green); }
+    .hub .lead { color:var(--muted); font-size:clamp(15px,2.5vw,19px); max-width:600px; }
+    .start-btn { background:var(--green); color:#08210c; border:none; border-radius:18px; padding:20px 60px; font-size:24px; font-weight:900; cursor:pointer; }
+    .start-btn:hover { transform:translateY(-2px); }
+
+    .progress-wrap { padding:14px 22px 0; flex:0 0 auto; }
+    .progress-bar { height:8px; background:var(--border); border-radius:999px; overflow:hidden; }
+    .progress-fill { height:100%; background:var(--green); width:0%; transition:width .25s; }
+    .progress-txt { text-align:center; color:var(--muted); font-size:14px; font-weight:700; margin-top:8px; }
+
+    .area-body { flex:1; overflow-y:auto; padding:18px 20px 8px; }
+    .area-name { font-size:clamp(26px,5vw,40px); font-weight:900; text-align:center; letter-spacing:-0.5px; margin-bottom:4px; }
+    .area-hint { text-align:center; color:var(--muted); font-size:15px; margin-bottom:18px; }
+    .cards { max-width:720px; margin:0 auto; display:flex; flex-direction:column; gap:14px; }
+    .tcard { background:var(--card); border:2px solid var(--border); border-radius:18px; padding:16px 18px; transition:border-color .15s; }
+    .tcard.on { border-color:var(--green); background:rgba(76,175,80,0.08); }
+    .tcard-head { display:flex; align-items:center; justify-content:space-between; gap:14px; }
+    .tname { font-size:20px; font-weight:800; }
+    .exists-tag { font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; }
+    /* toggle */
+    .sw { position:relative; width:64px; height:36px; flex:0 0 auto; cursor:pointer; }
+    .sw input { opacity:0; width:0; height:0; }
+    .sw .track { position:absolute; inset:0; background:var(--border); border-radius:999px; transition:background .15s; }
+    .sw .knob { position:absolute; top:4px; left:4px; width:28px; height:28px; border-radius:50%; background:#fff; transition:transform .15s; }
+    .sw input:checked + .track { background:var(--green); }
+    .sw input:checked + .track + .knob { transform:translateX(28px); }
+    .tcfg { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+    .tcfg.hidden { display:none; }
+    .tcfg label { display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--muted); font-weight:700; }
+    .tcfg select, .tcfg input { min-height:44px; border-radius:10px; border:1px solid var(--border); background:#10141b; color:var(--text); padding:8px 12px; font-size:15px; }
+
+    .actions { flex:0 0 auto; display:flex; gap:12px; padding:16px 20px; border-top:1px solid var(--border); }
+    .btn { flex:1; min-height:58px; border:none; border-radius:14px; font-size:19px; font-weight:800; cursor:pointer; }
+    .btn.prev { background:var(--card); color:var(--text); border:1px solid var(--border); max-width:160px; }
+    .btn.next { background:var(--green); color:#08210c; }
+
+    .done { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; padding:24px; text-align:center; }
+    .done .check { font-size:64px; }
+    .done h1 { font-size:clamp(28px,6vw,46px); font-weight:900; }
+    .done p { color:var(--muted); font-size:18px; }
+    .done .row { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-top:8px; }
+    .done .row a, .done .row button { text-decoration:none; border:1px solid var(--border); background:var(--card); color:var(--text); border-radius:12px; padding:12px 22px; font-size:16px; font-weight:800; cursor:pointer; }
+    .done .row .primary { background:var(--green); color:#08210c; border-color:var(--green); }
+
+    .saved { position:fixed; top:18px; left:50%; transform:translateX(-50%) translateY(-20px); background:var(--green); color:#08210c; font-weight:800; padding:10px 20px; border-radius:12px; opacity:0; transition:opacity .2s, transform .2s; z-index:100; pointer-events:none; }
+    .saved.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+  <div class="saved" id="saved">Guardado ✓</div>
+
+  <!-- HUB -->
+  <section class="screen active" id="hubScreen">
+    <div class="topbar">
+      <div class="title">Higiene y <span>Limpieza</span></div>
+      <a class="exit" href="/admin/sanitario/protocolo">Salir</a>
+    </div>
+    <div class="hub">
+      <div>
+        <h1>Arma tu <span>Protocolo</span></h1>
+        <p class="lead">Vamos área por área. Activa las tareas de limpieza que apliquen y define su frecuencia. Los detalles finos (procedimiento, concentración, tiempo de contacto) los ajustas luego en Protocolo, según la ficha técnica del producto.</p>
+      </div>
+      <button class="start-btn" id="startBtn">Empezar</button>
+    </div>
+  </section>
+
+  <!-- ÁREA -->
+  <section class="screen" id="areaScreen">
+    <div class="topbar">
+      <div class="title" id="areaTitle">Higiene y <span>Limpieza</span></div>
+      <a class="exit" href="/admin/sanitario/protocolo">Salir</a>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="progFill"></div></div>
+      <div class="progress-txt" id="progTxt"></div>
+    </div>
+    <div class="area-body">
+      <div class="area-name" id="areaName"></div>
+      <div class="area-hint">Activa las tareas que se realizan en esta área.</div>
+      <div class="cards" id="cards"></div>
+    </div>
+    <div class="actions">
+      <button class="btn prev" id="prevBtn">← Atrás</button>
+      <button class="btn next" id="nextBtn">Siguiente área →</button>
+    </div>
+  </section>
+
+  <!-- DONE -->
+  <section class="screen" id="doneScreen">
+    <div class="topbar">
+      <div class="title">Higiene y <span>Limpieza</span></div>
+      <a class="exit" href="/admin/sanitario">Salir</a>
+    </div>
+    <div class="done">
+      <div class="check">✅</div>
+      <h1>¡Protocolo listo!</h1>
+      <p id="doneMsg"></p>
+      <div class="row">
+        <a class="primary" href="/admin/sanitario/protocolo">Ir a Protocolo</a>
+        <a href="/admin/sanitario/tareas">Tareas / QR</a>
+        <a href="/admin/sanitario">Dashboard sanitario</a>
+        <button onclick="location.reload()">Empezar de nuevo</button>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const AREAS = {{ areas_data|tojson }};
+    const FREQS = {{ frequencies|tojson }};
+    const FREQ_LABELS = {{ freq_labels|tojson }};
+    const MOMENTS = {{ moments|tojson }};
+    const MOMENT_LABELS = {{ moment_labels|tojson }};
+
+    let idx = 0;
+    const savedEl = document.getElementById("saved");
+    let savedTimer = null;
+    function flashSaved(ok) {
+      savedEl.textContent = ok ? "Guardado ✓" : "Error al guardar";
+      savedEl.style.background = ok ? "var(--green)" : "var(--red)";
+      savedEl.style.color = ok ? "#08210c" : "#fff";
+      savedEl.classList.add("show");
+      clearTimeout(savedTimer);
+      savedTimer = setTimeout(() => savedEl.classList.remove("show"), 1400);
+    }
+
+    function show(id) {
+      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+    }
+
+    function optionsHtml(list, labels, current, includeEmpty) {
+      let html = includeEmpty ? '<option value="">—</option>' : "";
+      list.forEach(v => {
+        const sel = (v === current) ? " selected" : "";
+        html += `<option value="${v}"${sel}>${labels[v] || v}</option>`;
+      });
+      return html;
+    }
+
+    async function apply(areaId, task) {
+      try {
+        const res = await fetch("/admin/sanitario/cuestionario/apply", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            area_id: areaId, name: task.name, enabled: task.enabled,
+            frequency: task.frequency, moment: task.moment || null,
+            times_per_day: task.times_per_day || 1,
+          }),
+        });
+        flashSaved(res.ok);
+      } catch (e) { flashSaved(false); }
+    }
+
+    function renderArea() {
+      const a = AREAS[idx];
+      document.getElementById("areaName").textContent = a.name;
+      document.getElementById("progFill").style.width = Math.round((idx) / AREAS.length * 100) + "%";
+      document.getElementById("progTxt").textContent = "Área " + (idx + 1) + " de " + AREAS.length;
+      document.getElementById("prevBtn").style.visibility = idx === 0 ? "hidden" : "visible";
+      document.getElementById("nextBtn").textContent = (idx === AREAS.length - 1) ? "Finalizar ✓" : "Siguiente área →";
+
+      const host = document.getElementById("cards");
+      host.innerHTML = "";
+      a.tasks.forEach((task, ti) => {
+        const card = document.createElement("div");
+        card.className = "tcard" + (task.enabled ? " on" : "");
+        const showTimes = task.frequency === "varias_dia";
+        card.innerHTML = `
+          <div class="tcard-head">
+            <div>
+              <div class="tname">${task.name}</div>
+              ${task.exists ? '<div class="exists-tag">Ya en el protocolo</div>' : ''}
+            </div>
+            <label class="sw">
+              <input type="checkbox" ${task.enabled ? "checked" : ""} data-role="toggle" />
+              <span class="track"></span><span class="knob"></span>
+            </label>
+          </div>
+          <div class="tcfg ${task.enabled ? "" : "hidden"}" data-role="cfg">
+            <label>Frecuencia
+              <select data-role="freq">${optionsHtml(FREQS, FREQ_LABELS, task.frequency, false)}</select>
+            </label>
+            <label data-role="times-wrap" class="${showTimes ? "" : "hidden"}">Veces al día
+              <input type="number" min="1" max="12" value="${task.times_per_day || 1}" data-role="times" />
+            </label>
+            <label>Momento
+              <select data-role="moment">${optionsHtml(MOMENTS, MOMENT_LABELS, task.moment || "", true)}</select>
+            </label>
+          </div>`;
+        host.appendChild(card);
+
+        const toggle = card.querySelector('[data-role="toggle"]');
+        const cfg = card.querySelector('[data-role="cfg"]');
+        const freqSel = card.querySelector('[data-role="freq"]');
+        const timesWrap = card.querySelector('[data-role="times-wrap"]');
+        const timesInp = card.querySelector('[data-role="times"]');
+        const momentSel = card.querySelector('[data-role="moment"]');
+
+        toggle.addEventListener("change", () => {
+          task.enabled = toggle.checked;
+          card.classList.toggle("on", task.enabled);
+          cfg.classList.toggle("hidden", !task.enabled);
+          apply(a.id, task);
+        });
+        freqSel.addEventListener("change", () => {
+          task.frequency = freqSel.value;
+          timesWrap.classList.toggle("hidden", task.frequency !== "varias_dia");
+          if (task.enabled) apply(a.id, task);
+        });
+        timesInp.addEventListener("change", () => {
+          task.times_per_day = parseInt(timesInp.value || "1", 10) || 1;
+          if (task.enabled) apply(a.id, task);
+        });
+        momentSel.addEventListener("change", () => {
+          task.moment = momentSel.value;
+          if (task.enabled) apply(a.id, task);
+        });
+      });
+    }
+
+    document.getElementById("startBtn").onclick = () => {
+      if (!AREAS.length) { alert("No hay áreas activas. Crea áreas en Protocolo primero."); return; }
+      idx = 0; show("areaScreen"); renderArea();
+    };
+    document.getElementById("prevBtn").onclick = () => { if (idx > 0) { idx--; renderArea(); } };
+    document.getElementById("nextBtn").onclick = () => {
+      if (idx < AREAS.length - 1) { idx++; renderArea(); }
+      else {
+        let count = 0;
+        AREAS.forEach(a => a.tasks.forEach(t => { if (t.enabled) count++; }));
+        document.getElementById("doneMsg").textContent =
+          count + (count === 1 ? " tarea activa" : " tareas activas") + " en el protocolo. Puedes afinar los detalles en Protocolo.";
+        show("doneScreen");
+      }
+    };
+  </script>
+</body>
+</html>
