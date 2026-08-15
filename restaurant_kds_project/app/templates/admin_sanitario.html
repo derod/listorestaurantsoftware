@@ -47,6 +47,37 @@
   <div class="kpi {{ 'red' if inc_crit else '' }}"><div class="lbl">Incidencias críticas</div><div class="val">{{ inc_crit }}</div></div>
 </div>
 
+<style>
+  .insp-panel { display:flex; flex-wrap:wrap; align-items:center; gap:22px; background:var(--card); border:2px solid var(--border); border-radius:16px; padding:20px 24px; margin-bottom:26px; }
+  .insp-panel.green { border-color:rgba(76,175,80,0.5); } .insp-panel.yellow { border-color:rgba(255,210,77,0.5); } .insp-panel.red { border-color:rgba(228,91,91,0.55); }
+  .insp-pct { font-size:52px; font-weight:900; line-height:1; }
+  .insp-panel.green .insp-pct { color:var(--green); } .insp-panel.yellow .insp-pct { color:var(--yellow); } .insp-panel.red .insp-pct { color:var(--red); }
+  .insp-mid { flex:1; min-width:200px; }
+  .insp-rating { font-size:20px; font-weight:800; }
+  .insp-sub { color:#9aa6bd; font-size:14px; margin-top:3px; }
+  .insp-crit { background:rgba(228,91,91,0.16); color:var(--red); border:1px solid var(--red); border-radius:10px; padding:6px 12px; font-weight:800; font-size:13px; }
+  .insp-link { min-height:46px; display:inline-flex; align-items:center; padding:0 18px; border-radius:12px; background:rgba(76,175,80,0.16); color:var(--green); border:1px solid rgba(76,175,80,0.4); font-weight:800; text-decoration:none; }
+</style>
+
+{% set _c = 'green' if last_inspection and last_inspection.score_pct >= 81 else ('yellow' if last_inspection and last_inspection.score_pct >= 70 else 'red') %}
+<div class="insp-panel {{ _c if last_inspection else '' }}">
+  {% if last_inspection %}
+  <div class="insp-pct">{{ last_inspection.score_pct }}%</div>
+  <div class="insp-mid">
+    <div class="insp-rating">Autoinspección: {{ last_inspection.rating }}</div>
+    <div class="insp-sub">{{ last_inspection.score }}/{{ last_inspection.possible }} pts · {{ last_inspection.created_at.strftime('%d/%m/%Y %H:%M') }}</div>
+  </div>
+  {% if last_inspection.critical_fail %}<span class="insp-crit">⚠️ Punto crítico incumplido</span>{% endif %}
+  <a class="insp-link" href="/admin/sanitario/autoinspeccion">Ver / actualizar</a>
+  {% else %}
+  <div class="insp-mid">
+    <div class="insp-rating">Autoinspección</div>
+    <div class="insp-sub">Aún no has realizado una autoinspección. Evalúate contra la Guía de Inspección oficial.</div>
+  </div>
+  <a class="insp-link" href="/admin/sanitario/autoinspeccion">Empezar</a>
+  {% endif %}
+</div>
+
 <div class="cols">
   <div class="panel">
     <h2>Últimas verificaciones</h2>

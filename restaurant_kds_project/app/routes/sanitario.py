@@ -450,6 +450,7 @@ def admin_sanitario(request: Request, db: Session = Depends(get_db)):
         db.query(PestControlRecord).options(joinedload(PestControlRecord.area))
         .order_by(PestControlRecord.created_at.desc()).limit(5).all()
     )
+    last_inspection = db.query(SanitaryInspection).order_by(SanitaryInspection.created_at.desc()).first()
     return templates.TemplateResponse(
         "admin_sanitario.html",
         {
@@ -458,6 +459,7 @@ def admin_sanitario(request: Request, db: Session = Depends(get_db)):
             "in_proc": in_proc, "overdue": overdue, "pct": pct,
             "inc_open": inc_open, "inc_crit": inc_crit,
             "last_verified": last_verified, "last_temps": last_temps, "last_pests": last_pests,
+            "last_inspection": last_inspection,
             "state_labels": STATE_LABELS, "kind_labels": KIND_LABELS, "pest_state_labels": PEST_STATE_LABELS,
         },
     )
@@ -1329,6 +1331,37 @@ def _build_report_pdf(db: Session, d_from: date, d_to: date) -> bytes:
 
     dt_from = datetime.combine(d_from, datetime.min.time())
     dt_to = datetime.combine(d_to, datetime.max.time())
+
+    # ── Autoinspección (última realizada) ──
+    story.append(Paragraph("Autoinspección (Guía de Inspección, Decreto 37308-S)", h2))
+    insp = (
+        db.query(SanitaryInspection)
+        .filter(SanitaryInspection.created_at >= dt_from, SanitaryInspection.created_at <= dt_to)
+        .order_by(SanitaryInspection.created_at.desc()).first()
+    )
+    scope = "en el período"
+    if insp is None:  # ninguna en el período → toma la última realizada
+        insp = db.query(SanitaryInspection).order_by(SanitaryInspection.created_at.desc()).first()
+        scope = "más reciente (fuera del período)"
+    if insp is None:
+        story.append(Paragraph("No se ha registrado ninguna autoinspección.", normal))
+    else:
+        crit = " · ⚠️ Punto crítico incumplido" if insp.critical_fail else ""
+        story.append(Paragraph(
+            f"Resultado {scope}: <b>{insp.score_pct}%</b> — {insp.rating or '—'} "
+            f"({insp.score}/{insp.possible} pts){crit}. "
+            f"Fecha: {insp.created_at.strftime('%d/%m/%Y %H:%M')}.", normal))
+        try:
+            secs = _json.loads(insp.section_json) if insp.section_json else []
+        except (ValueError, TypeError):
+            secs = []
+        if secs:
+            rows = [["Sección", "Puntos", "%"]]
+            for s in secs:
+                pct = f"{s['pct']}%" if s.get("pct") is not None else "N/A"
+                rows.append([P(f"{s.get('letter','')} · {s.get('title','')}"),
+                             P(f"{s.get('score',0)}/{s.get('possible',0)}"), P(pct)])
+            story.append(_tbl(rows, [300, 90, 60]))
 
     # ── Protocolo (áreas + tareas) ──
     story.append(Paragraph("Protocolo vigente (áreas, tareas y frecuencias)", h2))
