@@ -1,4 +1,5 @@
 import os
+import shutil
 from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
@@ -11,7 +12,46 @@ from .websockets import manager
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 UPLOADS_DIR = DATA_DIR / "uploads"
-(UPLOADS_DIR / "audio").mkdir(parents=True, exist_ok=True)
+# Subcarpetas de uploads (funcionan igual en disco local o en un volumen /data).
+for _sub in ("audio", "menu", "products", "documentation"):
+    (UPLOADS_DIR / _sub).mkdir(parents=True, exist_ok=True)
+
+
+def _bootstrap_persistent_volume():
+    """Cuando DATA_DIR apunta a un volumen externo (ej. /data), el volumen puede
+    arrancar vacío. Copia al volumen los archivos que vienen EN el repo (uploads:
+    documentos oficiales, imágenes demo) si faltan, para que estén disponibles
+    sin recommittearlos. No sobrescribe nada existente.
+
+    La base de datos NO se copia por defecto (el seed crea una nueva en el
+    volumen). Para migrar tus datos actuales al volumen, poné SEED_DB_FROM_BUNDLE=1
+    (copia restaurant_kds.db del repo solo si el volumen aún no tiene una)."""
+    src_uploads = BASE_DIR / "uploads"
+    try:
+        same_place = UPLOADS_DIR.resolve() == src_uploads.resolve()
+    except OSError:
+        same_place = False
+    if not same_place and src_uploads.is_dir():
+        for src in src_uploads.rglob("*"):
+            rel = src.relative_to(src_uploads)
+            dst = UPLOADS_DIR / rel
+            if src.is_dir():
+                dst.mkdir(parents=True, exist_ok=True)
+            elif src.is_file() and not dst.exists():
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src, dst)
+    # DB opcional: sembrar desde el bundle solo si se pide y el volumen no la tiene.
+    if os.getenv("SEED_DB_FROM_BUNDLE") == "1":
+        src_db = BASE_DIR / "restaurant_kds.db"
+        dst_db = DATA_DIR / "restaurant_kds.db"
+        try:
+            if src_db.exists() and src_db.resolve() != dst_db.resolve() and not dst_db.exists():
+                shutil.copy2(src_db, dst_db)
+        except OSError:
+            pass
+
+
+_bootstrap_persistent_volume()
 
 SESSION_SECRET = os.getenv("SESSION_SECRET", "kds-dev-secret-change-me")
 SECURE_COOKIES = os.getenv("SECURE_COOKIES", "0") == "1"
