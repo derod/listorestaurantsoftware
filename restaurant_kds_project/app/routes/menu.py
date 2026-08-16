@@ -573,9 +573,11 @@ def admin_online_orders(request: Request, db: Session = Depends(get_db)):
         .filter(OnlineOrder.status.in_(["entregado", "rechazado"]))
         .order_by(OnlineOrder.updated_at.desc()).limit(20).all()
     )
+    latest_pending = db.query(func.max(OnlineOrder.id)).filter(OnlineOrder.status == "pendiente").scalar() or 0
     return templates.TemplateResponse(
         "admin_menu_pedidos.html",
-        {"request": request, "active": active, "recent": recent, "page_title": "Pedidos Online"},
+        {"request": request, "active": active, "recent": recent,
+         "latest_pending_id": latest_pending, "page_title": "Pedidos Online"},
     )
 
 
@@ -583,7 +585,8 @@ def admin_online_orders(request: Request, db: Session = Depends(get_db)):
 def admin_online_orders_count(request: Request, db: Session = Depends(get_db)):
     if not _admin(request):
         raise HTTPException(401, "Admin session required")
-    return {"pending": pending_online_count(db)}
+    latest = db.query(func.max(OnlineOrder.id)).filter(OnlineOrder.status == "pendiente").scalar() or 0
+    return {"pending": pending_online_count(db), "latest": latest}
 
 
 _ONLINE_TRANSITIONS = {

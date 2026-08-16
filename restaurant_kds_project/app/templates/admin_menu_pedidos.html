@@ -2,10 +2,15 @@
 {% block content %}
 <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;">
   <h1 style="margin:0;">Pedidos Online</h1>
-  <div style="display:flex;gap:10px;align-items:center;">
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+    <button id="soundBtn" style="min-height:40px;padding:0 14px;border:1px solid rgba(255,210,77,0.4);border-radius:10px;background:rgba(255,210,77,0.16);color:var(--yellow);font-weight:800;font-size:14px;cursor:pointer;">🔔 Activar sonido</button>
     <label style="font-size:14px;color:#9aa6bd;display:flex;gap:6px;align-items:center;"><input type="checkbox" id="autoref" checked /> Auto-actualizar</label>
     <a href="/admin/menu" style="color:#9aa6bd;text-decoration:none;font-weight:700;">← Menú Online</a>
   </div>
+</div>
+<div id="newBanner" style="display:none;align-items:center;justify-content:space-between;gap:12px;background:rgba(255,210,77,0.12);border:1px solid rgba(255,210,77,0.45);border-radius:12px;padding:12px 16px;margin-top:14px;">
+  <span style="font-weight:800;color:var(--yellow);font-size:16px;">🔔 ¡Nuevo pedido recibido!</span>
+  <button onclick="location.reload()" style="min-height:40px;padding:0 18px;border:none;border-radius:10px;background:var(--yellow);color:#2a2100;font-weight:800;cursor:pointer;">Ver ahora</button>
 </div>
 
 <style>
@@ -112,11 +117,68 @@
 {% endif %}
 
 <script>
-  // Auto-actualiza el tablero cada 20s (pausable).
-  var timer = setInterval(tick, 20000);
+  // ── Sonido de aviso (beep WebAudio, sin archivos) ───────────────────────
+  var audioOK = false;
+  function ensureAudio(){
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return false;
+      window.__pedCtx = window.__pedCtx || new AC();
+      if (window.__pedCtx.state === "suspended") window.__pedCtx.resume();
+      audioOK = true;
+      var b = document.getElementById("soundBtn");
+      b.textContent = "🔔 Sonido activo"; b.style.opacity = "0.7";
+    } catch(e){}
+    return audioOK;
+  }
+  function beep(){
+    if (!audioOK) return;
+    try {
+      var ctx = window.__pedCtx;
+      [880, 1320].forEach(function(f, i){
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = "sine"; o.frequency.value = f;
+        var t = ctx.currentTime + i*0.18;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.35, t+0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t+0.16);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(t); o.stop(t+0.18);
+      });
+    } catch(e){}
+  }
+  document.getElementById("soundBtn").addEventListener("click", function(){ ensureAudio(); beep(); });
+  // El navegador exige un gesto del usuario para el audio; lo intentamos al primer clic.
+  document.addEventListener("click", function once(){ ensureAudio(); document.removeEventListener("click", once); }, { once:true });
+
+  // ── Detección de pedidos nuevos por id máximo pendiente ─────────────────
+  var LATEST = {{ latest_pending_id|default(0) }};
+  var seen = parseInt(sessionStorage.getItem("pedSeen") || "0", 10);
+  if (LATEST > seen) { seen = LATEST; sessionStorage.setItem("pedSeen", String(seen)); }
+
+  async function poll(){
+    try {
+      var res = await fetch("/admin/menu/pedidos/count", { credentials:"same-origin" });
+      if (!res.ok) return;
+      var d = await res.json();
+      var latest = d.latest || 0;
+      document.title = (d.pending ? "("+d.pending+") " : "") + "Pedidos Online";
+      if (latest > seen) {
+        seen = latest; sessionStorage.setItem("pedSeen", String(seen));
+        beep();
+        var banner = document.getElementById("newBanner");
+        banner.style.display = "flex";
+        if (document.getElementById("autoref").checked) setTimeout(function(){ location.reload(); }, 1600);
+      }
+    } catch(e){}
+  }
+  setInterval(poll, 7000);
+
+  // ── Recarga periódica de respaldo (pausable) ────────────────────────────
+  var timer = setInterval(tick, 30000);
   function tick(){ if(document.getElementById("autoref").checked) location.reload(); }
   document.getElementById("autoref").addEventListener("change", function(){
-    if(this.checked){ timer = setInterval(tick, 20000); } else { clearInterval(timer); }
+    if(this.checked){ timer = setInterval(tick, 30000); } else { clearInterval(timer); }
   });
 </script>
 {% endblock %}
