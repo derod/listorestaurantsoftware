@@ -518,3 +518,77 @@ class SanitaryInspection(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(200), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now, index=True)
+
+
+# ─── Menú Online / QR (Fase 1: menú digital público) ─────────────────────────
+# Single-tenant: el admin del restaurante arma su(s) página(s) de menú. Cada
+# página tiene un slug público y su QR; dentro, varios menús por horario
+# (Desayuno/Almuerzo) que se muestran como pestañas con auto-selección por hora.
+
+class MenuPage(Base):
+    """Página pública de menú (la 'storefront' que el admin nombra). Su slug
+    define la URL /m/<slug> y su QR."""
+    __tablename__ = "menu_pages"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    slug: Mapped[str] = mapped_column(String(140), unique=True, nullable=False, index=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    cover_image_path: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    theme_color: Mapped[str] = mapped_column(String(9), default="#ff8c42")  # acento
+    currency: Mapped[str] = mapped_column(String(4), default="₡")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now, onupdate=cr_now)
+
+    menus = relationship("Menu", back_populates="page", cascade="all, delete-orphan")
+
+
+class Menu(Base):
+    """Un menú por horario dentro de una página (ej. Desayuno, Almuerzo).
+    Si all_day es True, aplica siempre; si no, entre start_hm y end_hm."""
+    __tablename__ = "menus"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    page_id: Mapped[int] = mapped_column(ForeignKey("menu_pages.id"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    all_day: Mapped[bool] = mapped_column(Boolean, default=False)
+    start_hm: Mapped[str | None] = mapped_column(String(5), nullable=True)  # "06:00"
+    end_hm: Mapped[str | None] = mapped_column(String(5), nullable=True)    # "11:00"
+    display_order: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
+
+    page = relationship("MenuPage", back_populates="menus")
+    items = relationship("MenuItem", back_populates="menu", cascade="all, delete-orphan")
+
+
+class MenuItem(Base):
+    """Ítem del menú. Puede enlazar a un Producto (para reusar catálogo/cocina)
+    o ser suelto. La sección es texto libre (Entradas, Fuertes, Bebidas…)."""
+    __tablename__ = "menu_items"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    menu_id: Mapped[int] = mapped_column(ForeignKey("menus.id"), nullable=False, index=True)
+    product_id: Mapped[int | None] = mapped_column(ForeignKey("products.id"), nullable=True)
+    section: Mapped[str] = mapped_column(String(80), default="General")
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    image_path: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    price: Mapped[float] = mapped_column(Float, default=0)  # precio base (si no hay variantes)
+    available: Mapped[bool] = mapped_column(Boolean, default=True)
+    display_order: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
+
+    menu = relationship("Menu", back_populates="items")
+    product = relationship("Product")
+    variants = relationship("MenuItemVariant", back_populates="item", cascade="all, delete-orphan")
+
+
+class MenuItemVariant(Base):
+    """Variación de precio de un ítem (ej. Casado: Pollo/Res/Pescado)."""
+    __tablename__ = "menu_item_variants"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    item_id: Mapped[int] = mapped_column(ForeignKey("menu_items.id"), nullable=False, index=True)
+    label: Mapped[str] = mapped_column(String(120), nullable=False)
+    price: Mapped[float] = mapped_column(Float, default=0)
+    display_order: Mapped[int] = mapped_column(Integer, default=0)
+
+    item = relationship("MenuItem", back_populates="variants")

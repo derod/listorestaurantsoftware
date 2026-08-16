@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Menú Online / QR</h1>
+
+<style>
+  .intro { color:#b7becd; font-size:16px; max-width:760px; margin-bottom:20px; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px 22px; margin-bottom:20px; }
+  .card h2 { margin:0 0 12px; font-size:20px; }
+  .newform { display:flex; gap:12px; flex-wrap:wrap; align-items:end; }
+  .newform input { flex:1; min-width:220px; min-height:52px; border-radius:12px; border:1px solid var(--border); background:#10141b; color:var(--text); padding:10px 14px; font-size:18px; }
+  .btn { min-height:52px; padding:0 24px; border:none; border-radius:12px; font-size:17px; font-weight:800; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:8px; }
+  .btn.primary { background:var(--accent); color:#111; }
+  .btn.ghost { background:var(--muted); color:var(--text); }
+  .pages { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px,1fr)); gap:16px; }
+  .page-card { border:1px solid var(--border); border-radius:16px; padding:18px 20px; background:var(--card); }
+  .page-card .pt { font-size:22px; font-weight:800; }
+  .page-card .slug { color:#9aa6bd; font-size:14px; margin:4px 0 10px; word-break:break-all; }
+  .page-card .stat { color:#b7becd; font-size:14px; }
+  .page-card .pill { font-size:12px; font-weight:800; padding:3px 10px; border-radius:999px; }
+  .page-card .pill.on { background:rgba(76,175,80,0.16); color:var(--green); }
+  .page-card .pill.off { background:rgba(228,91,91,0.16); color:var(--red); }
+  .page-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+  .page-actions a { min-height:44px; padding:0 16px; font-size:14px; }
+</style>
+
+<p class="intro">Crea páginas de menú digital para tus clientes. Cada página tiene su <strong>enlace público y su QR</strong>; adentro puedes tener varios menús por horario (Desayuno, Almuerzo…) con auto-cambio según la hora. <em>Fase 1: menú de solo lectura. Los pedidos del cliente vienen después.</em></p>
+
+<div class="card">
+  <h2>Nueva página de menú</h2>
+  <form method="post" action="/admin/menu" class="newform">
+    <input type="text" name="name" required placeholder="Nombre (ej. Soda Silvia, Menú de la mesa)" />
+    <button type="submit" class="btn primary">+ Crear</button>
+  </form>
+</div>
+
+{% if pages %}
+<div class="pages">
+  {% for v in pages %}
+  <div class="page-card">
+    <div class="pt">{{ v.p.name }}</div>
+    <div class="slug">/m/{{ v.p.slug }}</div>
+    <span class="pill {{ 'on' if v.p.active else 'off' }}">{{ 'Publicada' if v.p.active else 'Oculta' }}</span>
+    <div class="stat" style="margin-top:10px;">{{ v.menus }} menú(s) · {{ v.items }} ítem(s)</div>
+    <div class="page-actions">
+      <a class="btn primary" href="/admin/menu/{{ v.p.id }}">Editar</a>
+      <a class="btn ghost" href="/m/{{ v.p.slug }}" target="_blank" rel="noopener">Ver público ↗</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p style="color:#9aa6bd;">Aún no has creado ninguna página de menú.</p>
+{% endif %}
+{% endblock %}

@@ -6,7 +6,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from .database import Base, engine, SessionLocal, DATA_DIR
 from .seed import seed_initial_data
-from .routes import web, api, admin_inventory, sanitario
+from .routes import web, api, admin_inventory, sanitario, menu
 from .websockets import manager
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -137,6 +137,7 @@ app.include_router(web.router)
 app.include_router(api.router, prefix="/api")
 app.include_router(admin_inventory.router)
 app.include_router(sanitario.router)
+app.include_router(menu.router)
 
 
 @app.websocket("/ws/kitchen")

@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from .models import (
     Product, AudioSettings, Ingredient, Table, Order,
     CleaningArea, CleaningTask, TemperatureEquipment,
+    MenuPage, Menu, MenuItem, MenuItemVariant,
 )
 
 # Real master inventory data (loaded once). name, category, base unit, purchase
@@ -316,6 +317,51 @@ def seed_sanitario_soda_silvia(db: Session):
     db.commit()
 
 
+def seed_menu_demo(db: Session):
+    """Crea una página de menú demo (Soda Silvia) una sola vez, con Desayuno y
+    Almuerzo por horario y un Casado con variantes de precio. Guardado por: no
+    existe ninguna página de menú."""
+    if db.query(MenuPage.id).first():
+        return
+    page = MenuPage(
+        name="Soda Silvia", slug="soda-silvia", active=True,
+        description="Comida casera costarricense. ¡Bienvenidos!",
+        theme_color="#ff8c42", currency="₡",
+    )
+    db.add(page)
+    db.flush()
+
+    desayuno = Menu(page_id=page.id, name="Desayuno", start_hm="06:00", end_hm="11:00", display_order=1)
+    almuerzo = Menu(page_id=page.id, name="Almuerzo", start_hm="11:00", end_hm="16:00", display_order=2)
+    db.add_all([desayuno, almuerzo])
+    db.flush()
+
+    # Desayuno
+    d_items = [
+        ("Gallo Pinto", "Platillos", 1800, "Con natilla y tortilla."),
+        ("Huevos al gusto", "Platillos", 1500, "Fritos, revueltos o estrellados."),
+        ("Café", "Bebidas", 700, None),
+        ("Jugo natural", "Bebidas", 1200, None),
+    ]
+    for i, (n, sec, pr, desc) in enumerate(d_items):
+        db.add(MenuItem(menu_id=desayuno.id, name=n, section=sec, price=pr, description=desc, display_order=i))
+
+    # Almuerzo: Casado con variantes + otros
+    casado = MenuItem(menu_id=almuerzo.id, name="Casado", section="Platos fuertes",
+                      price=0, description="Arroz, frijoles, ensalada, plátano y su proteína.", display_order=1)
+    db.add(casado)
+    db.flush()
+    for i, (label, pr) in enumerate([("Pollo", 3500), ("Res", 4000), ("Pescado", 4500)]):
+        db.add(MenuItemVariant(item_id=casado.id, label=label, price=pr, display_order=i))
+    for i, (n, sec, pr, desc) in enumerate([
+        ("Arroz con pollo", "Platos fuertes", 3200, "Acompañado de ensalada."),
+        ("Sopa de mariscos", "Platos fuertes", 4200, None),
+        ("Fresco natural", "Bebidas", 1200, "Cas, mora o tamarindo."),
+    ], start=2):
+        db.add(MenuItem(menu_id=almuerzo.id, name=n, section=sec, price=pr, description=desc, display_order=i))
+    db.commit()
+
+
 def seed_initial_data(db: Session):
     if db.query(Product).count() == 0:
         for idx, name in enumerate(DEFAULT_PRODUCTS):
@@ -330,3 +376,4 @@ def seed_initial_data(db: Session):
     reconfigure_tables_v2(db)
     seed_table_capacities(db)
     seed_sanitario_soda_silvia(db)
+    seed_menu_demo(db)
