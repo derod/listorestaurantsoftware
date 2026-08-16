@@ -1,9 +1,30 @@
 import asyncio
 from datetime import datetime
 from sqlalchemy.orm import Session, joinedload
-from .models import Order, OrderItem, OrderEvent, Inventory, InventoryLog, cr_now
+from .models import Order, OrderItem, OrderEvent, Inventory, InventoryLog, OnlineOrder, cr_now
 
 ALLOWED_STATUSES = ["nuevo", "aceptado", "preparando", "listo", "despachado", "cancelado"]
+
+# Mapa de estado KDS → estado del tablero de Pedidos Online (para sincronizar
+# cuando la cocina mueve una comanda que vino de un pedido online).
+KDS_TO_BOARD_STATUS = {
+    "aceptado": "aceptado", "preparando": "preparando", "listo": "listo",
+    "despachado": "entregado", "cancelado": "rechazado",
+}
+
+
+def _sync_online_board_from_kds(db: Session, order: Order) -> None:
+    """Si esta orden nació de un pedido online, refleja su estado en el tablero.
+    Set directo (no vuelve a llamar al KDS) → sin bucles."""
+    if order.source_role != "online":
+        return
+    mapped = KDS_TO_BOARD_STATUS.get(order.status)
+    if not mapped:
+        return
+    oo = db.query(OnlineOrder).filter(OnlineOrder.kds_order_id == order.id).first()
+    if oo and oo.status != mapped:
+        oo.status = mapped
+        db.commit()
 
 
 def create_order(db: Session, source_role: str, items: list[dict], waiter_id: int | None = None, waiter_name: str | None = None, order_label: str | None = None, table_id: int | None = None):
@@ -71,6 +92,12 @@ def change_order_status(db: Session, order: Order, status: str, actor_role: str)
         order.was_cancelled = True
     db.add(OrderEvent(order_id=order.id, event_type="status_changed", actor_role=actor_role, old_value=old, new_value=status))
     db.commit()
+    # KDS → tablero de Pedidos Online (si la comanda vino de un pedido online).
+    if order.source_role == "online" and old != status:
+        try:
+            _sync_online_board_from_kds(db, order)
+        except Exception:
+            db.rollback()
     full = get_order(db, order.id)
     # Fire-and-forget: avisar al Salón al instante cuando un pedido de salón
     # queda listo/despachado (mismo criterio que /orders/ready-recent).

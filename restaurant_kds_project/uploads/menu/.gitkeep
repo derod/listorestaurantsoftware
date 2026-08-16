@@ -1,0 +1,4 @@
+# Carpeta de imágenes del Menú Online (portadas y fotos de ítems).
+# Las imágenes que subas desde Admin → Menú Online se guardan aquí y se sirven
+# en /uploads/menu/. Para que aparezcan en el despliegue (basado en git),
+# commítelas junto con tus cambios, igual que la base de datos.

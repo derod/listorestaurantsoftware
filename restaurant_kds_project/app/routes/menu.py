@@ -596,6 +596,13 @@ _ONLINE_TRANSITIONS = {
     "listo": {"entregado"},
 }
 
+# Tablero → KDS: al mover el pedido en el tablero, reflejarlo en la comanda de
+# cocina (si ya existe). "aceptado" no se mapea: crea la comanda vía el puente.
+_BOARD_TO_KDS_STATUS = {
+    "preparando": "preparando", "listo": "listo",
+    "entregado": "despachado", "rechazado": "cancelado",
+}
+
 
 @router.post("/admin/menu/pedidos/{order_id}/estado")
 def admin_online_order_state(order_id: int, request: Request, status: str = Form(...), db: Session = Depends(get_db)):
@@ -613,6 +620,15 @@ def admin_online_order_state(order_id: int, request: Request, status: str = Form
         db.commit()
         if status == "aceptado":
             _bridge_to_kds(db, o)  # crea la orden nativa para la pantalla de cocina
+        elif o.kds_order_id and status in _BOARD_TO_KDS_STATUS:
+            # tablero → KDS: refleja el cambio en la comanda de cocina
+            from ..utils import change_order_status
+            kds = db.query(Order).filter(Order.id == o.kds_order_id).first()
+            if kds and kds.status != _BOARD_TO_KDS_STATUS[status]:
+                try:
+                    change_order_status(db, kds, _BOARD_TO_KDS_STATUS[status], "online")
+                except Exception:
+                    db.rollback()
     return RedirectResponse(url="/admin/menu/pedidos", status_code=303)
 
 

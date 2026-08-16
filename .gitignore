@@ -16,3 +16,7 @@ Thumbs.db
 
 # Nota: restaurant_kds.db SÍ se versiona a propósito (datos demo de SODA SILVIA),
 # por eso NO se ignora aquí.
+#
+# Los archivos subidos (uploads/**: imágenes de menú/productos, documentos) TAMBIÉN
+# se versionan a propósito para que aparezcan en el despliegue basado en git.
+# Commitea tus fotos del menú (uploads/menu/) junto con tus cambios.
