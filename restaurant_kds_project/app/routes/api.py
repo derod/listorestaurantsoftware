@@ -42,7 +42,7 @@ def serialize_order(order: Order):
         "items": [
             {
                 "product_id": item.product_id,
-                "product_name": item.product.name,
+                "product_name": item.item_name or (item.product.name if item.product else "?"),
                 "quantity": item.quantity,
             }
             for item in order.items

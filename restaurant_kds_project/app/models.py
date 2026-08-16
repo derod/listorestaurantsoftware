@@ -61,6 +61,9 @@ class OrderItem(Base):
     order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"), nullable=False)
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, default=1)
+    # Nombre a mostrar si difiere del producto (ej. líneas de pedidos online con
+    # variante: "Casado (Res)"). Si es NULL se usa product.name.
+    item_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
 
     order = relationship("Order", back_populates="items")
     product = relationship("Product")
@@ -612,6 +615,7 @@ class OnlineOrder(Base):
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="pendiente", index=True)
     total: Mapped[float] = mapped_column(Float, default=0)
+    kds_order_id: Mapped[int | None] = mapped_column(Integer, nullable=True)  # orden nativa creada al aceptar (puente a Cocina)
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     accepted_by: Mapped[str | None] = mapped_column(String(200), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now, index=True)

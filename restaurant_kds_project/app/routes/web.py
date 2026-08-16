@@ -590,7 +590,7 @@ def kitchen(request: Request, db: Session = Depends(get_db)):
             "waiter_name": o.waiter_name,
             "accepted_at": (o.accepted_at.isoformat() + "Z") if o.accepted_at else None,
             "preparing_at": (o.preparing_at.isoformat() + "Z") if o.preparing_at else None,
-            "items": [{"product_name": i.product.name, "quantity": i.quantity, "product_id": i.product_id} for i in o.items],
+            "items": [{"product_name": i.item_name or (i.product.name if i.product else "?"), "quantity": i.quantity, "product_id": i.product_id} for i in o.items],
         }
         for o in active_orders
     ])

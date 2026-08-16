@@ -120,6 +120,16 @@ def _ensure_schema():
         if "table_id" not in ord_cols:
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE orders ADD COLUMN table_id INTEGER"))
+    if "order_items" in insp.get_table_names():
+        oi_cols = {c["name"] for c in insp.get_columns("order_items")}
+        if "item_name" not in oi_cols:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE order_items ADD COLUMN item_name VARCHAR(200)"))
+    if "online_orders" in insp.get_table_names():
+        oo_cols = {c["name"] for c in insp.get_columns("online_orders")}
+        if "kds_order_id" not in oo_cols:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE online_orders ADD COLUMN kds_order_id INTEGER"))
     # Performance indexes for orders table
     existing_indexes = {idx["name"] for idx in insp.get_indexes("orders")} if "orders" in insp.get_table_names() else set()
     with engine.begin() as conn:

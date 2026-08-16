@@ -24,7 +24,8 @@ from sqlalchemy.orm import Session, joinedload
 from ..database import get_db, DATA_DIR
 from ..models import (
     MenuPage, Menu, MenuItem, MenuItemVariant, Product, Table,
-    OnlineOrder, OnlineOrderItem, ONLINE_ORDER_STATES, cr_now,
+    OnlineOrder, OnlineOrderItem, ONLINE_ORDER_STATES,
+    Order, OrderItem, OrderEvent, cr_now,
 )
 from .web import templates, require_admin
 
@@ -597,14 +598,76 @@ _ONLINE_TRANSITIONS = {
 def admin_online_order_state(order_id: int, request: Request, status: str = Form(...), db: Session = Depends(get_db)):
     if not _admin(request):
         return RedirectResponse(url="/admin/login")
-    o = db.query(OnlineOrder).filter(OnlineOrder.id == order_id).first()
+    o = (
+        db.query(OnlineOrder).options(joinedload(OnlineOrder.items))
+        .filter(OnlineOrder.id == order_id).first()
+    )
     if o and status in ONLINE_ORDER_STATES and status in _ONLINE_TRANSITIONS.get(o.status, set()):
         o.status = status
         if status == "aceptado" and not o.accepted_at:
             o.accepted_at = cr_now()
             o.accepted_by = "Admin"
         db.commit()
+        if status == "aceptado":
+            _bridge_to_kds(db, o)  # crea la orden nativa para la pantalla de cocina
     return RedirectResponse(url="/admin/menu/pedidos", status_code=303)
+
+
+# ─── puente al KDS (Cocina) ───────────────────────────────────────────────────
+
+def _placeholder_product(db: Session) -> Product:
+    """Producto oculto (inactivo) usado como FK para líneas de pedidos online que
+    no están vinculadas a un producto real. No aparece en menús ni POS (filtran
+    active==True); el nombre real se muestra vía OrderItem.item_name."""
+    p = db.query(Product).filter(Product.name == "Pedido online").first()
+    if not p:
+        p = Product(name="Pedido online", active=False, price=0, category="General")
+        db.add(p)
+        db.flush()
+    return p
+
+
+def _bridge_to_kds(db: Session, o: OnlineOrder) -> None:
+    """Crea una orden nativa (source_role='online') a partir del pedido online
+    aceptado, para que aparezca en la pantalla de Cocina. Idempotente: si ya se
+    creó (kds_order_id) no hace nada. Nunca rompe el flujo de aceptación."""
+    if o.kds_order_id:
+        return
+    try:
+        kds = Order(
+            source_role="online", requires_acceptance=True, status="nuevo",
+            waiter_name=("🌐 " + (o.table_label or "Online")),
+            table_id=o.table_id,
+        )
+        db.add(kds)
+        db.flush()
+        ph = None
+        for it in o.items:
+            pid = None
+            if it.menu_item_id:
+                mi = db.query(MenuItem.product_id).filter(MenuItem.id == it.menu_item_id).first()
+                if mi and mi[0]:
+                    pid = mi[0]
+            if pid is None:
+                ph = ph or _placeholder_product(db)
+                pid = ph.id
+            label = it.name + (f" ({it.variant_label})" if it.variant_label else "")
+            if it.note:
+                label += f" – {it.note}"
+            db.add(OrderItem(order_id=kds.id, product_id=pid, quantity=it.quantity, item_name=label[:200]))
+        db.add(OrderEvent(order_id=kds.id, event_type="created", actor_role="online", new_value="online"))
+        o.kds_order_id = kds.id
+        db.commit()
+    except Exception:
+        db.rollback()
+        return
+    # Aviso en vivo a la pantalla de cocina (best-effort).
+    try:
+        from ..utils import get_order
+        from ..websockets import schedule_broadcast, broadcast_new_order
+        schedule_broadcast(broadcast_new_order(get_order(db, o.kds_order_id)))
+    except Exception:
+        pass
 
 
 # ─── utilidades ───────────────────────────────────────────────────────────────
