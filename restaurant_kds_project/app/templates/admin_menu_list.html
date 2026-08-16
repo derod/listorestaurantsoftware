@@ -1,6 +1,9 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Menú Online / QR</h1>
+<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;">
+  <h1 style="margin:0;">Menú Online / QR</h1>
+  <a href="/admin/menu/pedidos" class="btn primary" style="position:relative;">🛒 Pedidos Online{% if pending %} <span style="background:#111;color:#fff;border-radius:999px;padding:2px 9px;font-size:14px;margin-left:6px;">{{ pending }}</span>{% endif %}</a>
+</div>
 
 <style>
   .intro { color:#b7becd; font-size:16px; max-width:760px; margin-bottom:20px; }

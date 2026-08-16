@@ -89,7 +89,11 @@
       <a class="btn ghost small" href="/m/{{ page.slug }}" target="_blank" rel="noopener">Abrir ↗</a>
       <a class="btn ghost small" href="/admin/menu/{{ page.id }}/qr.png" target="_blank" rel="noopener">Descargar QR</a>
     </div>
-    <p style="color:#9aa6bd;font-size:13px;margin-top:12px;">Imprime el QR y colócalo en las mesas o la entrada.</p>
+    <p style="color:#9aa6bd;font-size:13px;margin-top:12px;">QR general (solo ver el menú). Para <strong>pedidos</strong>, usa los QR por mesa.</p>
+    <div class="inline" style="justify-content:center;margin-top:6px;">
+      <a class="btn primary small" href="/admin/menu/{{ page.id }}/mesas">🍽 QR por mesa</a>
+      <a class="btn ghost small" href="/admin/menu/pedidos">🛒 Pedidos</a>
+    </div>
   </div>
 </div>
 

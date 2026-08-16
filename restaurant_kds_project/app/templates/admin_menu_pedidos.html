@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% block content %}
+<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;">
+  <h1 style="margin:0;">Pedidos Online</h1>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <label style="font-size:14px;color:#9aa6bd;display:flex;gap:6px;align-items:center;"><input type="checkbox" id="autoref" checked /> Auto-actualizar</label>
+    <a href="/admin/menu" style="color:#9aa6bd;text-decoration:none;font-weight:700;">← Menú Online</a>
+  </div>
+</div>
+
+<style>
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px,1fr)); gap:16px; margin-top:18px; }
+  .ord { border:2px solid var(--border); border-radius:16px; padding:16px 18px; background:var(--card); }
+  .ord.pendiente { border-color:rgba(255,210,77,0.6); }
+  .ord.aceptado, .ord.preparando { border-color:rgba(77,163,255,0.6); }
+  .ord.listo { border-color:rgba(76,175,80,0.6); }
+  .ord-head { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .ord-table { font-size:20px; font-weight:900; }
+  .ord-time { color:#9aa6bd; font-size:13px; }
+  .badge { font-size:12px; font-weight:800; padding:4px 11px; border-radius:999px; text-transform:uppercase; letter-spacing:0.04em; }
+  .badge.pendiente { background:rgba(255,210,77,0.18); color:var(--yellow); }
+  .badge.aceptado, .badge.preparando { background:rgba(77,163,255,0.18); color:var(--blue); }
+  .badge.listo { background:rgba(76,175,80,0.18); color:var(--green); }
+  .badge.entregado { background:var(--muted); color:#c8cfdb; }
+  .badge.rechazado { background:rgba(228,91,91,0.2); color:var(--red); }
+  .cust { color:#c8cfdb; font-size:14px; margin:6px 0; }
+  .lines { list-style:none; padding:0; margin:10px 0; }
+  .lines li { display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-bottom:1px solid var(--border); font-size:15px; }
+  .lines li:last-child { border-bottom:none; }
+  .lines .q { color:var(--accent); font-weight:900; margin-right:6px; }
+  .lines .vlab { color:#9aa6bd; font-size:13px; }
+  .lines .lt { white-space:nowrap; color:#9aa6bd; }
+  .note { background:rgba(255,210,77,0.08); border:1px solid rgba(255,210,77,0.3); border-radius:10px; padding:8px 12px; font-size:13px; color:#d9cfa3; margin:8px 0; }
+  .tot { display:flex; justify-content:space-between; font-size:18px; font-weight:900; margin:8px 0 12px; }
+  .tot .v { color:var(--accent); }
+  .acts { display:flex; gap:8px; flex-wrap:wrap; }
+  .acts button { min-height:46px; padding:0 16px; border:none; border-radius:11px; font-size:15px; font-weight:800; cursor:pointer; }
+  .b-accept { background:var(--green); color:#08210c; }
+  .b-prep, .b-ready { background:rgba(77,163,255,0.2); color:var(--blue); }
+  .b-ready.solid { background:var(--green); color:#08210c; }
+  .b-deliver { background:var(--green); color:#08210c; }
+  .b-reject { background:rgba(228,91,91,0.18); color:var(--red); }
+  .empty { color:#9aa6bd; font-size:18px; padding:30px 0; }
+  .hist { margin-top:28px; }
+  .hist table { width:100%; border-collapse:collapse; }
+  .hist th, .hist td { text-align:left; padding:9px; border-bottom:1px solid var(--border); font-size:14px; }
+  .hist th { color:#9aa6bd; font-size:12px; text-transform:uppercase; }
+</style>
+
+{% macro line_list(o) %}
+<ul class="lines">
+  {% for it in o.items %}
+  <li>
+    <span><span class="q">{{ it.quantity }}×</span>{{ it.name }}{% if it.variant_label %} <span class="vlab">({{ it.variant_label }})</span>{% endif %}{% if it.note %} <span class="vlab">– {{ it.note }}</span>{% endif %}</span>
+    <span class="lt">₡{{ '{:,.0f}'.format(it.line_total or 0) }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{% endmacro %}
+
+{% if active %}
+<div class="grid">
+  {% for o in active %}
+  <div class="ord {{ o.status }}">
+    <div class="ord-head">
+      <div class="ord-table">{{ o.table_label or 'Sin mesa' }}</div>
+      <span class="badge {{ o.status }}">{{ o.status }}</span>
+    </div>
+    <div class="ord-time">#{{ o.id }} · {{ o.created_at.strftime('%d/%m %H:%M') }}</div>
+    {% if o.customer_name %}<div class="cust">👤 {{ o.customer_name }}</div>{% endif %}
+    {{ line_list(o) }}
+    {% if o.note %}<div class="note">📝 {{ o.note }}</div>{% endif %}
+    <div class="tot"><span>Total</span><span class="v">₡{{ '{:,.0f}'.format(o.total or 0) }}</span></div>
+    <div class="acts">
+      {% if o.status == 'pendiente' %}
+        <form method="post" action="/admin/menu/pedidos/{{ o.id }}/estado"><input type="hidden" name="status" value="aceptado"><button class="b-accept">✓ Aceptar</button></form>
+        <form method="post" action="/admin/menu/pedidos/{{ o.id }}/estado"><input type="hidden" name="status" value="rechazado"><button class="b-reject">Rechazar</button></form>
+      {% elif o.status == 'aceptado' %}
+        <form method="post" action="/admin/menu/pedidos/{{ o.id }}/estado"><input type="hidden" name="status" value="preparando"><button class="b-prep">Preparando</button></form>
+        <form method="post" action="/admin/menu/pedidos/{{ o.id }}/estado"><input type="hidden" name="status" value="listo"><button class="b-ready solid">Listo</button></form>
+      {% elif o.status == 'preparando' %}
+        <form method="post" action="/admin/menu/pedidos/{{ o.id }}/estado"><input type="hidden" name="status" value="listo"><button class="b-ready solid">Listo</button></form>
+      {% elif o.status == 'listo' %}
+        <form method="post" action="/admin/menu/pedidos/{{ o.id }}/estado"><input type="hidden" name="status" value="entregado"><button class="b-deliver">Entregado</button></form>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="empty">No hay pedidos online activos ahora mismo.</p>
+{% endif %}
+
+{% if recent %}
+<div class="hist">
+  <h2 style="font-size:19px;">Recientes</h2>
+  <table>
+    <thead><tr><th>#</th><th>Mesa</th><th>Total</th><th>Estado</th><th>Hora</th></tr></thead>
+    <tbody>
+      {% for o in recent %}
+      <tr>
+        <td>{{ o.id }}</td>
+        <td>{{ o.table_label or '—' }}</td>
+        <td>₡{{ '{:,.0f}'.format(o.total or 0) }}</td>
+        <td><span class="badge {{ o.status }}">{{ o.status }}</span></td>
+        <td>{{ o.updated_at.strftime('%d/%m %H:%M') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<script>
+  // Auto-actualiza el tablero cada 20s (pausable).
+  var timer = setInterval(tick, 20000);
+  function tick(){ if(document.getElementById("autoref").checked) location.reload(); }
+  document.getElementById("autoref").addEventListener("change", function(){
+    if(this.checked){ timer = setInterval(tick, 20000); } else { clearInterval(timer); }
+  });
+</script>
+{% endblock %}

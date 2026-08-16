@@ -15,13 +15,17 @@ import re
 import shutil
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse, StreamingResponse
+from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from ..database import get_db, DATA_DIR
-from ..models import MenuPage, Menu, MenuItem, MenuItemVariant, Product, cr_now
+from ..models import (
+    MenuPage, Menu, MenuItem, MenuItemVariant, Product, Table,
+    OnlineOrder, OnlineOrderItem, ONLINE_ORDER_STATES, cr_now,
+)
 from .web import templates, require_admin
 
 router = APIRouter()
@@ -109,7 +113,7 @@ def _sections(items: list[MenuItem]):
 # ══════════════════════════════════════════════════════════════════════════════
 
 @router.get("/m/{slug}")
-def public_menu(slug: str, request: Request, db: Session = Depends(get_db)):
+def public_menu(slug: str, request: Request, mesa: str = "", db: Session = Depends(get_db)):
     page = (
         db.query(MenuPage)
         .options(joinedload(MenuPage.menus).joinedload(Menu.items).joinedload(MenuItem.variants))
@@ -121,6 +125,10 @@ def public_menu(slug: str, request: Request, db: Session = Depends(get_db)):
             {"request": request, "page": None, "page_title": "Menú no encontrado"},
             status_code=404,
         )
+    # Contexto de mesa (solo si el QR trae una mesa válida se habilita el pedido).
+    table = None
+    if mesa.isdigit():
+        table = db.query(Table).filter(Table.id == int(mesa)).first()
     menus = sorted([m for m in page.menus if m.active], key=lambda m: (m.display_order, m.id))
     now = cr_now()
     now_min = now.hour * 60 + now.minute
@@ -139,9 +147,90 @@ def public_menu(slug: str, request: Request, db: Session = Depends(get_db)):
             "request": request, "page": page, "menus": menus_view,
             "active_index": active_index, "currency": page.currency or "₡",
             "theme": page.theme_color or "#ff8c42",
+            "ordering": table is not None,
+            "table_id": table.id if table else None,
+            "table_label": (("Mesa " + str(table.number)) + ((" · " + table.name) if table.name else "")) if table else None,
             "page_title": page.name,
         },
     )
+
+
+# ─── público: enviar pedido (carrito → cola de aceptación) ────────────────────
+
+class OnlineOrderLine(BaseModel):
+    menu_item_id: int
+    variant_id: int | None = None
+    quantity: int = 1
+    note: str | None = None
+
+
+class OnlineOrderIn(BaseModel):
+    table_id: int
+    customer_name: str | None = None
+    note: str | None = None
+    items: list[OnlineOrderLine]
+
+
+@router.post("/m/{slug}/pedido")
+def public_place_order(slug: str, payload: OnlineOrderIn, request: Request, db: Session = Depends(get_db)):
+    """Crea un pedido online. Página pública: valida todo contra la BD y
+    RECALCULA los precios en el servidor (no confía en el cliente)."""
+    page = db.query(MenuPage).filter(MenuPage.slug == slug, MenuPage.active == True).first()  # noqa: E712
+    if not page:
+        raise HTTPException(404, "Menú no encontrado")
+    table = db.query(Table).filter(Table.id == payload.table_id).first()
+    if not table:
+        raise HTTPException(400, "Mesa inválida")
+    if not payload.items or len(payload.items) > 40:
+        raise HTTPException(400, "Pedido vacío o demasiado grande")
+
+    # IDs de menús activos de esta página (para no aceptar ítems ajenos).
+    menu_ids = {m.id for m in page.menus if m.active}
+    order = OnlineOrder(
+        page_id=page.id, table_id=table.id,
+        table_label=("Mesa " + str(table.number)),
+        customer_name=(payload.customer_name or "").strip()[:120] or None,
+        note=(payload.note or "").strip()[:500] or None,
+        status="pendiente", total=0,
+    )
+    db.add(order)
+    db.flush()
+
+    total = 0.0
+    line_count = 0
+    for line in payload.items:
+        it = db.query(MenuItem).filter(MenuItem.id == line.menu_item_id).first()
+        if not it or it.menu_id not in menu_ids or not it.available:
+            continue
+        qty = max(1, min(int(line.quantity or 1), 20))
+        variant_label = None
+        unit = float(it.price or 0)
+        if line.variant_id:
+            v = db.query(MenuItemVariant).filter(
+                MenuItemVariant.id == line.variant_id, MenuItemVariant.item_id == it.id
+            ).first()
+            if v:
+                variant_label = v.label
+                unit = float(v.price or 0)
+        elif it.variants:
+            # el ítem exige variante y no se eligió → se omite la línea
+            continue
+        line_total = round(unit * qty, 2)
+        total += line_total
+        db.add(OnlineOrderItem(
+            online_order_id=order.id, menu_item_id=it.id, name=it.name,
+            variant_label=variant_label, unit_price=unit, quantity=qty,
+            line_total=line_total, note=(line.note or "").strip()[:200] or None,
+        ))
+        line_count += 1
+
+    if line_count == 0:
+        db.delete(order)
+        db.commit()
+        raise HTTPException(400, "No se pudo registrar ninguna línea del pedido")
+    order.total = round(total, 2)
+    db.commit()
+    return {"ok": True, "order_id": order.id, "total": order.total}
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -159,7 +248,7 @@ def admin_menu_list(request: Request, db: Session = Depends(get_db)):
                      "items": sum(len(m.items) for m in p.menus)})
     return templates.TemplateResponse(
         "admin_menu_list.html",
-        {"request": request, "pages": view, "page_title": "Menú Online"},
+        {"request": request, "pages": view, "pending": pending_online_count(db), "page_title": "Menú Online"},
     )
 
 
@@ -176,7 +265,7 @@ def admin_menu_create(request: Request, name: str = Form(...), db: Session = Dep
     return RedirectResponse(url="/admin/menu", status_code=303)
 
 
-@router.get("/admin/menu/{page_id}")
+@router.get("/admin/menu/{page_id:int}")
 def admin_menu_builder(page_id: int, request: Request, db: Session = Depends(get_db)):
     if not _admin(request):
         return RedirectResponse(url="/admin/login")
@@ -428,6 +517,94 @@ def admin_menu_qr(page_id: int, request: Request, db: Session = Depends(get_db))
     img.save(buf, format="PNG")
     buf.seek(0)
     return StreamingResponse(buf, media_type="image/png", headers={"Cache-Control": "no-store"})
+
+
+# ─── QR por mesa (para pedidos) ───────────────────────────────────────────────
+
+@router.get("/admin/menu/{page_id}/mesas")
+def admin_menu_tables(page_id: int, request: Request, db: Session = Depends(get_db)):
+    if not _admin(request):
+        return RedirectResponse(url="/admin/login")
+    page = db.query(MenuPage).filter(MenuPage.id == page_id).first()
+    if not page:
+        return RedirectResponse(url="/admin/menu")
+    tables = db.query(Table).order_by(Table.number.asc()).all()
+    return templates.TemplateResponse(
+        "admin_menu_tables.html",
+        {"request": request, "page": page, "tables": tables, "page_title": f"QR de mesas · {page.name}"},
+    )
+
+
+@router.get("/admin/menu/{page_id}/mesa/{table_id}/qr.png")
+def admin_menu_table_qr(page_id: int, table_id: int, request: Request, db: Session = Depends(get_db)):
+    if not _admin(request):
+        return RedirectResponse(url="/admin/login")
+    page = db.query(MenuPage).filter(MenuPage.id == page_id).first()
+    if not page:
+        return RedirectResponse(url="/admin/menu")
+    import qrcode
+    base = str(request.base_url).rstrip("/")
+    url = f"{base}/m/{page.slug}?mesa={table_id}"
+    img = qrcode.make(url)
+    buf = _io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return StreamingResponse(buf, media_type="image/png", headers={"Cache-Control": "no-store"})
+
+
+# ─── tablero de pedidos online (staff) ────────────────────────────────────────
+
+def pending_online_count(db: Session) -> int:
+    return db.query(func.count(OnlineOrder.id)).filter(OnlineOrder.status == "pendiente").scalar() or 0
+
+
+@router.get("/admin/menu/pedidos")
+def admin_online_orders(request: Request, db: Session = Depends(get_db)):
+    if not _admin(request):
+        return RedirectResponse(url="/admin/login")
+    active = (
+        db.query(OnlineOrder).options(joinedload(OnlineOrder.items))
+        .filter(OnlineOrder.status.in_(["pendiente", "aceptado", "preparando", "listo"]))
+        .order_by(OnlineOrder.created_at.asc()).all()
+    )
+    recent = (
+        db.query(OnlineOrder).options(joinedload(OnlineOrder.items))
+        .filter(OnlineOrder.status.in_(["entregado", "rechazado"]))
+        .order_by(OnlineOrder.updated_at.desc()).limit(20).all()
+    )
+    return templates.TemplateResponse(
+        "admin_menu_pedidos.html",
+        {"request": request, "active": active, "recent": recent, "page_title": "Pedidos Online"},
+    )
+
+
+@router.get("/admin/menu/pedidos/count")
+def admin_online_orders_count(request: Request, db: Session = Depends(get_db)):
+    if not _admin(request):
+        raise HTTPException(401, "Admin session required")
+    return {"pending": pending_online_count(db)}
+
+
+_ONLINE_TRANSITIONS = {
+    "pendiente": {"aceptado", "rechazado"},
+    "aceptado": {"preparando", "listo", "rechazado"},
+    "preparando": {"listo", "rechazado"},
+    "listo": {"entregado"},
+}
+
+
+@router.post("/admin/menu/pedidos/{order_id}/estado")
+def admin_online_order_state(order_id: int, request: Request, status: str = Form(...), db: Session = Depends(get_db)):
+    if not _admin(request):
+        return RedirectResponse(url="/admin/login")
+    o = db.query(OnlineOrder).filter(OnlineOrder.id == order_id).first()
+    if o and status in ONLINE_ORDER_STATES and status in _ONLINE_TRANSITIONS.get(o.status, set()):
+        o.status = status
+        if status == "aceptado" and not o.accepted_at:
+            o.accepted_at = cr_now()
+            o.accepted_by = "Admin"
+        db.commit()
+    return RedirectResponse(url="/admin/menu/pedidos", status_code=303)
 
 
 # ─── utilidades ───────────────────────────────────────────────────────────────

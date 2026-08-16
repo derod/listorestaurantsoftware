@@ -592,3 +592,45 @@ class MenuItemVariant(Base):
     display_order: Mapped[int] = mapped_column(Integer, default=0)
 
     item = relationship("MenuItem", back_populates="variants")
+
+
+# ─── Pedidos Online (Fase 2) ─────────────────────────────────────────────────
+# El cliente arma su pedido desde la página pública (accedida por el QR de su
+# mesa) y entra a una cola de aceptación que modera el staff. Flujo propio, no
+# toca el KDS existente. Los precios se recalculan en el servidor.
+
+ONLINE_ORDER_STATES = ["pendiente", "aceptado", "preparando", "listo", "entregado", "rechazado"]
+
+
+class OnlineOrder(Base):
+    __tablename__ = "online_orders"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    page_id: Mapped[int | None] = mapped_column(ForeignKey("menu_pages.id"), nullable=True, index=True)
+    table_id: Mapped[int | None] = mapped_column(ForeignKey("tables.id"), nullable=True, index=True)
+    table_label: Mapped[str | None] = mapped_column(String(60), nullable=True)  # snapshot ("Mesa 5")
+    customer_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="pendiente", index=True)
+    total: Mapped[float] = mapped_column(Float, default=0)
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    accepted_by: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now, index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now, onupdate=cr_now)
+
+    items = relationship("OnlineOrderItem", back_populates="order", cascade="all, delete-orphan")
+    table = relationship("Table")
+
+
+class OnlineOrderItem(Base):
+    __tablename__ = "online_order_items"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    online_order_id: Mapped[int] = mapped_column(ForeignKey("online_orders.id"), nullable=False, index=True)
+    menu_item_id: Mapped[int | None] = mapped_column(ForeignKey("menu_items.id"), nullable=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)          # snapshot
+    variant_label: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    unit_price: Mapped[float] = mapped_column(Float, default=0)
+    quantity: Mapped[int] = mapped_column(Integer, default=1)
+    line_total: Mapped[float] = mapped_column(Float, default=0)
+    note: Mapped[str | None] = mapped_column(String(200), nullable=True)
+
+    order = relationship("OnlineOrder", back_populates="items")

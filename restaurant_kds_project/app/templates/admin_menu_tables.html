@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block content %}
+<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;" class="noprint">
+  <h1 style="margin:0;">QR de mesas · {{ page.name }}</h1>
+  <div style="display:flex;gap:10px;">
+    <button onclick="window.print()" class="btn primary">🖨 Imprimir</button>
+    <a href="/admin/menu/{{ page.id }}" style="color:#9aa6bd;text-decoration:none;font-weight:700;align-self:center;">← Volver</a>
+  </div>
+</div>
+<p class="noprint" style="color:#9aa6bd;font-size:15px;margin:10px 0 20px;">Cada QR lleva a la mesa correspondiente. Al escanearlo, el cliente ve el menú y puede <strong>enviar su pedido etiquetado con esa mesa</strong>. Imprime y colócalos en cada mesa.</p>
+
+<style>
+  .qgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:18px; }
+  .qcard { border:1px solid var(--border); border-radius:16px; padding:18px; text-align:center; background:#fff; color:#111; }
+  .qcard .qn { font-size:22px; font-weight:900; margin-bottom:4px; }
+  .qcard .qs { font-size:13px; color:#555; margin-bottom:12px; }
+  .qcard img { width:180px; height:180px; }
+  .qcard .brand { font-size:12px; color:#888; margin-top:10px; }
+  @media print {
+    .noprint { display:none !important; }
+    .topbar, header { display:none !important; }
+    .qgrid { grid-template-columns:repeat(2, 1fr); }
+    .qcard { break-inside:avoid; border:1px solid #ccc; }
+  }
+</style>
+
+{% if tables %}
+<div class="qgrid">
+  {% for t in tables %}
+  <div class="qcard">
+    <div class="qn">Mesa {{ t.number }}{% if t.name %} · {{ t.name }}{% endif %}</div>
+    <div class="qs">{{ page.name }}</div>
+    <img src="/admin/menu/{{ page.id }}/mesa/{{ t.id }}/qr.png" alt="QR Mesa {{ t.number }}" />
+    <div class="brand">Escanéame para ver el menú y ordenar</div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p style="color:#9aa6bd;">No hay mesas configuradas. Créalas en Admin → Editar plano de mesas.</p>
+{% endif %}
+{% endblock %}

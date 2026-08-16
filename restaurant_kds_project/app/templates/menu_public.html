@@ -32,8 +32,45 @@
     .variant .vl { color:var(--text); }
     .variant .vp { font-weight:800; color:var(--acc); }
     .empty { color:var(--muted); text-align:center; padding:50px 20px; font-size:17px; }
-    .foot { text-align:center; color:var(--muted); font-size:12px; padding:30px 16px 0; }
+    .foot { text-align:center; color:var(--muted); font-size:12px; padding:30px 16px 90px; }
     .notfound { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; gap:12px; text-align:center; padding:24px; }
+
+    /* Pedido (carrito) */
+    .order-banner { background:rgba(255,255,255,0.04); border-bottom:1px solid var(--border); padding:10px 16px; text-align:center; font-size:14px; color:var(--muted); }
+    .order-banner b { color:var(--acc); }
+    .addbtn { flex:0 0 auto; width:38px; height:38px; border-radius:50%; border:none; background:var(--acc); color:#111; font-size:24px; font-weight:900; line-height:1; cursor:pointer; }
+    .variant .addbtn { width:32px; height:32px; font-size:20px; }
+    .fab { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:20; background:var(--acc); color:#111; border:none; border-radius:16px; padding:14px 26px; font-size:17px; font-weight:900; cursor:pointer; box-shadow:0 10px 30px rgba(0,0,0,.4); display:none; align-items:center; gap:10px; }
+    .fab.show { display:inline-flex; }
+    .fab .badge { background:#111; color:#fff; border-radius:999px; padding:2px 9px; font-size:14px; }
+    .cart-ov { display:none; position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:30; align-items:flex-end; justify-content:center; }
+    .cart-ov.open { display:flex; }
+    .cart { background:var(--bg); width:100%; max-width:720px; max-height:88vh; overflow-y:auto; border-radius:20px 20px 0 0; border:1px solid var(--border); padding:20px 18px 24px; }
+    .cart h2 { font-size:22px; margin-bottom:14px; }
+    .cart-line { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); }
+    .cart-line .cl-info { flex:1; min-width:0; }
+    .cart-line .cl-name { font-weight:800; font-size:16px; }
+    .cart-line .cl-sub { color:var(--muted); font-size:13px; }
+    .qtyc { display:flex; align-items:center; gap:10px; }
+    .qtyc button { width:34px; height:34px; border-radius:50%; border:1px solid var(--border); background:var(--card); color:var(--text); font-size:20px; font-weight:800; cursor:pointer; }
+    .qtyc span { min-width:22px; text-align:center; font-weight:800; }
+    .cart-fld { margin-top:14px; }
+    .cart-fld label { display:block; font-size:13px; color:var(--muted); margin-bottom:5px; }
+    .cart-fld input, .cart-fld textarea { width:100%; min-height:48px; border-radius:12px; border:1px solid var(--border); background:var(--card); color:var(--text); padding:10px 14px; font-size:16px; }
+    .cart-total { display:flex; justify-content:space-between; align-items:center; font-size:22px; font-weight:900; margin:16px 0; }
+    .cart-total .t { color:var(--acc); }
+    .cart-actions { display:flex; gap:12px; }
+    .cart-actions button { flex:1; min-height:56px; border:none; border-radius:14px; font-size:18px; font-weight:900; cursor:pointer; }
+    .btn-close { background:var(--card); color:var(--text); border:1px solid var(--border) !important; }
+    .btn-send { background:var(--acc); color:#111; }
+    .cart-empty { color:var(--muted); text-align:center; padding:24px; }
+    .done-ov { display:none; position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:40; align-items:center; justify-content:center; padding:24px; text-align:center; }
+    .done-ov.open { display:flex; }
+    .done-box { background:var(--bg); border:1px solid var(--border); border-radius:20px; padding:30px; max-width:400px; }
+    .done-box .ok { font-size:60px; }
+    .done-box h2 { font-size:26px; margin:8px 0; }
+    .done-box p { color:var(--muted); font-size:16px; }
+    .done-box button { margin-top:18px; min-height:52px; padding:0 28px; border:none; border-radius:14px; background:var(--acc); color:#111; font-size:17px; font-weight:900; cursor:pointer; }
   </style>
 </head>
 <body>
@@ -44,6 +81,7 @@
     <p style="color:var(--muted);">Este menú no existe o fue ocultado.</p>
   </div>
   {% else %}
+  {% if ordering %}<div class="order-banner">Pedido para <b>{{ table_label }}</b> — agrega platillos y envía tu orden.</div>{% endif %}
   <div class="wrap">
     {% if page.cover_image_path %}<img class="cover" src="{{ page.cover_image_path }}" alt="" />{% endif %}
     <div class="head">
@@ -69,15 +107,22 @@
         <div class="item">
           {% if it.image_path %}<img class="thumb" src="{{ it.image_path }}" alt="" />{% endif %}
           <div class="info">
-            <div style="display:flex;gap:12px;align-items:baseline;">
+            <div style="display:flex;gap:12px;align-items:center;">
               <div class="iname">{{ it.name }}</div>
               {% if not it.variants %}<div class="price">{{ currency }}{{ '{:,.0f}'.format(it.price or 0) }}</div>{% endif %}
+              {% if ordering and not it.variants %}
+              <button class="addbtn" style="margin-left:auto;" onclick="cartAdd({{ it.id }},0,{{ it.name|tojson }},null,{{ (it.price or 0) }})">＋</button>
+              {% endif %}
             </div>
             {% if it.description %}<div class="idesc">{{ it.description }}</div>{% endif %}
             {% if it.variants %}
             <div class="variants">
               {% for v in it.variants|sort(attribute='display_order') %}
-              <div class="variant"><span class="vl">{{ v.label }}</span><span class="vp">{{ currency }}{{ '{:,.0f}'.format(v.price or 0) }}</span></div>
+              <div class="variant">
+                <span class="vl">{{ v.label }}</span>
+                <span class="vp">{{ currency }}{{ '{:,.0f}'.format(v.price or 0) }}</span>
+                {% if ordering %}<button class="addbtn" style="margin-left:auto;" onclick="cartAdd({{ it.id }},{{ v.id }},{{ it.name|tojson }},{{ v.label|tojson }},{{ (v.price or 0) }})">＋</button>{% endif %}
+              </div>
               {% endfor %}
             </div>
             {% endif %}
@@ -96,6 +141,93 @@
 
     <div class="foot">Hecho con LISTO Restaurant Software</div>
   </div>
+
+  {% if ordering %}
+  <button class="fab" id="fab" onclick="openCart()">🛒 Ver pedido <span class="badge" id="fabCount">0</span> · <span id="fabTotal"></span></button>
+  <div class="cart-ov" id="cartOv">
+    <div class="cart">
+      <h2>Tu pedido · {{ table_label }}</h2>
+      <div id="cartLines"></div>
+      <div class="cart-fld"><label>Tu nombre (opcional)</label><input type="text" id="custName" maxlength="120" placeholder="Ej. Juan" /></div>
+      <div class="cart-fld"><label>Nota para la cocina (opcional)</label><textarea id="custNote" maxlength="500" placeholder="Ej. sin cebolla, para llevar…"></textarea></div>
+      <div class="cart-total"><span>Total</span><span class="t" id="cartTotal"></span></div>
+      <div class="cart-actions">
+        <button class="btn-close" onclick="closeCart()">Seguir viendo</button>
+        <button class="btn-send" id="sendBtn" onclick="sendOrder()">Enviar pedido</button>
+      </div>
+    </div>
+  </div>
+  <div class="done-ov" id="doneOv">
+    <div class="done-box">
+      <div class="ok">✅</div>
+      <h2>¡Pedido enviado!</h2>
+      <p>El personal lo revisará en un momento. Gracias.</p>
+      <button onclick="location.reload()">Hacer otro pedido</button>
+    </div>
+  </div>
+
+  <script>
+    var CART = {};
+    var CURRENCY = {{ currency|tojson }};
+    var TABLE_ID = {{ table_id }};
+    var SLUG = {{ page.slug|tojson }};
+    function money(n){ return CURRENCY + Math.round(n).toLocaleString("es-CR"); }
+    function cartAdd(id, vid, name, vlabel, price){
+      var key = id + "-" + (vid||0);
+      if(!CART[key]) CART[key] = {menu_item_id:id, variant_id:(vid||null), name:name, variant_label:vlabel, price:price, qty:0};
+      CART[key].qty++;
+      renderCart();
+    }
+    function cartChange(key, d){
+      if(!CART[key]) return;
+      CART[key].qty += d;
+      if(CART[key].qty <= 0) delete CART[key];
+      renderCart();
+    }
+    function cartArr(){ return Object.keys(CART).map(function(k){ return Object.assign({key:k}, CART[k]); }); }
+    function renderCart(){
+      var arr = cartArr();
+      var count = arr.reduce(function(s,l){return s+l.qty;},0);
+      var total = arr.reduce(function(s,l){return s+l.qty*l.price;},0);
+      var fab = document.getElementById("fab");
+      fab.classList.toggle("show", count>0);
+      document.getElementById("fabCount").textContent = count;
+      document.getElementById("fabTotal").textContent = money(total);
+      document.getElementById("cartTotal").textContent = money(total);
+      var host = document.getElementById("cartLines");
+      if(!arr.length){ host.innerHTML = '<div class="cart-empty">Tu pedido está vacío.</div>'; return; }
+      host.innerHTML = arr.map(function(l){
+        return '<div class="cart-line"><div class="cl-info"><div class="cl-name">'+l.name+'</div>'+
+          (l.variant_label?'<div class="cl-sub">'+l.variant_label+'</div>':'')+
+          '<div class="cl-sub">'+money(l.price)+' c/u</div></div>'+
+          '<div class="qtyc"><button onclick="cartChange(\''+l.key+'\',-1)">−</button><span>'+l.qty+'</span>'+
+          '<button onclick="cartChange(\''+l.key+'\',1)">＋</button></div></div>';
+      }).join("");
+    }
+    function openCart(){ document.getElementById("cartOv").classList.add("open"); }
+    function closeCart(){ document.getElementById("cartOv").classList.remove("open"); }
+    async function sendOrder(){
+      var arr = cartArr();
+      if(!arr.length) return;
+      var btn = document.getElementById("sendBtn");
+      btn.disabled = true; btn.textContent = "Enviando…";
+      try{
+        var res = await fetch("/m/"+SLUG+"/pedido", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({
+            table_id: TABLE_ID,
+            customer_name: document.getElementById("custName").value || null,
+            note: document.getElementById("custNote").value || null,
+            items: arr.map(function(l){ return {menu_item_id:l.menu_item_id, variant_id:l.variant_id, quantity:l.qty}; })
+          })
+        });
+        if(res.ok){ closeCart(); document.getElementById("doneOv").classList.add("open"); }
+        else { alert("No se pudo enviar el pedido. Intenta de nuevo."); btn.disabled=false; btn.textContent="Enviar pedido"; }
+      }catch(e){ alert("Error de conexión."); btn.disabled=false; btn.textContent="Enviar pedido"; }
+    }
+    document.getElementById("cartOv").addEventListener("click", function(e){ if(e.target===this) closeCart(); });
+  </script>
+  {% endif %}
 
   <script>
     var tabs = document.querySelectorAll("#tabs .tab");
