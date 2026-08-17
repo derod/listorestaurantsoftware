@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Respaldo y Datos</h1>
+
+<style>
+  .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px 22px; margin-bottom:20px; }
+  .card h2 { margin:0 0 6px; font-size:20px; }
+  .card .sub { color:#9aa6bd; font-size:14px; margin-bottom:14px; }
+  .btn { min-height:52px; padding:0 22px; border:none; border-radius:12px; font-size:16px; font-weight:800; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:8px; }
+  .btn.primary { background:var(--accent); color:#111; }
+  .btn.ghost { background:var(--muted); color:var(--text); }
+  .btn.green { background:var(--green); color:#08210c; }
+  .btn:disabled { opacity:0.5; cursor:not-allowed; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+  .exp-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+  .exp-item { border:1px solid var(--border); border-radius:12px; padding:14px 16px; }
+  .exp-item .t { font-weight:800; font-size:17px; margin-bottom:10px; }
+  .fld label { display:block; font-size:13px; color:#9aa6bd; margin-bottom:5px; font-weight:700; }
+  .fld select, .fld input { min-height:48px; border-radius:10px; border:1px solid var(--border); background:#10141b; color:var(--text); padding:9px 12px; font-size:15px; }
+  .counts { display:flex; gap:10px; flex-wrap:wrap; margin:14px 0; }
+  .pill { font-size:14px; font-weight:800; padding:6px 14px; border-radius:999px; }
+  .pill.crear { background:rgba(76,175,80,0.16); color:var(--green); }
+  .pill.act { background:rgba(77,163,255,0.16); color:var(--blue); }
+  .pill.omit { background:rgba(228,91,91,0.16); color:var(--red); }
+  table.prev { width:100%; border-collapse:collapse; }
+  table.prev th, table.prev td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--border); font-size:14px; }
+  table.prev th { color:#9aa6bd; font-size:12px; text-transform:uppercase; }
+  .a-crear { color:var(--green); font-weight:800; } .a-actualizar { color:var(--blue); font-weight:800; } .a-omitir { color:var(--red); font-weight:800; }
+  .prev-wrap { max-height:340px; overflow:auto; border:1px solid var(--border); border-radius:12px; margin-top:8px; }
+  .note { background:rgba(255,210,77,0.08); border:1px solid rgba(255,210,77,0.3); border-radius:10px; padding:10px 14px; font-size:13px; color:#d9cfa3; margin-top:10px; }
+  .msg { font-weight:800; margin-top:12px; }
+  .msg.ok { color:var(--green); } .msg.err { color:var(--red); }
+</style>
+
+<!-- 1. Respaldo completo -->
+<div class="card">
+  <h2>Respaldo completo del sistema</h2>
+  <div class="sub">Descarga una copia completa: base de datos ({{ stats.productos }} productos, {{ stats.insumos }} insumos y todo lo demás) + {{ n_files }} archivo(s) de <em>uploads</em> (imágenes y documentos). Úsalo para respaldo o migración.</div>
+  <a class="btn primary" href="/admin/backup/full.zip">⬇ Descargar respaldo (.zip)</a>
+  <div class="note">Para <strong>restaurar</strong>: reemplaza <code>restaurant_kds.db</code> y la carpeta <code>uploads/</code> en el volumen de datos y reinicia la app (ver DEPLOY.md).</div>
+</div>
+
+<!-- 2. Exportar catálogos -->
+<div class="card">
+  <h2>Exportar catálogos</h2>
+  <div class="sub">Descarga tus catálogos para editarlos en Excel o respaldarlos aparte.</div>
+  <div class="exp-grid">
+    <div class="exp-item">
+      <div class="t">Productos ({{ stats.productos }})</div>
+      <div class="row">
+        <a class="btn ghost" href="/admin/backup/export/productos.xlsx">Excel</a>
+        <a class="btn ghost" href="/admin/backup/export/productos.csv">CSV</a>
+      </div>
+    </div>
+    <div class="exp-item">
+      <div class="t">Insumos ({{ stats.insumos }})</div>
+      <div class="row">
+        <a class="btn ghost" href="/admin/backup/export/insumos.xlsx">Excel</a>
+        <a class="btn ghost" href="/admin/backup/export/insumos.csv">CSV</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 3. Importar catálogos -->
+<div class="card">
+  <h2>Importar catálogos</h2>
+  <div class="sub">Carga Productos o Insumos desde Excel/CSV. Hace <strong>upsert por nombre</strong> (crea los que faltan, actualiza los existentes, <strong>no borra</strong>). Revisa la vista previa antes de aplicar. Tip: exporta primero para ver el formato de columnas.</div>
+  <div class="row" style="align-items:end;">
+    <div class="fld"><label>Catálogo</label>
+      <select id="entity"><option value="productos">Productos</option><option value="insumos">Insumos</option></select>
+    </div>
+    <div class="fld"><label>Archivo (.xlsx o .csv)</label>
+      <input type="file" id="file" accept=".xlsx,.csv" />
+    </div>
+    <button class="btn ghost" id="previewBtn">Vista previa</button>
+  </div>
+
+  <div id="previewArea" style="display:none;">
+    <div class="counts">
+      <span class="pill crear">Crear: <span id="cCrear">0</span></span>
+      <span class="pill act">Actualizar: <span id="cAct">0</span></span>
+      <span class="pill omit">Omitir: <span id="cOmit">0</span></span>
+    </div>
+    <div class="prev-wrap">
+      <table class="prev"><thead><tr><th>Acción</th><th>Nombre</th><th>Detalle</th></tr></thead><tbody id="prevBody"></tbody></table>
+    </div>
+    <div id="truncNote" class="note" style="display:none;">Mostrando las primeras 300 filas.</div>
+    <div class="row" style="margin-top:14px;">
+      <button class="btn green" id="applyBtn">✓ Aplicar cambios</button>
+      <button class="btn ghost" id="cancelBtn">Cancelar</button>
+    </div>
+  </div>
+  <div class="msg" id="msg"></div>
+</div>
+
+<script>
+  var fileInput = document.getElementById("file");
+  var entitySel = document.getElementById("entity");
+  var msg = document.getElementById("msg");
+  function setMsg(t, ok){ msg.textContent = t; msg.className = "msg " + (ok===false?"err":(ok?"ok":"")); }
+
+  async function send(mode){
+    if(!fileInput.files.length){ setMsg("Elige un archivo primero.", false); return null; }
+    var fd = new FormData();
+    fd.append("entity", entitySel.value);
+    fd.append("file", fileInput.files[0]);
+    var res = await fetch("/admin/backup/import/"+mode, { method:"POST", body:fd, credentials:"same-origin" });
+    var data = await res.json();
+    if(!res.ok){ setMsg(data.error || "Error al procesar el archivo.", false); return null; }
+    return data;
+  }
+
+  document.getElementById("previewBtn").addEventListener("click", async function(){
+    setMsg("Analizando…");
+    var d = await send("preview");
+    if(!d) return;
+    setMsg("");
+    document.getElementById("cCrear").textContent = d.crear;
+    document.getElementById("cAct").textContent = d.actualizar;
+    document.getElementById("cOmit").textContent = d.omitir;
+    var tb = document.getElementById("prevBody");
+    tb.innerHTML = d.rows.map(function(r){
+      return "<tr><td class='a-"+r.action+"'>"+r.action+"</td><td>"+r.name+"</td><td>"+(r.detail||"")+"</td></tr>";
+    }).join("");
+    document.getElementById("truncNote").style.display = d.truncated ? "block" : "none";
+    document.getElementById("previewArea").style.display = "block";
+  });
+
+  document.getElementById("applyBtn").addEventListener("click", async function(){
+    var btn = this; btn.disabled = true; btn.textContent = "Aplicando…";
+    var d = await send("apply");
+    btn.disabled = false; btn.textContent = "✓ Aplicar cambios";
+    if(!d) return;
+    document.getElementById("previewArea").style.display = "none";
+    fileInput.value = "";
+    setMsg("Listo: "+d.created+" creados, "+d.updated+" actualizados, "+d.skipped+" omitidos.", true);
+  });
+
+  document.getElementById("cancelBtn").addEventListener("click", function(){
+    document.getElementById("previewArea").style.display = "none";
+    setMsg("");
+  });
+</script>
+{% endblock %}
