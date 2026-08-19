@@ -50,7 +50,8 @@ class Order(Base):
     was_edited: Mapped[bool] = mapped_column(Boolean, default=False)
     was_cancelled: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
+    # order_by id → preserva la SECUENCIA en que se agregaron (comanda de Desayuno).
+    items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan", order_by="OrderItem.id")
     events = relationship("OrderEvent", back_populates="order", cascade="all, delete-orphan")
     table = relationship("Table")
 

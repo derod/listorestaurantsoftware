@@ -29,6 +29,12 @@
 
   .order-items-big { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:12px; }
   .order-line-big { display:flex; justify-content:flex-start; align-items:center; gap:20px; background:#10141b; border-radius:16px; padding:16px 22px; font-weight:800; }
+
+  /* Comanda secuencial (Desayuno/Uber): lista vertical en el orden armado */
+  .order-items-comanda { display:flex; flex-direction:column; gap:8px; }
+  .order-line-seq { display:flex; align-items:center; gap:18px; background:#10141b; border-radius:12px; padding:12px 20px; border-left:6px solid var(--accent); }
+  .order-line-seq .seq-qty { color:var(--accent); font-size:30px; font-weight:900; min-width:58px; text-align:center; }
+  .order-line-seq .seq-name { font-size:30px; font-weight:800; }
   .order-line-big .qty { color:var(--accent); font-size:64px; font-weight:900; line-height:1; min-width:96px; text-align:center; flex-shrink:0; }
   .order-line-big .qty .mult { font-size:30px; opacity:0.75; margin-right:2px; }
   .order-line-big .prod-name { font-size:34px; }

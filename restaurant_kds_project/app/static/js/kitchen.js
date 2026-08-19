@@ -467,11 +467,19 @@ function renderOrders(orders) {
         </div>
         ${timerHtml}
       </div>
-      <div class="order-items-big">
-        ${order.items.map(item =>
+      ${(function () {
+        // Desayuno/Uber = comanda secuencial: lista vertical en el orden en que
+        // el mesero la armó (Uber reutiliza productos de categoría Desayuno).
+        const isComanda = order.items.some(it => it.category === "Desayuno");
+        if (isComanda) {
+          return `<div class="order-items-comanda">${order.items.map(item =>
+            `<div class="order-line-seq"><span class="seq-qty">×${item.quantity}</span><span class="seq-name">${item.product_name}</span></div>`
+          ).join("")}</div>`;
+        }
+        return `<div class="order-items-big">${order.items.map(item =>
           `<div class="order-line-big"><span class="qty"><span class="mult">×</span>${item.quantity}</span><span class="prod-name">${item.product_name}</span></div>`
-        ).join("")}
-      </div>
+        ).join("")}</div>`;
+      })()}
       <div class="order-actions-big">
         ${buttonsHtml}
       </div>
