@@ -35,9 +35,12 @@
 </div>
 
 <div class="panel" style="margin-bottom:26px;">
-  <div style="display:flex;align-items:baseline;justify-content:space-between;">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
     <h2 style="margin:0;">Cumplimiento de hoy</h2>
-    <div style="font-size:34px;font-weight:900;color:var(--green);">{{ pct }}%</div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <a href="/admin/sanitario/reporte-diario/pdf?fecha={{ today }}" target="_blank" rel="noopener" style="min-height:44px;display:inline-flex;align-items:center;padding:0 16px;border-radius:12px;background:rgba(76,175,80,0.16);color:var(--green);border:1px solid rgba(76,175,80,0.4);font-weight:800;text-decoration:none;">📄 Reporte del día</a>
+      <div style="font-size:34px;font-weight:900;color:var(--green);">{{ pct }}%</div>
+    </div>
   </div>
   <div class="prog-bar"><div class="prog-fill" style="width:{{ pct }}%;"></div></div>
 </div>

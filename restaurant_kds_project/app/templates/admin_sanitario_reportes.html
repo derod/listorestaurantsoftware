@@ -16,8 +16,19 @@
   @media(max-width:520px){ .included ul { columns:1; } }
 </style>
 
+<div class="card" style="border-color:rgba(76,175,80,0.4);">
+  <h2>📅 Reporte diario (para el Ministerio de Salud)</h2>
+  <p>Reporte imprimible de <strong>un día</strong>: qué limpiezas se hicieron (quién, hora, verificación), temperaturas, incidencias y plagas del día, con líneas de firma. Formato profesional listo para presentar.</p>
+  <form method="get" action="/admin/sanitario/reporte-diario/pdf" target="_blank">
+    <div class="row">
+      <div class="fld"><label>Día</label><input type="date" name="fecha" value="{{ default_to }}" /></div>
+      <button type="submit" class="btn">📄 Generar reporte del día</button>
+    </div>
+  </form>
+</div>
+
 <div class="card">
-  <h2>Generar reporte sanitario (PDF)</h2>
+  <h2>Generar reporte de período (PDF)</h2>
   <p>Documento con el establecimiento, período, protocolo vigente, registros de limpieza,
      verificaciones, incidencias, temperaturas y control de plagas.</p>
   <form method="get" action="/admin/sanitario/reportes/pdf" target="_blank">

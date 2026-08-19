@@ -1151,6 +1151,20 @@ def admin_reportes_pdf(request: Request, desde: str = "", hasta: str = "", db: S
     )
 
 
+@router.get("/admin/sanitario/reporte-diario/pdf")
+def admin_reporte_diario_pdf(request: Request, fecha: str = "", db: Session = Depends(get_db)):
+    g = _admin_guard(request)
+    if g:
+        return g
+    d = _parse_date_opt(fecha)
+    day = d.date() if d else cr_today()
+    pdf = _build_daily_report_pdf(db, day)
+    return StreamingResponse(
+        _io.BytesIO(pdf), media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=reporte-diario-{day}.pdf"},
+    )
+
+
 # ─── guías y cumplimiento ─────────────────────────────────────────────────────
 
 @router.get("/admin/sanitario/guias")
@@ -1451,5 +1465,172 @@ def _build_report_pdf(db: Session, d_from: date, d_to: date) -> bytes:
 
     story.append(Spacer(1, 10))
     story.append(Paragraph("LISTO Restaurant Software — Control Sanitario", small))
+    doc.build(story)
+    return buf.getvalue()
+
+
+_DIAS_ES = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+_MESES_ES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+             "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+
+
+def _fecha_larga(d: date) -> str:
+    return f"{_DIAS_ES[d.weekday()]} {d.day} de {_MESES_ES[d.month - 1]} de {d.year}"
+
+
+def _build_daily_report_pdf(db: Session, day: date) -> bytes:
+    """Reporte DIARIO de Higiene y Desinfección, formato profesional para el
+    Ministerio de Salud: programa del día con quién/hora/verificación, más
+    temperaturas, incidencias y plagas del día, y líneas de firma."""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.lib.units import mm
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+
+    buf = _io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=A4, topMargin=15 * mm, bottomMargin=14 * mm,
+                            leftMargin=14 * mm, rightMargin=14 * mm)
+    styles = getSampleStyleSheet()
+    h1 = ParagraphStyle("h1", parent=styles["Heading1"], fontSize=15, spaceAfter=2)
+    h2 = ParagraphStyle("h2", parent=styles["Heading2"], fontSize=12, spaceBefore=12, spaceAfter=4)
+    small = ParagraphStyle("small", parent=styles["Normal"], fontSize=8, textColor=colors.grey)
+    normal = styles["Normal"]
+    P = lambda s: Paragraph(str(s if s not in (None, "") else "—"), ParagraphStyle("c", parent=normal, fontSize=8))
+
+    def _tbl(data, col_widths):
+        t = Table(data, colWidths=col_widths, repeatRows=1)
+        t.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0f4c81")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTSIZE", (0, 0), (-1, -1), 8),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#c8d0dc")),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f2f5f9")]),
+            ("LEFTPADDING", (0, 0), (-1, -1), 4), ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ]))
+        return t
+
+    dt_from = datetime.combine(day, datetime.min.time())
+    dt_to = datetime.combine(day, datetime.max.time())
+    today = cr_today()
+
+    story = []
+    story.append(Paragraph(_establishment_name(db), styles["Heading3"]))
+    story.append(Paragraph("Reporte Diario de Higiene y Desinfección", h1))
+    story.append(Paragraph(f"Fecha: {_fecha_larga(day)}", normal))
+    story.append(Paragraph(
+        "Programa de Higiene y Desinfección — registro de ejecución del día "
+        "(concepto operativo del Decreto 37308-S).", small))
+
+    # ── Limpiezas del día ──
+    recs = (
+        db.query(CleaningRecord).options(joinedload(CleaningRecord.task).joinedload(CleaningTask.area))
+        .filter(CleaningRecord.scheduled_date == day).all()
+    )
+    recs.sort(key=lambda r: (r.task.area.display_order if r.task and r.task.area else 0,
+                             r.task.name if r.task else "", r.slot))
+    total = len(recs)
+    done = sum(1 for r in recs if r.status in ("completada", "verificada"))
+    verified = sum(1 for r in recs if r.status == "verificada")
+    pct = round(done / total * 100) if total else 0
+    story.append(Paragraph(
+        f"<b>Cumplimiento del día:</b> {done} / {total} limpiezas ({pct}%) · "
+        f"Verificadas: {verified}", normal))
+
+    story.append(Paragraph("Programa de limpieza y desinfección del día", h2))
+    rows = [["Área", "Tarea", "Estado", "Realizó", "Inicio", "Fin", "Verificó"]]
+    for r in recs:
+        st = _effective_status(r, today)
+        rows.append([
+            P(r.task.area.name if r.task and r.task.area else "—"),
+            P(r.task.name if r.task else "—"),
+            P(STATE_LABELS.get(st, st)),
+            P(r.created_by),
+            P(r.started_at.strftime("%H:%M") if r.started_at else "—"),
+            P(r.completed_at.strftime("%H:%M") if r.completed_at else "—"),
+            P(r.verified_by),
+        ])
+    story.append(_tbl(rows, [70, 150, 60, 70, 38, 38, 70]) if total
+                 else Paragraph("No hay limpiezas programadas para este día.", normal))
+
+    # ── Temperaturas del día ──
+    story.append(Paragraph("Control de temperaturas", h2))
+    temps = (
+        db.query(TemperatureRecord).options(joinedload(TemperatureRecord.equipment))
+        .filter(TemperatureRecord.recorded_at >= dt_from, TemperatureRecord.recorded_at <= dt_to)
+        .order_by(TemperatureRecord.recorded_at.asc()).all()
+    )
+    if temps:
+        rows = [["Hora", "Equipo", "Temp.", "Rango", "Estado", "Registró"]]
+        for tr in temps:
+            eq = tr.equipment
+            rng = (f"{eq.min_temp if eq and eq.min_temp is not None else '—'} a "
+                   f"{eq.max_temp if eq and eq.max_temp is not None else '—'} °C") if eq else "—"
+            rows.append([
+                P(tr.recorded_at.strftime("%H:%M")), P(eq.name if eq else "—"),
+                P(f"{tr.temperature} °C"), P(rng),
+                P("FUERA DE RANGO" if tr.out_of_range else "OK"), P(tr.created_by),
+            ])
+        story.append(_tbl(rows, [45, 110, 55, 90, 90, 70]))
+    else:
+        story.append(Paragraph("Sin lecturas de temperatura en el día.", normal))
+
+    # ── Incidencias del día ──
+    story.append(Paragraph("Incidencias del día", h2))
+    incs = (
+        db.query(CleaningIncident).options(joinedload(CleaningIncident.area))
+        .filter(CleaningIncident.created_at >= dt_from, CleaningIncident.created_at <= dt_to)
+        .order_by(CleaningIncident.created_at.asc()).all()
+    )
+    if incs:
+        rows = [["Área", "Problema", "Prioridad", "Acción correctiva", "Estado"]]
+        for i in incs:
+            rows.append([
+                P(i.area.name if i.area else "—"), P(i.problem),
+                P(PRIORITY_LABELS.get(i.priority, i.priority)),
+                P(i.corrective_action), P(INCIDENT_STATE_LABELS.get(i.status, i.status)),
+            ])
+        story.append(_tbl(rows, [70, 140, 60, 130, 60]))
+    else:
+        story.append(Paragraph("Sin incidencias reportadas en el día.", normal))
+
+    # ── Plagas del día ──
+    pests = (
+        db.query(PestControlRecord).options(joinedload(PestControlRecord.area))
+        .filter(PestControlRecord.inspection_date == day).all()
+    )
+    if pests:
+        story.append(Paragraph("Control de plagas", h2))
+        rows = [["Área", "Tipo", "Evidencia", "Acción", "Estado"]]
+        for p in pests:
+            rows.append([
+                P(p.area.name if p.area else "General"), P(p.pest_type),
+                P(p.evidence), P(p.action_taken),
+                P(PEST_STATE_LABELS.get(p.status, p.status)),
+            ])
+        story.append(_tbl(rows, [70, 70, 130, 130, 60]))
+
+    # ── Observaciones + firmas ──
+    story.append(Spacer(1, 16))
+    story.append(Paragraph("Observaciones generales:", normal))
+    story.append(Spacer(1, 26))
+    sig = Table(
+        [["", ""], ["Responsable de cocina", "Encargado / Regente"]],
+        colWidths=[245, 245],
+    )
+    sig.setStyle(TableStyle([
+        ("LINEABOVE", (0, 1), (0, 1), 0.7, colors.black),
+        ("LINEABOVE", (1, 1), (1, 1), 0.7, colors.black),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("FONTSIZE", (0, 1), (-1, 1), 9),
+        ("TOPPADDING", (0, 0), (-1, 0), 30),
+    ]))
+    story.append(sig)
+    story.append(Spacer(1, 12))
+    story.append(Paragraph(
+        f"Generado: {cr_now().strftime('%d/%m/%Y %H:%M')} (hora CR) · "
+        "LISTO Restaurant Software — Control Sanitario", small))
     doc.build(story)
     return buf.getvalue()
