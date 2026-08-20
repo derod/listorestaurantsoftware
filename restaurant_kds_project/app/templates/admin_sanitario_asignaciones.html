@@ -60,5 +60,20 @@
     <span class="hint">Las áreas sin ningún responsable quedan visibles para todos.</span>
   </div>
 </form>
+
+<div class="card" style="margin-top:24px;">
+  <h2 style="margin:0 0 6px;font-size:20px;">👤 Encargados de verificación</h2>
+  <p class="hint" style="margin-bottom:14px;">Marca qué agentes pueden <strong>verificar</strong> limpiezas desde su app. Regla: un encargado <strong>no puede verificar lo que él mismo hizo</strong>. El Admin siempre puede verificar cualquiera.</p>
+  <form method="post" action="/admin/sanitario/verificadores">
+    <div style="display:flex;flex-wrap:wrap;gap:12px;">
+      {% for w in waiters %}
+      <label style="display:flex;align-items:center;gap:10px;min-height:52px;padding:0 18px;border:1px solid var(--border);border-radius:12px;background:{{ 'rgba(76,175,80,0.10)' if w.supervisor else '#10141b' }};font-size:18px;font-weight:700;cursor:pointer;">
+        <input type="checkbox" class="chk" name="supervisor" value="{{ w.id }}" {{ 'checked' if w.supervisor else '' }} /> {{ w.name }}
+      </label>
+      {% endfor %}
+    </div>
+    <div class="actions"><button type="submit" class="btn primary">Guardar encargados</button></div>
+  </form>
+</div>
 {% endif %}
 {% endblock %}

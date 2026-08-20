@@ -170,6 +170,11 @@ def _ensure_schema():
         if "kds_order_id" not in oo_cols:
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE online_orders ADD COLUMN kds_order_id INTEGER"))
+    if "waiters" in insp.get_table_names():
+        wt_cols = {c["name"] for c in insp.get_columns("waiters")}
+        if "supervisor" not in wt_cols:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE waiters ADD COLUMN supervisor BOOLEAN DEFAULT 0"))
     # Performance indexes for orders table
     existing_indexes = {idx["name"] for idx in insp.get_indexes("orders")} if "orders" in insp.get_table_names() else set()
     with engine.begin() as conn:

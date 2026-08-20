@@ -54,6 +54,7 @@
     <div class="san-user">👤 {{ waiter_name }} · {{ today.strftime('%d/%m/%Y') }}{% if has_assignments %} · <strong style="color:var(--green);">{{ mine_pending }} asignada(s) hoy</strong>{% endif %}</div>
   </div>
   <div class="san-actions">
+    {% if is_supervisor %}<a class="san-btn" style="background:rgba(76,175,80,0.16);color:var(--green);border:1px solid rgba(76,175,80,0.4);" href="/sanitario/verificaciones">✓ Verificar{% if pend_verif %} ({{ pend_verif }}){% endif %}</a>{% endif %}
     <button class="san-btn blue" onclick="document.getElementById('tempModal').classList.add('open')">🌡️ Temperatura</button>
     <a class="san-btn warn" href="/sanitario/incidencias/nueva">⚠️ Incidencia</a>
     <a class="san-btn red" href="/sanitario/logout">Salir</a>

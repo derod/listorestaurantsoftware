@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .v-head { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; margin-bottom:18px; }
+  .v-head h1 { margin:0; }
+  .v-user { font-size:18px; color:#b7becd; }
+  .v-actions { display:flex; gap:10px; flex-wrap:wrap; }
+  .san-btn { display:inline-flex; align-items:center; gap:8px; min-height:52px; padding:0 20px; border-radius:14px; font-size:18px; font-weight:800; text-decoration:none; border:none; cursor:pointer; }
+  .san-btn.ghost { background:var(--muted); color:var(--text); }
+  .san-btn.red { background:rgba(228,91,91,0.16); color:var(--red); border:1px solid rgba(228,91,91,0.4); }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:18px 20px; margin-bottom:20px; }
+  .card h2 { margin:0 0 12px; font-size:20px; }
+  .ver-row { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; padding:16px; border:1px solid var(--border); border-radius:14px; margin-bottom:12px; }
+  .ver-row .name { font-size:20px; font-weight:800; }
+  .ver-row .sub { font-size:15px; color:#9aa6bd; margin-top:4px; }
+  .ver-row form { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .ver-row input[type=text] { min-height:52px; border-radius:12px; border:1px solid var(--border); background:#10141b; color:var(--text); padding:10px 14px; font-size:16px; width:220px; }
+  .btn-ok { min-height:56px; padding:0 26px; border:none; border-radius:14px; background:var(--green); color:#08210c; font-size:19px; font-weight:900; cursor:pointer; }
+  .empty { color:var(--green); font-size:20px; font-weight:700; }
+  .recent { list-style:none; padding:0; margin:0; }
+  .recent li { display:flex; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); font-size:15px; }
+  .recent li:last-child { border-bottom:none; }
+  .note { color:#9aa6bd; font-size:13px; }
+  @media (max-width:640px){ .ver-row input[type=text]{ width:100%; } .ver-row form{ width:100%; } .btn-ok{ flex:1; } }
+</style>
+
+<div class="v-head">
+  <div>
+    <h1>Verificaciones</h1>
+    <div class="v-user">👤 {{ waiter_name }} · Encargado</div>
+  </div>
+  <div class="v-actions">
+    <a class="san-btn ghost" href="/sanitario/hoy">← Limpiezas de hoy</a>
+    <a class="san-btn red" href="/sanitario/logout">Salir</a>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Pendientes de verificar ({{ pendientes|length }})</h2>
+  <p class="note" style="margin-bottom:12px;">Revisa la limpieza y confirma. No aparecen las que tú realizaste (no puedes verificar tu propio trabajo).</p>
+  {% for r in pendientes %}
+  <div class="ver-row">
+    <div class="info">
+      <div class="name">{{ r.task.area.name if r.task and r.task.area else '—' }} — {{ r.task.name if r.task else '—' }}</div>
+      <div class="sub">Realizó {{ r.created_by or '—' }}{% if r.completed_at %} · {{ r.completed_at.strftime('%d/%m %H:%M') }}{% endif %}{% if r.observations %} · 📝 {{ r.observations }}{% endif %}</div>
+    </div>
+    <form method="post" action="/sanitario/registro/{{ r.id }}/verificar">
+      <input type="text" name="notes" placeholder="Observación (opcional)" />
+      <button type="submit" class="btn-ok">✓ Verificar</button>
+    </form>
+  </div>
+  {% else %}
+  <p class="empty">✓ No hay limpiezas pendientes de verificar.</p>
+  {% endfor %}
+</div>
+
+{% if recientes %}
+<div class="card">
+  <h2>Verificadas por ti</h2>
+  <ul class="recent">
+    {% for r in recientes %}
+    <li>
+      <span>{{ r.task.area.name if r.task and r.task.area else '—' }} — {{ r.task.name if r.task else '—' }}
+        <div class="note">Realizó {{ r.created_by or '—' }}{% if r.verified_notes %} · {{ r.verified_notes }}{% endif %}</div>
+      </span>
+      <span style="color:var(--green);font-weight:700;white-space:nowrap;">✓ {{ r.verified_at.strftime('%d/%m %H:%M') if r.verified_at else '' }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% endblock %}

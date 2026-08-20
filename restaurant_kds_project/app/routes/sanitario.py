@@ -20,7 +20,7 @@ from datetime import datetime, date, timedelta
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse, StreamingResponse
 from pydantic import BaseModel
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
 
 from ..database import get_db
@@ -233,6 +233,15 @@ def sanitario_hoy(request: Request, db: Session = Depends(get_db)):
     has_assignments = bool(mine_areas)
     mine_pending = sum(1 for v in pending if v["mine"])
     equipos = db.query(TemperatureEquipment).filter(TemperatureEquipment.active == True).order_by(TemperatureEquipment.name).all()  # noqa: E712
+    is_supervisor = _is_supervisor(db, waiter_id)
+    pend_verif = 0
+    if is_supervisor:
+        pend_verif = (
+            db.query(func.count(CleaningRecord.id))
+            .filter(CleaningRecord.status == "completada", CleaningRecord.verified_at == None)  # noqa: E711
+            .filter(or_(CleaningRecord.created_by_id.is_(None), CleaningRecord.created_by_id != waiter_id))
+            .scalar() or 0
+        )
     return templates.TemplateResponse(
         "sanitario_hoy.html",
         {
@@ -241,6 +250,7 @@ def sanitario_hoy(request: Request, db: Session = Depends(get_db)):
             "pending": pending, "completed": completed,
             "total": total, "done": done, "pct": pct, "equipos": equipos,
             "has_assignments": has_assignments, "mine_pending": mine_pending,
+            "is_supervisor": is_supervisor, "pend_verif": pend_verif,
         },
     )
 
@@ -314,6 +324,54 @@ def sanitario_completar(
             r.created_by, r.created_by_id = wname, wid
         db.commit()
     return RedirectResponse(url="/sanitario/hoy", status_code=303)
+
+
+# ─── worker: verificación por el encargado (no puede autoverificar) ───────────
+
+@router.get("/sanitario/verificaciones")
+def sanitario_verificaciones_worker(request: Request, db: Session = Depends(get_db)):
+    w = require_waiter(request)
+    if not w:
+        return _login_redirect("/sanitario/verificaciones")
+    wid, wname = w
+    if not _is_supervisor(db, wid):
+        return RedirectResponse(url="/sanitario/hoy")
+    # Completadas pendientes de verificar, EXCLUYENDO las que hizo este encargado.
+    pendientes = (
+        db.query(CleaningRecord).options(joinedload(CleaningRecord.task).joinedload(CleaningTask.area))
+        .filter(CleaningRecord.status == "completada", CleaningRecord.verified_at == None)  # noqa: E711
+        .filter(or_(CleaningRecord.created_by_id.is_(None), CleaningRecord.created_by_id != wid))
+        .order_by(CleaningRecord.completed_at.desc()).limit(200).all()
+    )
+    recientes = (
+        db.query(CleaningRecord).options(joinedload(CleaningRecord.task).joinedload(CleaningTask.area))
+        .filter(CleaningRecord.verified_by == wname)
+        .order_by(CleaningRecord.verified_at.desc()).limit(10).all()
+    )
+    return templates.TemplateResponse(
+        "sanitario_verificaciones.html",
+        {"request": request, "page_title": "Verificaciones", "waiter_name": wname,
+         "pendientes": pendientes, "recientes": recientes},
+    )
+
+
+@router.post("/sanitario/registro/{record_id}/verificar")
+def sanitario_verificar_worker(record_id: int, request: Request, notes: str = Form(""), db: Session = Depends(get_db)):
+    w = require_waiter(request)
+    if not w:
+        return _login_redirect("/sanitario/verificaciones")
+    wid, wname = w
+    if not _is_supervisor(db, wid):
+        return RedirectResponse(url="/sanitario/hoy")
+    r = db.query(CleaningRecord).filter(CleaningRecord.id == record_id).first()
+    # Segregación: no puede verificar la limpieza que él mismo realizó.
+    if (r and r.status == "completada" and not r.verified_at and r.created_by_id != wid):
+        r.status = "verificada"
+        r.verified_at = cr_now()
+        r.verified_by = wname
+        r.verified_notes = (notes.strip() or None)
+        db.commit()
+    return RedirectResponse(url="/sanitario/verificaciones", status_code=303)
 
 
 # ─── worker: QR landing (siempre pasa por login) ──────────────────────────────
@@ -1226,6 +1284,30 @@ async def admin_asignaciones_save(request: Request, db: Session = Depends(get_db
         db.add(CleaningAssignment(area_id=a, waiter_id=wid))
     db.commit()
     return RedirectResponse(url="/admin/sanitario/asignaciones?saved=1", status_code=303)
+
+
+@router.post("/admin/sanitario/verificadores")
+async def admin_verificadores_save(request: Request, db: Session = Depends(get_db)):
+    """Designa qué agentes son ENCARGADOS (pueden verificar limpiezas)."""
+    g = _admin_guard(request)
+    if g:
+        return g
+    form = await request.form()
+    ids = set()
+    for raw in form.getlist("supervisor"):
+        try:
+            ids.add(int(raw))
+        except (ValueError, TypeError):
+            continue
+    for w in db.query(Waiter).all():
+        w.supervisor = w.id in ids
+    db.commit()
+    return RedirectResponse(url="/admin/sanitario/asignaciones?saved=1", status_code=303)
+
+
+def _is_supervisor(db: Session, waiter_id: int) -> bool:
+    row = db.query(Waiter.supervisor).filter(Waiter.id == waiter_id).first()
+    return bool(row and row[0])
 
 
 # ─── guías y cumplimiento ─────────────────────────────────────────────────────
