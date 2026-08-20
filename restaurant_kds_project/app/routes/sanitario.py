@@ -26,7 +26,7 @@ from sqlalchemy.orm import Session, joinedload
 from ..database import get_db
 from ..models import (
     Waiter, FacturaConfig,
-    CleaningArea, CleaningTask, CleaningRecord, CleaningIncident,
+    CleaningArea, CleaningTask, CleaningRecord, CleaningIncident, CleaningAssignment,
     TemperatureEquipment, TemperatureRecord, PestControlRecord, SanitaryInspection,
     cr_now, cr_today,
     CLEANING_FREQUENCIES, CLEANING_MOMENTS, CLEANING_RECORD_STATES,
@@ -177,10 +177,21 @@ def sanitario_root(request: Request):
     return RedirectResponse(url="/sanitario/hoy")
 
 
-def _record_view(r: CleaningRecord, today: date) -> dict:
+def _assigned_area_ids(db: Session, waiter_id: int) -> set[int]:
+    """Áreas asignadas al agente (reparto del protocolo)."""
+    return {
+        a for (a,) in db.query(CleaningAssignment.area_id)
+        .filter(CleaningAssignment.waiter_id == waiter_id).all()
+    }
+
+
+def _record_view(r: CleaningRecord, today: date, mine_areas: set[int] | None = None) -> dict:
     st = _effective_status(r, today)
+    area_id = r.task.area_id if r.task else None
     return {
         "id": r.id,
+        "area_id": area_id,
+        "mine": bool(mine_areas and area_id in mine_areas),
         "area": r.task.area.name if r.task and r.task.area else "—",
         "task": r.task.name if r.task else "—",
         "moment": MOMENT_LABELS.get(r.task.moment or "", "") if r.task else "",
@@ -201,9 +212,10 @@ def sanitario_hoy(request: Request, db: Session = Depends(get_db)):
     w = require_waiter(request)
     if not w:
         return _login_redirect("/sanitario/hoy")
-    _, waiter_name = w
+    waiter_id, waiter_name = w
     ensure_today_records(db)
     today = cr_today()
+    mine_areas = _assigned_area_ids(db, waiter_id)
     records = (
         db.query(CleaningRecord)
         .options(joinedload(CleaningRecord.task).joinedload(CleaningTask.area))
@@ -212,12 +224,14 @@ def sanitario_hoy(request: Request, db: Session = Depends(get_db)):
     )
     records.sort(key=lambda r: (r.task.area.display_order if r.task and r.task.area else 0,
                                 r.task.name if r.task else "", r.slot))
-    views = [_record_view(r, today) for r in records]
+    views = [_record_view(r, today, mine_areas) for r in records]
     total = len(views)
     done = sum(1 for v in views if v["status"] in ("completada", "verificada"))
     pct = round(done / total * 100) if total else 0
     pending = [v for v in views if v["status"] in ("pendiente", "en_proceso", "vencida")]
     completed = [v for v in views if v["status"] in ("completada", "verificada")]
+    has_assignments = bool(mine_areas)
+    mine_pending = sum(1 for v in pending if v["mine"])
     equipos = db.query(TemperatureEquipment).filter(TemperatureEquipment.active == True).order_by(TemperatureEquipment.name).all()  # noqa: E712
     return templates.TemplateResponse(
         "sanitario_hoy.html",
@@ -226,6 +240,7 @@ def sanitario_hoy(request: Request, db: Session = Depends(get_db)):
             "waiter_name": waiter_name, "today": today,
             "pending": pending, "completed": completed,
             "total": total, "done": done, "pct": pct, "equipos": equipos,
+            "has_assignments": has_assignments, "mine_pending": mine_pending,
         },
     )
 
@@ -1163,6 +1178,54 @@ def admin_reporte_diario_pdf(request: Request, fecha: str = "", db: Session = De
         _io.BytesIO(pdf), media_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename=reporte-diario-{day}.pdf"},
     )
+
+
+# ─── admin: repartir protocolo (asignar áreas a agentes) ──────────────────────
+
+@router.get("/admin/sanitario/asignaciones")
+def admin_asignaciones(request: Request, db: Session = Depends(get_db)):
+    g = _admin_guard(request)
+    if g:
+        return g
+    areas = db.query(CleaningArea).filter(CleaningArea.active == True).order_by(CleaningArea.display_order, CleaningArea.name).all()  # noqa: E712
+    waiters = db.query(Waiter).filter(Waiter.active == True).order_by(Waiter.name).all()  # noqa: E712
+    assigned = {(a, w) for (a, w) in db.query(CleaningAssignment.area_id, CleaningAssignment.waiter_id).all()}
+    # conteo de agentes por área (para mostrar áreas sin responsable)
+    per_area = {}
+    for (a, _w) in assigned:
+        per_area[a] = per_area.get(a, 0) + 1
+    return templates.TemplateResponse(
+        "admin_sanitario_asignaciones.html",
+        {
+            "request": request, "page_title": "Repartir protocolo",
+            "areas": areas, "waiters": waiters, "assigned": assigned, "per_area": per_area,
+        },
+    )
+
+
+@router.post("/admin/sanitario/asignaciones")
+async def admin_asignaciones_save(request: Request, db: Session = Depends(get_db)):
+    g = _admin_guard(request)
+    if g:
+        return g
+    form = await request.form()
+    valid_areas = {a for (a,) in db.query(CleaningArea.id).all()}
+    valid_waiters = {w for (w,) in db.query(Waiter.id).all()}
+    pairs = set()
+    for raw in form.getlist("pair"):
+        try:
+            a_str, w_str = str(raw).split(":")
+            a, wid = int(a_str), int(w_str)
+        except (ValueError, AttributeError):
+            continue
+        if a in valid_areas and wid in valid_waiters:
+            pairs.add((a, wid))
+    # Reemplazar el reparto completo por lo enviado (matriz).
+    db.query(CleaningAssignment).delete()
+    for (a, wid) in pairs:
+        db.add(CleaningAssignment(area_id=a, waiter_id=wid))
+    db.commit()
+    return RedirectResponse(url="/admin/sanitario/asignaciones?saved=1", status_code=303)
 
 
 # ─── guías y cumplimiento ─────────────────────────────────────────────────────

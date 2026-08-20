@@ -51,7 +51,7 @@
 <div class="san-head">
   <div>
     <h1>Limpiezas de hoy</h1>
-    <div class="san-user">👤 {{ waiter_name }} · {{ today.strftime('%d/%m/%Y') }}</div>
+    <div class="san-user">👤 {{ waiter_name }} · {{ today.strftime('%d/%m/%Y') }}{% if has_assignments %} · <strong style="color:var(--green);">{{ mine_pending }} asignada(s) hoy</strong>{% endif %}</div>
   </div>
   <div class="san-actions">
     <button class="san-btn blue" onclick="document.getElementById('tempModal').classList.add('open')">🌡️ Temperatura</button>
@@ -70,27 +70,46 @@
   <div class="prog-bar"><div class="prog-fill" style="width:{{ pct }}%;"></div></div>
 </div>
 
-<div class="san-section-title">Pendientes ({{ pending|length }})</div>
+<style>
+  .mine-tabs { display:flex; gap:10px; margin:22px 0 4px; }
+  .mine-tab { min-height:48px; padding:0 22px; border-radius:12px; border:1px solid var(--border); background:var(--card); color:var(--text); font-size:18px; font-weight:800; cursor:pointer; }
+  .mine-tab.on { background:var(--green); color:#08210c; border-color:var(--green); }
+  .task-card.mine { box-shadow:inset 6px 0 0 var(--green); }
+  .mine-badge { display:inline-block; font-size:12px; font-weight:800; padding:3px 10px; border-radius:999px; background:rgba(76,175,80,0.18); color:var(--green); margin-top:6px; align-self:flex-start; }
+  #taskArea.filter-mine [data-mine="n"] { display:none; }
+</style>
+
+{% if has_assignments %}
+<div class="mine-tabs" id="mineTabs">
+  <button class="mine-tab on" data-mode="mine">👤 Mis tareas</button>
+  <button class="mine-tab" data-mode="all">Todas</button>
+</div>
+{% endif %}
+
+<div id="taskArea" class="{{ 'filter-mine' if has_assignments else '' }}">
+<div class="san-section-title">Pendientes (<span id="cntPend">{{ pending|length }}</span>)</div>
 {% if pending %}
 <div class="task-grid">
   {% for v in pending %}
-  <a class="task-card {{ v.status }}" href="/sanitario/tarea/{{ v.id }}">
+  <a class="task-card {{ v.status }}{{ ' mine' if v.mine else '' }}" data-mine="{{ 'y' if v.mine else 'n' }}" href="/sanitario/tarea/{{ v.id }}">
     <div class="task-area">{{ v.area }}</div>
     <div class="task-name">{{ v.task }}</div>
     <div class="task-meta">{{ v.frequency }}{% if v.moment %} · {{ v.moment }}{% endif %}{% if v.slot %} · Turno {{ v.slot + 1 }}{% endif %}</div>
     <span class="pill {{ v.status }}">{{ v.status_label }}</span>
+    {% if v.mine %}<span class="mine-badge">Asignada a ti</span>{% endif %}
   </a>
   {% endfor %}
 </div>
+<p id="minePendEmpty" style="display:none;color:var(--green);font-size:18px;font-weight:700;">✓ No tienes limpiezas pendientes asignadas. Cambia a "Todas" para ayudar.</p>
 {% else %}
 <p style="color:var(--green);font-size:20px;font-weight:700;">✓ ¡Todo al día! No hay limpiezas pendientes.</p>
 {% endif %}
 
 {% if completed %}
-<div class="san-section-title">Completadas ({{ completed|length }})</div>
+<div class="san-section-title">Completadas (<span id="cntDone">{{ completed|length }}</span>)</div>
 <div class="done-list">
   {% for v in completed %}
-  <div class="done-row">
+  <div class="done-row" data-mine="{{ 'y' if v.mine else 'n' }}">
     <div>
       <div class="lbl">{{ v.area }} — {{ v.task }}</div>
       <div class="sub">
@@ -104,6 +123,41 @@
   {% endfor %}
 </div>
 {% endif %}
+</div><!-- /taskArea -->
+
+<script>
+  (function () {
+    var area = document.getElementById("taskArea");
+    var tabs = document.getElementById("mineTabs");
+    function count(sel, mineMode) {
+      return Array.prototype.filter.call(document.querySelectorAll(sel), function (el) {
+        return !mineMode || el.getAttribute("data-mine") === "y";
+      }).length;
+    }
+    function recount() {
+      var mineMode = area.classList.contains("filter-mine");
+      var cp = document.getElementById("cntPend");
+      var pendVis = count(".task-grid .task-card", mineMode);
+      if (cp) cp.textContent = pendVis;
+      var cd = document.getElementById("cntDone");
+      if (cd) cd.textContent = count(".done-list .done-row", mineMode);
+      var empty = document.getElementById("minePendEmpty");
+      var totalCards = document.querySelectorAll(".task-grid .task-card").length;
+      if (empty) empty.style.display = (mineMode && pendVis === 0 && totalCards > 0) ? "block" : "none";
+    }
+    if (tabs) {
+      tabs.querySelectorAll(".mine-tab").forEach(function (b) {
+        b.addEventListener("click", function () {
+          tabs.querySelectorAll(".mine-tab").forEach(function (x) { x.classList.remove("on"); });
+          b.classList.add("on");
+          area.classList.toggle("filter-mine", b.dataset.mode === "mine");
+          recount();
+        });
+      });
+    }
+    recount();
+  })();
+</script>
 
 <!-- Modal: registrar temperatura -->
 <div class="modal-ov" id="tempModal">

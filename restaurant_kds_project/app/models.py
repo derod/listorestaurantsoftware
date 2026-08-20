@@ -385,6 +385,20 @@ class CleaningArea(Base):
     tasks = relationship("CleaningTask", back_populates="area")
 
 
+class CleaningAssignment(Base):
+    """Reparto del protocolo por ÁREA: qué agente(s) son responsables de un área.
+    Muchos-a-muchos entre áreas y agentes (waiters). Una tarea es 'de' un agente
+    si su área está asignada a ese agente."""
+    __tablename__ = "cleaning_assignments"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    area_id: Mapped[int] = mapped_column(ForeignKey("cleaning_areas.id"), nullable=False, index=True)
+    waiter_id: Mapped[int] = mapped_column(ForeignKey("waiters.id"), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
+
+    area = relationship("CleaningArea")
+    waiter = relationship("Waiter")
+
+
 class CleaningTask(Base):
     """Definición del protocolo: una tarea de limpieza/desinfección de un área.
     La concentración y el tiempo de contacto se configuran según la ficha técnica

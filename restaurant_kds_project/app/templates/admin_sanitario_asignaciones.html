@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Repartir protocolo</h1>
+{% include '_sanitario_admin_nav.html' %}
+
+<style>
+  .intro { color:#c8cfdb; font-size:15px; max-width:820px; margin-bottom:16px; }
+  .saved { background:rgba(76,175,80,0.14); border:1px solid var(--green); color:var(--green); border-radius:12px; padding:12px 16px; font-weight:800; margin-bottom:16px; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px; }
+  .matrix-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  table.mx { border-collapse:collapse; min-width:100%; }
+  table.mx th, table.mx td { border:1px solid var(--border); padding:10px 12px; text-align:center; }
+  table.mx thead th { background:#10141b; color:#c8cfdb; font-size:14px; position:sticky; top:0; }
+  table.mx td.area, table.mx th.area { text-align:left; font-weight:800; font-size:16px; white-space:nowrap; position:sticky; left:0; background:var(--card); z-index:1; }
+  table.mx thead th.area { background:#10141b; z-index:2; }
+  tr.no-resp td.area { color:var(--red); }
+  tr.no-resp td.area::after { content:" · sin responsable"; font-size:12px; font-weight:700; color:var(--red); }
+  .chk { width:26px; height:26px; cursor:pointer; accent-color:var(--green); }
+  .agent-col { min-width:110px; }
+  .actions { display:flex; gap:12px; margin-top:18px; align-items:center; flex-wrap:wrap; }
+  .btn { min-height:54px; padding:0 26px; border:none; border-radius:14px; font-size:18px; font-weight:800; cursor:pointer; }
+  .btn.primary { background:var(--green); color:#08210c; }
+  .hint { color:#9aa6bd; font-size:14px; }
+</style>
+
+<p class="intro">Marca qué <strong>agente(s)</strong> son responsables de cada <strong>área</strong>. Todas las tareas de esa área serán "suyas" en Limpiezas de hoy. Un área puede tener varios responsables; un agente puede tener varias áreas.</p>
+
+{% if request.query_params.get('saved') %}<div class="saved">✓ Reparto guardado.</div>{% endif %}
+
+{% if not waiters %}
+<p style="color:#9aa6bd;">No hay agentes activos. Crea agentes en <a href="/admin/waiters">Admin → Agentes</a>.</p>
+{% elif not areas %}
+<p style="color:#9aa6bd;">No hay áreas activas. Créalas en <a href="/admin/sanitario/protocolo">Protocolo</a>.</p>
+{% else %}
+<form method="post" action="/admin/sanitario/asignaciones">
+  <div class="card">
+    <div class="matrix-wrap">
+      <table class="mx">
+        <thead>
+          <tr>
+            <th class="area">Área \ Agente</th>
+            {% for w in waiters %}<th class="agent-col">{{ w.name }}</th>{% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in areas %}
+          <tr class="{{ 'no-resp' if not per_area.get(a.id) else '' }}">
+            <td class="area">{{ a.name }}</td>
+            {% for w in waiters %}
+            <td><input type="checkbox" class="chk" name="pair" value="{{ a.id }}:{{ w.id }}" {{ 'checked' if (a.id, w.id) in assigned else '' }} /></td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="actions">
+    <button type="submit" class="btn primary">Guardar reparto</button>
+    <span class="hint">Las áreas sin ningún responsable quedan visibles para todos.</span>
+  </div>
+</form>
+{% endif %}
+{% endblock %}
