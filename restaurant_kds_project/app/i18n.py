@@ -85,6 +85,12 @@ STRINGS = {
     "hub.kitchen_desc":   {"es": "Pantalla de cocina en tiempo real. Alertas de pedidos vía WebSocket.", "pt": "Tela de cozinha em tempo real. Alertas de pedidos via WebSocket.", "fr": "Écran cuisine en temps réel. Alertes de commandes via WebSocket."},
     "hub.admin":          {"es": "Admin",                 "pt": "Admin",                  "fr": "Admin"},
     "hub.admin_desc":     {"es": "Configuración, productos y reportes", "pt": "Configuração, produtos e relatórios", "fr": "Configuration, produits et rapports"},
+
+    # ── Control Sanitario · login (regresar a estaciones) ─────────────────
+    "san.volver_estaciones": {"es": "¿Quieres regresar a las estaciones?", "pt": "Quer voltar às estações?", "fr": "Voulez-vous revenir aux postes ?"},
+    "san.cocina":            {"es": "Cocina",              "pt": "Cozinha",                "fr": "Cuisine"},
+    "san.salon":             {"es": "Salón",               "pt": "Salão",                  "fr": "Salle"},
+    "san.admin":             {"es": "Admin",               "pt": "Admin",                  "fr": "Admin"},
     "hub.inv":            {"es": "Inventario",            "pt": "Inventário",             "fr": "Inventaire"},
     "hub.inv_desc":       {"es": "Control de stock y existencias", "pt": "Controle de estoque e existências", "fr": "Contrôle du stock et des existences"},
     "hub.pos":            {"es": "Punto de Venta",        "pt": "Ponto de Venda",         "fr": "Point de Vente"},
