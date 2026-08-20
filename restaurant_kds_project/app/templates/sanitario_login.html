@@ -25,10 +25,24 @@
       .pin-wrap { flex-direction:column; gap:28px; }
       .pin-btn { width:90px; height:90px; font-size:36px; }
     }
+    /* Regresar a las estaciones */
+    .stage { display:flex; flex-direction:column; align-items:center; gap:30px; width:100%; }
+    .back-stations { text-align:center; padding:0 16px; }
+    .back-stations .legend { font-size:20px; font-weight:700; color:#b7becd; margin-bottom:16px; }
+    .station-links { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
+    .station-links a { display:inline-flex; align-items:center; gap:10px; min-height:60px; padding:0 30px; border-radius:16px; font-size:22px; font-weight:800; text-decoration:none; border:1px solid var(--border); background:var(--muted); color:var(--text); transition:transform .1s, border-color .15s; }
+    .station-links a:active { transform:scale(0.97); }
+    .station-links a.cocina { background:rgba(77,163,255,0.14); color:var(--blue); border-color:rgba(77,163,255,0.45); }
+    .station-links a.salon  { background:rgba(255,140,66,0.14); color:var(--accent); border-color:rgba(255,140,66,0.45); }
+    .station-links a.admin  { background:rgba(228,91,91,0.12); color:var(--red); border-color:rgba(228,91,91,0.4); }
+    @media (max-width: 700px) {
+      .station-links a { font-size:19px; min-height:54px; padding:0 22px; }
+    }
   </style>
 </head>
 <body>
   {% include '_lang_switch.html' %}
+  <div class="stage">
   <div class="pin-wrap">
     <div class="pin-left">
       <div class="pin-kicker">LISTO · Control Sanitario</div>
@@ -51,6 +65,16 @@
         <button type="button" class="pin-btn entrar" onclick="submitPin()">ENTRAR</button>
       </div>
     </form>
+  </div>
+
+    <div class="back-stations">
+      <div class="legend">¿Quieres regresar a las estaciones?</div>
+      <div class="station-links">
+        <a class="cocina" href="/kitchen">🍳 Cocina</a>
+        <a class="salon" href="/station-a">🍽️ Salón</a>
+        <a class="admin" href="/admin">⚙️ Admin</a>
+      </div>
+    </div>
   </div>
 
   <script>
