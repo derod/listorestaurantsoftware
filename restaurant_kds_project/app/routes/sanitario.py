@@ -1684,21 +1684,39 @@ def _build_daily_report_pdf(db: Session, day: date) -> bytes:
         f"<b>Cumplimiento del día:</b> {done} / {total} limpiezas ({pct}%) · "
         f"Verificadas: {verified}", normal))
 
+    # Responsable(s) asignado(s) por área (reparto del protocolo).
+    area_responsables: dict[int, str] = {}
+    for area_id, wname in (
+        db.query(CleaningAssignment.area_id, Waiter.name)
+        .join(Waiter, Waiter.id == CleaningAssignment.waiter_id).all()
+    ):
+        area_responsables.setdefault(area_id, [])
+        area_responsables[area_id].append(wname)
+    area_responsables = {k: ", ".join(v) for k, v in area_responsables.items()}
+
     story.append(Paragraph("Programa de limpieza y desinfección del día", h2))
-    rows = [["Área", "Tarea", "Estado", "Realizó", "Inicio", "Fin", "Verificó"]]
+    rows = [["Área", "Tarea", "Responsable", "Estado", "Realizó", "Inicio", "Fin", "Verificó"]]
     for r in recs:
         st = _effective_status(r, today)
+        area_id = r.task.area_id if r.task else None
         rows.append([
             P(r.task.area.name if r.task and r.task.area else "—"),
             P(r.task.name if r.task else "—"),
+            P(area_responsables.get(area_id, "—")),
             P(STATE_LABELS.get(st, st)),
             P(r.created_by),
             P(r.started_at.strftime("%H:%M") if r.started_at else "—"),
             P(r.completed_at.strftime("%H:%M") if r.completed_at else "—"),
             P(r.verified_by),
         ])
-    story.append(_tbl(rows, [70, 150, 60, 70, 38, 38, 70]) if total
+    story.append(_tbl(rows, [58, 118, 64, 50, 58, 32, 32, 58]) if total
                  else Paragraph("No hay limpiezas programadas para este día.", normal))
+    # Encargados de verificación (evidencia de segregación de funciones).
+    verificadores = [n for (n,) in db.query(Waiter.name)
+                     .filter(Waiter.supervisor == True, Waiter.active == True)  # noqa: E712
+                     .order_by(Waiter.name).all()]
+    if verificadores:
+        story.append(Paragraph("Encargados de verificación: " + ", ".join(verificadores), small))
 
     # ── Temperaturas del día ──
     story.append(Paragraph("Control de temperaturas", h2))
