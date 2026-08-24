@@ -4,20 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{{ page_title }}</title>
-  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
-  <link rel="icon" href="/static/favicon.ico" sizes="any" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%A5%A4</text></svg>" />
   <link rel="apple-touch-icon" href="/static/apple-touch-icon.png" />
   <link rel="stylesheet" href="/static/css/styles.css?v=touch" />
   <style>
     .lang-switch { display:flex; gap:4px; }
     .lang-switch .lang-btn { font-size:15px; font-weight:800; padding:8px 12px; border-radius:10px; background:var(--muted); color:var(--text); text-decoration:none; border:1px solid var(--border); }
-    .lang-switch .lang-btn.on { background:var(--accent); color:#111; border-color:var(--accent); }
+    .lang-switch .lang-btn.on { background:var(--accent); color:#fff; border-color:var(--accent); }
   </style>
   <script>window.LANG={{ cur_lang(request)|tojson }};window.I18N={{ i18n_dict(cur_lang(request))|tojson }};</script>
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">LISTO Restaurant Software</div>
+    <div class="brand">🥤 Soda Silvia</div>
     <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
       <nav class="nav">
         {% if request.url.path.startswith('/admin') %}
