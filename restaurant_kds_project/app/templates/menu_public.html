@@ -4,27 +4,29 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{{ page_title }}</title>
-  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%A5%A4</text></svg>" />
   <style>
     *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
-    :root { --acc: {{ theme|default('#ff8c42') }}; --bg:#0f1115; --card:#171b22; --border:#252c38; --text:#eef2f8; --muted:#8a95a8; }
-    html,body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; -webkit-font-smoothing:antialiased; }
-    .wrap { max-width:720px; margin:0 auto; padding-bottom:60px; }
+    /* Soda Silvia brand: purple gradient #667eea→#764ba2, white cards, gold star accents. */
+    :root { --acc: {{ theme|default('#667eea') }}; --acc2:#764ba2; --grad:linear-gradient(135deg,#667eea 0%,#764ba2 100%); --gold:#FFD700; --card:#f3f4f6; --border:#e8eaf0; --text:#374151; --ink:#1f2430; --muted:#6b7280; }
+    html,body { background:var(--grad); background-attachment:fixed; color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; -webkit-font-smoothing:antialiased; }
+    .wrap { max-width:720px; margin:0 auto; min-height:100vh; background:#fff; box-shadow:0 0 60px rgba(0,0,0,.25); padding-bottom:60px; }
     .cover { width:100%; height:190px; object-fit:cover; display:block; }
-    .head { padding:22px 18px 6px; text-align:center; }
-    .head h1 { font-size:30px; font-weight:900; letter-spacing:-0.5px; }
-    .head p { color:var(--muted); font-size:15px; margin-top:8px; line-height:1.5; }
-    .tabs { position:sticky; top:0; z-index:5; background:var(--bg); display:flex; gap:8px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding:14px 16px; border-bottom:1px solid var(--border); }
-    .tab { flex:0 0 auto; padding:10px 18px; border-radius:999px; background:var(--card); border:1px solid var(--border); color:var(--text); font-size:16px; font-weight:800; cursor:pointer; white-space:nowrap; }
-    .tab.on { background:var(--acc); color:#111; border-color:var(--acc); }
-    .tab small { display:block; font-size:11px; font-weight:600; opacity:0.8; }
+    .brand { background:var(--grad); color:#fff; text-align:center; padding:22px 18px 26px; }
+    .brand .logo { font-size:38px; line-height:1; }
+    .brand h1 { font-size:30px; font-weight:900; letter-spacing:-0.5px; margin-top:4px; }
+    .brand p { color:rgba(255,255,255,.9); font-size:15px; margin-top:8px; line-height:1.5; }
+    .tabs { position:sticky; top:0; z-index:5; background:#fff; display:flex; gap:8px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding:14px 16px; border-bottom:1px solid var(--border); }
+    .tab { flex:0 0 auto; padding:10px 18px; border-radius:999px; background:#fff; border:1px solid #d9ddea; color:var(--acc); font-size:16px; font-weight:800; cursor:pointer; white-space:nowrap; }
+    .tab.on { background:var(--grad); color:#fff; border-color:transparent; }
+    .tab small { display:block; font-size:11px; font-weight:600; opacity:0.85; }
     .panel { display:none; padding:8px 16px 0; }
     .panel.on { display:block; }
     .sec-title { font-size:14px; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; color:var(--acc); margin:22px 0 10px; }
     .item { display:flex; gap:14px; padding:14px 0; border-bottom:1px solid var(--border); }
-    .item .thumb { width:74px; height:74px; border-radius:12px; object-fit:cover; flex:0 0 auto; background:var(--card); }
+    .item .thumb { width:74px; height:74px; border-radius:14px; object-fit:cover; flex:0 0 auto; background:var(--card); }
     .item .info { flex:1; min-width:0; }
-    .item .iname { font-size:18px; font-weight:800; }
+    .item .iname { font-size:18px; font-weight:800; color:var(--ink); }
     .item .idesc { color:var(--muted); font-size:14px; margin-top:3px; line-height:1.4; }
     .item .price { font-size:18px; font-weight:900; color:var(--acc); white-space:nowrap; margin-left:auto; }
     .variants { margin-top:8px; display:flex; flex-direction:column; gap:5px; }
@@ -33,44 +35,46 @@
     .variant .vp { font-weight:800; color:var(--acc); }
     .empty { color:var(--muted); text-align:center; padding:50px 20px; font-size:17px; }
     .foot { text-align:center; color:var(--muted); font-size:12px; padding:30px 16px 90px; }
-    .notfound { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; gap:12px; text-align:center; padding:24px; }
+    .foot b { color:var(--acc); }
+    .notfound { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; gap:12px; text-align:center; padding:24px; color:#fff; }
 
     /* Pedido (carrito) */
-    .order-banner { background:rgba(255,255,255,0.04); border-bottom:1px solid var(--border); padding:10px 16px; text-align:center; font-size:14px; color:var(--muted); }
+    .order-banner { background:#eef0fb; border-bottom:1px solid var(--border); padding:10px 16px; text-align:center; font-size:14px; color:var(--muted); }
     .order-banner b { color:var(--acc); }
-    .addbtn { flex:0 0 auto; width:38px; height:38px; border-radius:50%; border:none; background:var(--acc); color:#111; font-size:24px; font-weight:900; line-height:1; cursor:pointer; }
+    .addbtn { flex:0 0 auto; width:38px; height:38px; border-radius:50%; border:none; background:var(--grad); color:#fff; font-size:24px; font-weight:900; line-height:1; cursor:pointer; }
     .variant .addbtn { width:32px; height:32px; font-size:20px; }
-    .fab { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:20; background:var(--acc); color:#111; border:none; border-radius:16px; padding:14px 26px; font-size:17px; font-weight:900; cursor:pointer; box-shadow:0 10px 30px rgba(0,0,0,.4); display:none; align-items:center; gap:10px; }
+    .fab { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:20; background:var(--grad); color:#fff; border:none; border-radius:16px; padding:14px 26px; font-size:17px; font-weight:900; cursor:pointer; box-shadow:0 10px 30px rgba(102,126,234,.5); display:none; align-items:center; gap:10px; }
     .fab.show { display:inline-flex; }
-    .fab .badge { background:#111; color:#fff; border-radius:999px; padding:2px 9px; font-size:14px; }
-    .cart-ov { display:none; position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:30; align-items:flex-end; justify-content:center; }
+    .fab .badge { background:#fff; color:var(--acc); border-radius:999px; padding:2px 9px; font-size:14px; }
+    .cart-ov { display:none; position:fixed; inset:0; background:rgba(31,36,48,.6); z-index:30; align-items:flex-end; justify-content:center; }
     .cart-ov.open { display:flex; }
-    .cart { background:var(--bg); width:100%; max-width:720px; max-height:88vh; overflow-y:auto; border-radius:20px 20px 0 0; border:1px solid var(--border); padding:20px 18px 24px; }
-    .cart h2 { font-size:22px; margin-bottom:14px; }
+    .cart { background:#fff; width:100%; max-width:720px; max-height:88vh; overflow-y:auto; border-radius:24px 24px 0 0; padding:22px 18px 24px; box-shadow:0 -10px 40px rgba(0,0,0,.25); }
+    .cart h2 { font-size:22px; margin-bottom:14px; color:var(--ink); }
     .cart-line { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); }
     .cart-line .cl-info { flex:1; min-width:0; }
     .cart-line .cl-name { font-weight:800; font-size:16px; }
     .cart-line .cl-sub { color:var(--muted); font-size:13px; }
     .qtyc { display:flex; align-items:center; gap:10px; }
-    .qtyc button { width:34px; height:34px; border-radius:50%; border:1px solid var(--border); background:var(--card); color:var(--text); font-size:20px; font-weight:800; cursor:pointer; }
+    .qtyc button { width:34px; height:34px; border-radius:50%; border:1px solid #d9ddea; background:#fff; color:var(--acc); font-size:20px; font-weight:800; cursor:pointer; }
     .qtyc span { min-width:22px; text-align:center; font-weight:800; }
     .cart-fld { margin-top:14px; }
     .cart-fld label { display:block; font-size:13px; color:var(--muted); margin-bottom:5px; }
-    .cart-fld input, .cart-fld textarea { width:100%; min-height:48px; border-radius:12px; border:1px solid var(--border); background:var(--card); color:var(--text); padding:10px 14px; font-size:16px; }
-    .cart-total { display:flex; justify-content:space-between; align-items:center; font-size:22px; font-weight:900; margin:16px 0; }
+    .cart-fld input, .cart-fld textarea { width:100%; min-height:48px; border-radius:12px; border:1px solid #d9ddea; background:#fff; color:var(--text); padding:10px 14px; font-size:16px; }
+    .cart-fld input:focus, .cart-fld textarea:focus { outline:none; border-color:var(--acc); }
+    .cart-total { display:flex; justify-content:space-between; align-items:center; font-size:22px; font-weight:900; margin:16px 0; color:var(--ink); }
     .cart-total .t { color:var(--acc); }
     .cart-actions { display:flex; gap:12px; }
     .cart-actions button { flex:1; min-height:56px; border:none; border-radius:14px; font-size:18px; font-weight:900; cursor:pointer; }
-    .btn-close { background:var(--card); color:var(--text); border:1px solid var(--border) !important; }
-    .btn-send { background:var(--acc); color:#111; }
+    .btn-close { background:#f3f4f6; color:var(--text); }
+    .btn-send { background:var(--grad); color:#fff; }
     .cart-empty { color:var(--muted); text-align:center; padding:24px; }
-    .done-ov { display:none; position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:40; align-items:center; justify-content:center; padding:24px; text-align:center; }
+    .done-ov { display:none; position:fixed; inset:0; background:rgba(31,36,48,.75); z-index:40; align-items:center; justify-content:center; padding:24px; text-align:center; }
     .done-ov.open { display:flex; }
-    .done-box { background:var(--bg); border:1px solid var(--border); border-radius:20px; padding:30px; max-width:400px; }
+    .done-box { background:#fff; border-radius:24px; padding:34px 30px; max-width:400px; box-shadow:0 20px 60px rgba(0,0,0,.35); }
     .done-box .ok { font-size:60px; }
-    .done-box h2 { font-size:26px; margin:8px 0; }
+    .done-box h2 { font-size:26px; margin:8px 0; color:var(--ink); }
     .done-box p { color:var(--muted); font-size:16px; }
-    .done-box button { margin-top:18px; min-height:52px; padding:0 28px; border:none; border-radius:14px; background:var(--acc); color:#111; font-size:17px; font-weight:900; cursor:pointer; }
+    .done-box button { margin-top:18px; min-height:52px; padding:0 28px; border:none; border-radius:14px; background:var(--grad); color:#fff; font-size:17px; font-weight:900; cursor:pointer; }
   </style>
 </head>
 <body>
@@ -78,13 +82,14 @@
   <div class="notfound">
     <div style="font-size:52px;">🍽️</div>
     <h1 style="font-size:26px;">Menú no disponible</h1>
-    <p style="color:var(--muted);">Este menú no existe o fue ocultado.</p>
+    <p style="color:rgba(255,255,255,.85);">Este menú no existe o fue ocultado.</p>
   </div>
   {% else %}
   {% if ordering %}<div class="order-banner">Pedido para <b>{{ table_label }}</b> — agrega platillos y envía tu orden.</div>{% endif %}
   <div class="wrap">
     {% if page.cover_image_path %}<img class="cover" src="{{ page.cover_image_path }}" alt="" />{% endif %}
-    <div class="head">
+    <div class="brand">
+      {% if not page.cover_image_path %}<div class="logo">🥤</div>{% endif %}
       <h1>{{ page.name }}</h1>
       {% if page.description %}<p>{{ page.description }}</p>{% endif %}
     </div>
@@ -139,7 +144,7 @@
     <div class="empty">Este menú aún no está disponible.</div>
     {% endif %}
 
-    <div class="foot">Hecho con LISTO Restaurant Software</div>
+    <div class="foot"><b>🥤 Soda Silvia</b></div>
   </div>
 
   {% if ordering %}
