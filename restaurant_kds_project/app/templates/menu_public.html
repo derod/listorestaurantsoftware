@@ -87,7 +87,7 @@
   {% else %}
   {% if ordering %}<div class="order-banner">Pedido para <b>{{ table_label }}</b> — agrega platillos y envía tu orden.</div>{% endif %}
   <div class="wrap">
-    {% if page.cover_image_path %}<img class="cover" src="{{ page.cover_image_path }}" alt="" />{% endif %}
+    <img class="cover" src="{{ page.cover_image_path or '/static/images/food-5.jpg' }}" alt="" />
     <div class="brand">
       {% if not page.cover_image_path %}<div class="logo">🥤</div>{% endif %}
       <h1>{{ page.name }}</h1>
