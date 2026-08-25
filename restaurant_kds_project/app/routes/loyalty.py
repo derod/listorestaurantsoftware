@@ -211,6 +211,25 @@ def customer_home(request: Request):
     return RedirectResponse(url="/cliente/login", status_code=303)
 
 
+# Compatibility redirects: the old loyalty app served these at the root. Keep
+# old bookmarks / printed-QR links working after the cutover to /cliente/*.
+def _redirect(to):
+    def _r(request: Request):
+        return RedirectResponse(url=to, status_code=301)
+    return _r
+
+
+for _old, _new in [
+    ("/login", "/cliente/login"),
+    ("/register", "/cliente/register"),
+    ("/dashboard", "/cliente/dashboard"),
+    ("/historial", "/cliente/historial"),
+    ("/terminos", "/cliente/terminos"),
+    ("/checkin", "/cliente/dashboard"),  # old QR native-camera scans land here
+]:
+    router.add_api_route(_old, _redirect(_new), methods=["GET"], include_in_schema=False)
+
+
 @router.get("/cliente/register", response_class=HTMLResponse)
 def customer_register_page(request: Request):
     return templates.TemplateResponse("customer_register.html", {"request": request})

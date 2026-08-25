@@ -188,6 +188,28 @@ _ensure_schema()
 with SessionLocal() as db:
     seed_initial_data(db)
 
+
+def _maybe_migrate_loyalty():
+    """One-shot loyalty data import on startup when MIGRATE_LOYALTY_SRC points at
+    an old soda_silvia.db. Guarded by a sentinel so it runs only once, and the
+    migration itself is idempotent. Lets Railway users migrate without a shell."""
+    src = os.getenv("MIGRATE_LOYALTY_SRC", "").strip()
+    if not src:
+        return
+    sentinel = DATA_DIR / ".loyalty_migrated"
+    if sentinel.exists():
+        return
+    try:
+        from .loyalty_migration import migrate_from_sqlite
+        result = migrate_from_sqlite(src)
+        sentinel.write_text("ok", encoding="utf-8")
+        print(f"[LOYALTY] Migrated from {src}: {result['added']}")
+    except Exception as e:
+        print(f"[LOYALTY] Migration skipped/failed ({type(e).__name__}: {e})")
+
+
+_maybe_migrate_loyalty()
+
 app.include_router(web.router)
 app.include_router(api.router, prefix="/api")
 app.include_router(admin_inventory.router)
