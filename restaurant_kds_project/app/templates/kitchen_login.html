@@ -4,24 +4,24 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{{ page_title }}</title>
-  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
-  <link rel="icon" href="/static/favicon.ico" sizes="any" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%A5%A4</text></svg>" />
   <link rel="stylesheet" href="/static/css/styles.css?v=touch" />
   <style>
-    body { display:flex; align-items:center; justify-content:center; min-height:100vh; background:var(--bg); }
-    .pin-wrap { display:flex; flex-direction:row; align-items:center; justify-content:center; gap:60px; width:100%; max-width:1000px; padding:32px; }
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh; background:var(--brand-grad); padding:20px; }
+    .pin-wrap { display:flex; flex-direction:row; align-items:center; justify-content:center; gap:48px; width:100%; max-width:1000px; padding:40px; background:#fff; border-radius:28px; box-shadow:0 20px 60px rgba(0,0,0,.3); }
     .pin-left { display:flex; flex-direction:column; align-items:center; gap:28px; flex:0 0 auto; }
-    .pin-title { font-size:48px; font-weight:800; letter-spacing:1px; color:var(--blue); }
-    .pin-display { background:#10141b; border:2px solid var(--border); border-radius:20px; width:340px; min-height:90px; display:flex; align-items:center; padding:0 28px; font-size:52px; font-weight:700; letter-spacing:10px; color:var(--blue); }
+    .pin-logo { font-size:56px; line-height:1; }
+    .pin-title { font-size:40px; font-weight:800; letter-spacing:1px; color:var(--blue); }
+    .pin-display { background:#f3f4f6; border:2px solid #d9ddea; border-radius:20px; width:340px; min-height:90px; display:flex; align-items:center; padding:0 28px; font-size:52px; font-weight:700; letter-spacing:10px; color:var(--blue); }
     .pin-display.error-border { border-color:var(--red); }
-    .error-msg { font-size:30px; color:var(--red); font-weight:700; min-height:44px; text-align:center; }
+    .error-msg { font-size:26px; color:#c0392b; font-weight:700; min-height:40px; text-align:center; }
     .pin-keypad { display:grid; grid-template-columns:repeat(3, 1fr); gap:18px; }
-    .pin-btn { width:100px; height:100px; font-size:42px; font-weight:800; border:none; border-radius:20px; background:var(--muted); color:var(--text); cursor:pointer; transition:background 0.12s; display:flex; align-items:center; justify-content:center; }
-    .pin-btn:active { background:var(--border); transform:scale(0.96); }
-    .pin-btn.borrar { background:#3a2020; color:var(--red); font-size:28px; }
-    .pin-btn.entrar { background:var(--blue); color:#111; font-size:28px; grid-column:span 2; width:100%; }
+    .pin-btn { width:100px; height:100px; font-size:42px; font-weight:800; border:none; border-radius:20px; background:#f3f4f6; color:#374151; cursor:pointer; transition:background 0.12s; display:flex; align-items:center; justify-content:center; }
+    .pin-btn:active { background:#e5e7eb; transform:scale(0.96); }
+    .pin-btn.borrar { background:#fdecec; color:#c0392b; font-size:28px; }
+    .pin-btn.entrar { background:var(--blue); color:#fff; font-size:28px; grid-column:span 2; width:100%; }
     @media (max-width: 700px) {
-      .pin-wrap { flex-direction:column; gap:32px; }
+      .pin-wrap { flex-direction:column; gap:28px; padding:24px; }
       .pin-btn { width:90px; height:90px; font-size:36px; }
     }
   </style>
@@ -30,6 +30,7 @@
   {% include '_lang_switch.html' %}
   <div class="pin-wrap">
     <div class="pin-left">
+      <div class="pin-logo">🥤</div>
       <div class="pin-title">KITCHEN</div>
       <div class="pin-display {% if error %}error-border{% endif %}" id="pinDisplay">
         <span id="pinDots"></span>
