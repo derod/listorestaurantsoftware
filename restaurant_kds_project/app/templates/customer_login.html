@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Soda Silvia</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%A5%A4</text></svg>">
+    <link rel="stylesheet" href="/static/css/modals.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .login-card {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 450px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 { 
+            color: #667eea; 
+            margin-bottom: 24px; 
+            text-align: center;
+        }
+        .form-group { margin-bottom: 20px; }
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: 600; 
+            color: #374151; 
+        }
+        input, select {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px;
+        }
+        input:focus, select:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .links { 
+            text-align: center; 
+            margin-top: 16px; 
+        }
+        .links a { 
+            color: #667eea; 
+            text-decoration: none;
+            display: block;
+            margin: 8px 0;
+        }
+        .admin-link {
+            color: #8b5cf6 !important;
+            font-size: 13px;
+        }
+
+        @media (max-width: 480px) {
+            body { padding: 12px; align-items: flex-start; padding-top: 40px; }
+            .login-card { padding: 28px 20px; border-radius: 18px; }
+            h1 { font-size: 22px; margin-bottom: 18px; }
+            .btn { font-size: 16px; padding: 14px; min-height: 44px; }
+            input, select { padding: 12px; font-size: 16px; min-height: 44px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h1>👋 Iniciar Sesión</h1>
+        <form id="loginForm">
+            <div class="form-group">
+                <label>¿Cómo querés iniciar sesión?</label>
+                <select id="loginType" required>
+                    <option value="phone">Teléfono</option>
+                    <option value="email">Email</option>
+                    <option value="username">Usuario</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label id="identifierLabel">Número de teléfono</label>
+                <input type="tel" id="identifier" placeholder="Ej: 0981 123 456" required>
+            </div>
+            <div class="form-group">
+                <label>Contraseña (opcional)</label>
+                <input type="password" id="password" placeholder="Déjala en blanco si no tienes">
+                <small style="color:#6b7280; display:block; margin-top:6px;">Si tu cuenta tiene contraseña, ingrésala. Si no, déjala en blanco.</small>
+            </div>
+            <button type="submit" class="btn">Entrar</button>
+        </form>
+        <div class="links">
+            <a href="/cliente/register">¿No tienes cuenta? Regístrate</a>
+            <a href="/admin/login" class="admin-link">🔐 Acceso Administrador</a>
+        </div>
+    </div>
+    <script src="/static/js/modals.js"></script>
+    <script>
+        const IDENTIFIER_FIELDS = {
+            phone:    { label: 'Número de teléfono', placeholder: 'Ej: 0981 123 456', inputType: 'tel' },
+            email:    { label: 'Correo electrónico', placeholder: 'Ej: nombre@correo.com', inputType: 'email' },
+            username: { label: 'Nombre de usuario', placeholder: 'Ej: silvia123', inputType: 'text' }
+        };
+
+        function updateIdentifierField() {
+            const type = document.getElementById('loginType').value;
+            const field = IDENTIFIER_FIELDS[type] || IDENTIFIER_FIELDS.phone;
+            const input = document.getElementById('identifier');
+            document.getElementById('identifierLabel').textContent = field.label;
+            input.placeholder = field.placeholder;
+            input.type = field.inputType;
+        }
+
+        document.getElementById('loginType').addEventListener('change', updateIdentifierField);
+        updateIdentifierField();
+
+        function normalizeIdentifier(type, value) {
+            if (type === 'email') return value.trim().toLowerCase();
+            if (type === 'phone') return value.replace(/[\s\-\(\)]/g, '').trim();
+            return value.trim().toLowerCase();
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const loginType = document.getElementById('loginType').value;
+            const normalized = normalizeIdentifier(loginType, document.getElementById('identifier').value);
+            try {
+                const res = await fetch('/cliente/api/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        login_type: loginType,
+                        login_identifier: normalized,
+                        password: document.getElementById('password').value || null
+                    })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('login_type', data.user.login_type);
+                    localStorage.setItem('login_identifier', data.user.login_identifier);
+                    window.location.href = '/cliente/dashboard';
+                } else {
+                    await ModernModal.alert(data.detail, 'error');
+                }
+            } catch (err) {
+                await ModernModal.alert('Error de conexión', 'error');
+            }
+        });
+    </script>
+</body>
+</html>

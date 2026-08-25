@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Progreso - Soda Silvia Rewards</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%A5%A4</text></svg>">
+    <link rel="stylesheet" href="/static/css/modals.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── 1. HEADER ── */
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 16px;
+            background: rgba(255,255,255,0.12);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 24px 20px 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .welcome-text {
+            font-size: 26px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .user-info {
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+            margin-bottom: 14px;
+        }
+        .tier-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 20px;
+            border-radius: 50px;
+            margin-bottom: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .tier-emoji { font-size: 22px; }
+        .tier-name  { font-size: 16px; font-weight: bold; color: #FFD700; }
+
+        .btn-logout {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 22px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .btn-logout:hover {
+            background: rgba(255,255,255,0.25);
+            transform: translateY(-1px);
+        }
+
+        /* ── 2. MAIN QR ACTION CARD ── */
+        .qr-hero {
+            background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+            border-radius: 28px;
+            padding: 36px 24px 28px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 12px 40px rgba(249,115,22,0.45), 0 4px 16px rgba(0,0,0,0.2);
+            border: 2px solid rgba(255,255,255,0.25);
+            position: relative;
+            overflow: hidden;
+        }
+        /* subtle inner glow ring */
+        .qr-hero::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 30px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent 60%);
+            pointer-events: none;
+        }
+        .qr-hero-icon {
+            font-size: 72px;
+            line-height: 1;
+            margin-bottom: 14px;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+        }
+        .qr-hero-title {
+            font-size: 22px;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 6px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        }
+        .qr-hero-sub {
+            font-size: 14px;
+            color: rgba(255,255,255,0.85);
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+        /* scanner area (hidden by default) */
+        #qr-scanner-container {
+            display: none;
+            margin-bottom: 16px;
+        }
+        #reader {
+            width: 100%;
+            max-width: 420px;
+            margin: 0 auto;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        .btn-stop-scanner {
+            margin-top: 12px;
+            width: 100%;
+            padding: 14px;
+            background: rgba(0,0,0,0.35);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.4);
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-stop-scanner:hover { background: rgba(0,0,0,0.5); }
+
+        .btn-scan {
+            width: 100%;
+            padding: 18px;
+            background: #fff;
+            color: #f97316;
+            border: none;
+            border-radius: 16px;
+            font-size: 19px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            transition: all 0.25s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-scan:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 28px rgba(0,0,0,0.2);
+        }
+
+        /* ── 3. REWARDS PROGRAM ── */
+        .rewards-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .rewards-card-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #FFD700;
+            margin-bottom: 4px;
+        }
+        .rewards-card-sub {
+            font-size: 13px;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 20px;
+        }
+
+        .stars-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .star-slot {
+            aspect-ratio: 1;
+            background: rgba(255,255,255,0.12);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            transition: all 0.3s;
+            border: 2px solid rgba(255,255,255,0.18);
+        }
+        .star-slot.filled {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            box-shadow: 0 0 16px rgba(255,215,0,0.55);
+            transform: scale(1.06);
+            border-color: #FFD700;
+        }
+        /* 12th star: premium trophy slot — spans full last row center */
+        .star-trophy {
+            grid-column: 3 / span 2;
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+            border-radius: 18px;
+            font-size: 36px;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        .star-trophy.filled {
+            background: linear-gradient(135deg, #FFD700 0%, #FF69B4 100%);
+            box-shadow: 0 0 30px rgba(255,215,0,0.8);
+            animation: trophy-glow 1.2s ease infinite;
+        }
+        @keyframes trophy-glow {
+            0%, 100% { box-shadow: 0 0 24px rgba(255,215,0,0.7); }
+            50%       { box-shadow: 0 0 48px rgba(255,215,0,1); }
+        }
+        .stars-progress {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #FFD700;
+        }
+
+        /* ── 4. STATS ROW ── */
+        .stats-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            border: 1px solid rgba(255,255,255,0.18);
+        }
+        .stat-icon  { font-size: 36px; margin-bottom: 6px; }
+        .stat-value { font-size: 34px; font-weight: bold; color: #FFD700; margin-bottom: 4px; }
+        .stat-label { font-size: 13px; color: rgba(255,255,255,0.75); }
+
+        /* ── SECTION CARDS (rewards, números, historial) ── */
+        .section-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 22px;
+            margin-bottom: 18px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            border: 1px solid rgba(255,255,255,0.18);
+        }
+        .section-title {
+            font-size: 20px;
+            margin-bottom: 14px;
+            color: #FFD700;
+            font-weight: bold;
+        }
+        .empty-message {
+            text-align: center;
+            color: rgba(255,255,255,0.55);
+            padding: 16px 0;
+            font-size: 14px;
+        }
+
+        /* visits */
+        .visits-scroll { max-height: 320px; overflow-y: auto; }
+        .visit-item {
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        .visit-badge {
+            display: inline-block;
+            padding: 5px 11px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .visit-badge.qr      { background: #667eea; color: white; }
+        .visit-badge.manual  { background: #8b5cf6; color: white; }
+
+        .btn-historial {
+            display: block;
+            width: 100%;
+            margin-top: 12px;
+            padding: 12px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 12px;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .btn-historial:hover { background: rgba(255,255,255,0.22); }
+
+        /* rewards */
+        .reward-item {
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        .reward-badge { display: inline-block; padding: 5px 11px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .reward-badge.available { background: #10b981; color: white; }
+        .reward-badge.redeemed  { background: #6b7280; color: white; }
+
+        /* raffle numbers */
+        .raffle-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 12px;
+        }
+        .raffle-card {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,215,0,0.3);
+            border-radius: 16px;
+            padding: 14px 10px;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .raffle-card:hover { transform: translateY(-2px); }
+        .raffle-number {
+            font-size: 38px;
+            font-weight: 900;
+            color: #FFD700;
+            line-height: 1.1;
+            text-shadow: 0 2px 8px rgba(255,215,0,0.4);
+        }
+        .raffle-date   { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 4px; }
+        .raffle-status { display: inline-block; margin-top: 6px; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+        .raffle-status.available { background: #10b981; color: white; }
+        .raffle-status.used      { background: #6b7280; color: white; }
+
+        /* manual numbers */
+        .manual-number-item {
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255,255,255,0.12);
+        }
+        .manual-number-value { font-size: 26px; font-weight: 900; color: #FFD700; }
+        .manual-number-date  { font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 2px; }
+
+        /* ── RAFFLE CELEBRATION ── */
+        .raffle-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(6px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 10000;
+            animation: raffleFadeIn 0.3s ease;
+        }
+        @keyframes raffleFadeIn { from{opacity:0} to{opacity:1} }
+        .raffle-modal {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 2px solid #FFD700;
+            border-radius: 28px;
+            padding: 40px 32px 32px;
+            max-width: 360px; width: 90%;
+            text-align: center;
+            position: relative; overflow: hidden;
+            box-shadow: 0 0 60px rgba(255,215,0,0.3), 0 20px 40px rgba(0,0,0,0.5);
+            animation: rafflePopIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275);
+        }
+        @keyframes rafflePopIn { from{transform:scale(0.7);opacity:0} to{transform:scale(1);opacity:1} }
+        .raffle-modal::before {
+            content:''; position:absolute; top:0; left:-100%; right:-100%; height:4px;
+            background: linear-gradient(90deg,transparent,#FFD700,transparent);
+            animation: raffleShimmer 2s linear infinite;
+        }
+        @keyframes raffleShimmer { from{transform:translateX(-50%)} to{transform:translateX(50%)} }
+        .raffle-modal-icon  { font-size:56px; margin-bottom:8px; animation:raffleBounce 0.6s ease infinite alternate; }
+        @keyframes raffleBounce { from{transform:translateY(0)} to{transform:translateY(-8px)} }
+        .raffle-modal-title  { color:#FFD700; font-size:20px; font-weight:800; margin-bottom:20px; }
+        .raffle-modal-number { font-size:72px; font-weight:900; color:#FFD700; text-shadow:0 0 30px rgba(255,215,0,0.6); line-height:1; margin-bottom:8px; letter-spacing:8px; }
+        .raffle-modal-sub    { color:rgba(255,255,255,0.7); font-size:14px; margin-bottom:28px; }
+        .raffle-modal-btn {
+            background: linear-gradient(135deg,#FFD700 0%,#FFA500 100%);
+            color:#000; border:none; padding:14px 48px; border-radius:14px;
+            font-size:16px; font-weight:bold; cursor:pointer; transition:all 0.2s;
+        }
+        .raffle-modal-btn:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(255,215,0,0.5); }
+        .sparkle {
+            position:absolute; width:6px; height:6px; border-radius:50%;
+            background:#FFD700; opacity:0;
+            animation:sparkleAnim 1.5s ease-in-out infinite;
+        }
+        @keyframes sparkleAnim {
+            0%  { opacity:0; transform:translateY(0) scale(0); }
+            50% { opacity:1; transform:translateY(-30px) scale(1); }
+            100%{ opacity:0; transform:translateY(-60px) scale(0); }
+        }
+
+        /* ── MOBILE ── */
+        @media (max-width: 480px) {
+            body { overflow-x: hidden; }
+
+            .container    { padding: 12px; }
+            .welcome-text { font-size: 20px; }
+            .user-info    { font-size: 12px; word-break: break-all; }
+
+            /* QR hero */
+            .qr-hero      { padding: 24px 16px 20px; border-radius: 20px; }
+            .qr-hero-icon { font-size: 52px; }
+            .qr-hero-title{ font-size: 18px; }
+            .qr-hero-sub  { font-size: 13px; }
+
+            /* Rewards stars */
+            .stars-grid { gap: 6px; }
+            .star-slot  { font-size: 20px; }
+            .rewards-card { padding: 16px 14px; }
+
+            /* Stats */
+            .stats-row  { gap: 10px; }
+            .stat-value { font-size: 28px; }
+            .stat-icon  { font-size: 28px; }
+
+            /* Section cards */
+            .section-card { padding: 16px 14px; }
+            .section-title { font-size: 17px; }
+
+            /* Visit items: prevent long identifiers overflowing */
+            .visit-item { flex-wrap: wrap; gap: 8px; }
+            .visit-item > div { min-width: 0; word-break: break-word; }
+
+            /* Raffle numbers: smaller */
+            .raffle-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+
+            /* Logout button */
+            .btn-logout { width: 100%; text-align: center; margin-top: 8px; }
+
+            /* Celebration modal */
+            .raffle-modal { padding: 28px 16px; width: 94%; }
+        }
+    </style>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+
+    <div class="container" id="dashboardContainer">
+
+        <!-- ── 1. HEADER ── -->
+        <div class="dashboard-header">
+            <h1 class="welcome-text">¡Hola, <span id="userName">...</span>!</h1>
+            <p class="user-info" id="userInfo"></p>
+            <div class="tier-badge" id="tierBadge">
+                <span class="tier-emoji">🥉</span>
+                <span class="tier-name">Bronce</span>
+            </div>
+            <br>
+            <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
+        </div>
+
+        <!-- ── 2. MAIN QR ACTION CARD ── -->
+        <div class="qr-hero">
+            <div class="qr-hero-icon">🍽️</div>
+            <div class="qr-hero-title">Registra tu visita y acumula recompensas</div>
+            <div class="qr-hero-sub">Cada visita cuenta para tu premio especial.</div>
+
+            <div id="qr-scanner-container">
+                <div id="reader"></div>
+                <button class="btn-stop-scanner" onclick="stopScanner()">❌ Cerrar Escáner</button>
+            </div>
+
+            <button id="btnStartScanner" class="btn-scan" onclick="startScanner()">
+                <span>📱</span> Escanear Código
+            </button>
+        </div>
+
+        <!-- ── 3. REWARDS PROGRAM ── -->
+        <div class="rewards-card">
+            <div class="rewards-card-title">✨ Tu Programa de Recompensas</div>
+            <div class="rewards-card-sub">Completa 12 estrellas y recibe tu premio especial.</div>
+
+            <div class="stars-grid" id="starsGrid">
+                <!-- Stars 1-5 -->
+                <div class="star-slot" data-star="1"><span class="star-icon">☆</span></div>
+                <div class="star-slot" data-star="2"><span class="star-icon">☆</span></div>
+                <div class="star-slot" data-star="3"><span class="star-icon">☆</span></div>
+                <div class="star-slot" data-star="4"><span class="star-icon">☆</span></div>
+                <div class="star-slot" data-star="5"><span class="star-icon">☆</span></div>
+                <!-- Stars 6-10 -->
+                <div class="star-slot" data-star="6"><span class="star-icon">☆</span></div>
+                <div class="star-slot" data-star="7"><span class="star-icon">☆</span></div>
+                <div class="star-slot" data-star="8"><span class="star-icon">☆</span></div>
+                <div class="star-slot" data-star="9"><span class="star-icon">☆</span></div>
+                <div class="star-slot" data-star="10"><span class="star-icon">☆</span></div>
+                <!-- Stars 11: one normal slot -->
+                <div class="star-slot" data-star="11"><span class="star-icon">☆</span></div>
+                <!-- Star 12: premium trophy (full last row center) -->
+                <div class="star-slot star-trophy" data-star="12">
+                    <span class="trophy-icon">🏆</span>
+                </div>
+            </div>
+
+            <p class="stars-progress">
+                <span id="currentStars">0</span> / 12 estrellas
+            </p>
+        </div>
+
+        <!-- ── 4. STATS ── -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-icon">⭐</div>
+                <div class="stat-value" id="totalStars">0</div>
+                <div class="stat-label">Total Estrellas</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🏆</div>
+                <div class="stat-value" id="totalCompletions">0</div>
+                <div class="stat-label">Premios Ganados</div>
+            </div>
+        </div>
+
+        <!-- Mis Recompensas (shown when earned) -->
+        <div class="section-card">
+            <h2 class="section-title">🎁 Mis Recompensas</h2>
+            <div id="rewardsContainer">
+                <p class="empty-message">Completa 12 estrellas para ganar recompensas</p>
+            </div>
+        </div>
+
+        <!-- Números Promocionales -->
+        <div class="section-card">
+            <h2 class="section-title">🎟 Mis Números</h2>
+            <div id="raffleContainer">
+                <p class="empty-message">Aún no tienes números promocionales. ¡Con 3 visitas desbloqueas uno!</p>
+            </div>
+        </div>
+
+        <!-- Manual Numbers (only when present) -->
+        <div class="section-card" id="manualNumbersSection" style="display:none;">
+            <h2 class="section-title">📌 Números Manuales</h2>
+            <div id="manualNumbersContainer"></div>
+        </div>
+
+        <!-- ── HISTORIAL (last section) ── -->
+        <div class="section-card">
+            <h2 class="section-title">📅 Últimas Visitas</h2>
+            <div id="historyContainer" class="visits-scroll">
+                <p class="empty-message">Aún no hay visitas registradas</p>
+            </div>
+            <a href="/cliente/historial" class="btn-historial">📋 Ver historial completo</a>
+        </div>
+
+        <!-- ── FOOTER ── -->
+        <div style="text-align:center;padding:20px 0 8px;">
+            <a href="/cliente/terminos" style="color:rgba(255,255,255,0.55);font-size:13px;text-decoration:none;border-bottom:1px solid rgba(255,255,255,0.2);padding-bottom:1px;">
+                📋 Términos y Condiciones
+            </a>
+        </div>
+
+    </div>
+
+    <script src="/static/js/modals.js"></script>
+    <script>
+        // ============================
+        // DASHBOARD CORE LOGIC
+        // ============================
+        const API_BASE = '';
+        let currentUser = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginType       = localStorage.getItem('login_type');
+            const loginIdentifier = localStorage.getItem('login_identifier');
+            if (!loginType || !loginIdentifier) {
+                window.location.href = '/cliente/login';
+                return;
+            }
+            loadUserData();
+        });
+
+        async function loadUserData() {
+            const loginType       = localStorage.getItem('login_type');
+            const loginIdentifier = localStorage.getItem('login_identifier');
+            try {
+                const response = await fetch(
+                    `/cliente/api/me?login_type=${encodeURIComponent(loginType)}&login_identifier=${encodeURIComponent(loginIdentifier)}`
+                );
+                if (!response.ok) throw new Error('Failed to load user data');
+                const data = await response.json();
+                currentUser = data;
+                updateDashboard(data);
+            } catch (error) {
+                console.error('Error loading user data:', error);
+                alert('Error cargando datos. Por favor intenta de nuevo.');
+            }
+        }
+
+        function updateDashboard(data) {
+            document.getElementById('userName').textContent  = data.user.name || 'Usuario';
+            document.getElementById('userInfo').textContent  = data.user.login_type + ': ' + data.user.login_identifier;
+            updateStarProgress(data.current_cycle_stars);
+            document.getElementById('totalStars').textContent       = data.total_stars;
+            document.getElementById('currentStars').textContent     = data.current_cycle_stars;
+            document.getElementById('totalCompletions').textContent = data.completion_history.length;
+            updateRewards(data.rewards);
+            updateRaffles(data.rewards.raffles || []);
+            updateHistory(data.last_visits);
+            updateManualNumbers(data.manual_numbers || []);
+            document.querySelector('.tier-emoji').textContent = data.tier.emoji;
+            document.querySelector('.tier-name').textContent  = data.tier.name;
+        }
+
+        function updateStarProgress(currentStars) {
+            document.querySelectorAll('.star-slot').forEach(function(slot, index) {
+                var starNumber = index + 1;
+                if (starNumber <= currentStars) {
+                    slot.classList.add('filled');
+                    // replace icon for filled stars
+                    var icon = slot.querySelector('.star-icon');
+                    if (icon) icon.textContent = '⭐';
+                } else {
+                    slot.classList.remove('filled');
+                    var icon = slot.querySelector('.star-icon');
+                    if (icon) icon.textContent = '☆';
+                }
+            });
+        }
+
+        function updateRewards(rewards) {
+            var container = document.getElementById('rewardsContainer');
+            if (rewards.surprises.length === 0) {
+                container.innerHTML = '<p class="empty-message">Completa 12 estrellas para ganar recompensas</p>';
+                return;
+            }
+            container.innerHTML = '';
+            rewards.surprises.forEach(function(reward) {
+                var div = document.createElement('div');
+                div.className = 'reward-item';
+                div.innerHTML =
+                    '<div><strong>🎁 Recompensa Ganada</strong><br><small>' + reward.date + '</small></div>' +
+                    '<span class="reward-badge ' + reward.status + '">' +
+                    (reward.status === 'available' ? 'Disponible' : 'Canjeada') + '</span>';
+                container.appendChild(div);
+            });
+        }
+
+        function updateRaffles(raffles) {
+            var container = document.getElementById('raffleContainer');
+            if (!raffles || raffles.length === 0) {
+                container.innerHTML = '<p class="empty-message">Aún no tienes números promocionales. ¡Con 3 visitas desbloqueas uno!</p>';
+                return;
+            }
+            var html = '<div class="raffle-grid">';
+            raffles.forEach(function(r) {
+                var statusClass = r.status === 'available' ? 'available' : 'used';
+                var statusLabel = r.status === 'available' ? 'Disponible' : 'Usado';
+                var dateOnly    = (r.date || '').split(' ')[0];
+                html +=
+                    '<div class="raffle-card">' +
+                        '<div class="raffle-number">' + r.number + '</div>' +
+                        '<div class="raffle-date">' + dateOnly + '</div>' +
+                        '<span class="raffle-status ' + statusClass + '">' + statusLabel + '</span>' +
+                    '</div>';
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function showRaffleCelebration(number) {
+            var sparkles = '';
+            for (var i = 0; i < 12; i++) {
+                var left  = Math.floor(Math.random() * 90) + 5;
+                var top   = Math.floor(Math.random() * 60) + 20;
+                var delay = (Math.random() * 1.5).toFixed(2);
+                sparkles += '<div class="sparkle" style="left:' + left + '%;top:' + top + '%;animation-delay:' + delay + 's;"></div>';
+            }
+            var overlay = document.createElement('div');
+            overlay.className = 'raffle-overlay';
+            overlay.id = 'raffleCelebration';
+            overlay.innerHTML =
+                '<div class="raffle-modal">' +
+                    sparkles +
+                    '<div class="raffle-modal-icon">🎟</div>' +
+                    '<div class="raffle-modal-title">¡Número promocional desbloqueado!</div>' +
+                    '<div class="raffle-modal-sub">Tu número es:</div>' +
+                    '<div class="raffle-modal-number">' + number + '</div>' +
+                    '<div class="raffle-modal-sub">¡Guárdalo bien! Podrías ganar un premio.</div>' +
+                    '<button class="raffle-modal-btn" onclick="closeRaffleCelebration()">Continuar</button>' +
+                '</div>';
+            document.body.appendChild(overlay);
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeRaffleCelebration() {
+            var el = document.getElementById('raffleCelebration');
+            if (el) { el.remove(); document.body.style.overflow = ''; }
+        }
+
+        function updateHistory(visits) {
+            var container = document.getElementById('historyContainer');
+            if (visits.length === 0) {
+                container.innerHTML = '<p class="empty-message">Aún no hay visitas registradas</p>';
+                return;
+            }
+            container.innerHTML = '';
+            visits.forEach(function(visit) {
+                var div = document.createElement('div');
+                div.className = 'visit-item';
+                var badge = '';
+                if (visit.source === 'qr' || visit.source === 'qr_scan') {
+                    badge = '<span class="visit-badge qr">📱 QR</span>';
+                } else {
+                    badge = '<span class="visit-badge manual">✏️ Manual</span>';
+                }
+                div.innerHTML =
+                    '<div><strong>' + visit.date + '</strong> ' + visit.time +
+                    '<br><small>+' + visit.stars_earned + ' estrella' +
+                    (visit.stars_earned > 1 ? 's' : '') + '</small></div>' + badge;
+                container.appendChild(div);
+            });
+        }
+
+        function updateManualNumbers(entries) {
+            var section   = document.getElementById('manualNumbersSection');
+            var container = document.getElementById('manualNumbersContainer');
+            if (!entries || entries.length === 0) { section.style.display = 'none'; return; }
+            section.style.display = 'block';
+            var months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+            var html = '';
+            entries.forEach(function(e) {
+                var dateStr = '';
+                if (e.assigned_date) {
+                    var parts = e.assigned_date.split('-');
+                    if (parts.length === 3)
+                        dateStr = parts[2] + ' ' + months[parseInt(parts[1],10) - 1] + ' ' + parts[0];
+                }
+                html += '<div class="manual-number-item">' +
+                    '<div>' +
+                        '<div class="manual-number-value">' + e.number + '</div>' +
+                        '<div class="manual-number-date">Fecha: ' + dateStr + '</div>' +
+                    '</div>' +
+                    '<span style="font-size:20px;">📌</span>' +
+                '</div>';
+            });
+            container.innerHTML = html;
+        }
+
+        function logout() {
+            if (confirm('¿Seguro que quieres cerrar sesión?')) {
+                localStorage.clear();
+                window.location.href = '/cliente/login';
+            }
+        }
+
+        // ============================
+        // QR SCANNER
+        // ============================
+        var html5QrCode = null;
+        var isScanning  = false;
+
+        // Responsive scan box: ~70% of the shorter viewfinder edge, so the QR
+        // fits the box on any screen size instead of a fixed 250px square.
+        function qrboxDimensions(viewfinderWidth, viewfinderHeight) {
+            var minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+            var size = Math.max(180, Math.floor(minEdge * 0.7));
+            return { width: size, height: size };
+        }
+
+        function startScanner() {
+            document.getElementById('qr-scanner-container').style.display = 'block';
+            document.getElementById('btnStartScanner').style.display = 'none';
+            isScanning = true;
+            html5QrCode = new Html5Qrcode('reader');
+
+            // Keep the initial request simple: only 'environment'. Adding
+            // advanced/resolution constraints here makes some browsers and
+            // WebViews reject start() with OverconstrainedError even when the
+            // camera permission is granted. We tune focus afterwards instead.
+            html5QrCode.start(
+                { facingMode: 'environment' },
+                { fps: 10, qrbox: qrboxDimensions },
+                function onScanSuccess(decodedText) {
+                    // The scanner fires this callback several times per second
+                    // for the same QR. Without this guard, the first read
+                    // registers the visit and a follow-up read races in and
+                    // reports "Ya registraste tu visita hoy" — a false warning.
+                    if (!isScanning) return;
+                    isScanning = false;
+                    stopScanner();
+                    var token = null;
+                    try {
+                        var url = new URL(decodedText);
+                        token = url.searchParams.get('token');
+                    } catch(e) { token = decodedText; }
+                    if (token) {
+                        processCheckIn(token);
+                    } else {
+                        ModernModal.alert('Código QR no válido. Escanea el QR del restaurante.', 'error');
+                    }
+                },
+                function onScanFailure() {}
+            ).then(function() {
+                // Best-effort: request continuous autofocus once the stream is
+                // running. Wrapped so an unsupported constraint never breaks
+                // an otherwise-working scanner.
+                try {
+                    html5QrCode.applyVideoConstraints({
+                        advanced: [{ focusMode: 'continuous' }]
+                    }).catch(function(){});
+                } catch(e) {}
+            }).catch(function(err) {
+                console.error('Camera error:', err);
+                stopScanner();
+                ModernModal.alert('No se pudo acceder a la cámara. Verifica los permisos.', 'error');
+            });
+        }
+
+        function stopScanner() {
+            if (html5QrCode) {
+                try { html5QrCode.stop().catch(function(){}); } catch(e) {}
+                html5QrCode = null;
+            }
+            document.getElementById('qr-scanner-container').style.display = 'none';
+            document.getElementById('btnStartScanner').style.display = 'flex';
+            isScanning = false;
+        }
+
+        async function processCheckIn(restaurantToken) {
+            var loginType       = localStorage.getItem('login_type');
+            var loginIdentifier = localStorage.getItem('login_identifier');
+            if (!loginType || !loginIdentifier) {
+                await ModernModal.alert('Sesión expirada. Inicia sesión nuevamente.', 'error');
+                window.location.href = '/cliente/login';
+                return;
+            }
+            try {
+                var response = await fetch(
+                    '/cliente/api/scan-checkin?login_type=' + encodeURIComponent(loginType) +
+                    '&login_identifier=' + encodeURIComponent(loginIdentifier),
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ restaurant_token: restaurantToken })
+                    }
+                );
+                var data = await response.json();
+                if (response.ok && data.success) {
+                    var message = '✅ ¡Visita registrada!\n+' + data.stars_earned + ' estrella' + (data.stars_earned > 1 ? 's' : '');
+                    await ModernModal.alert(message, 'success');
+                    await loadUserData();
+                    if (data.new_raffle_number) showRaffleCelebration(data.new_raffle_number);
+                    if (data.big_moment) {
+                        setTimeout(function() {
+                            ModernModal.alert('🏆 ¡FELICIDADES!\n¡Completaste 12 visitas!\nTienes una recompensa disponible', 'success');
+                        }, 1000);
+                    }
+                } else {
+                    await ModernModal.alert(
+                        data.display_message || 'Ya sumaste tu estrella de hoy.\nSólo se suma una por día — ¡te esperamos mañana!',
+                        'success',
+                        '¡Listo por hoy! ⭐'
+                    );
+                }
+            } catch(error) {
+                console.error('Check-in error:', error);
+                await ModernModal.alert('Error al registrar visita', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

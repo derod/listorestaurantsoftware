@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - Soda Silvia Rewards</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%A5%A4</text></svg>">
+    <link rel="stylesheet" href="/static/css/modals.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .register-container {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .register-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .register-header h1 {
+            font-size: 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+        .register-header p {
+            color: #6b7280;
+            font-size: 16px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+            font-size: 14px;
+        }
+        .optional-tag {
+            color: #6b7280;
+            font-weight: normal;
+            font-size: 12px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+        .form-group input:focus, .form-group select:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+        .field-help {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-top: 2px;
+            cursor: pointer;
+        }
+        .checkbox-group label {
+            margin: 0;
+            font-weight: normal;
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+        .checkbox-group a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+        .btn-submit:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+        }
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .links {
+            text-align: center;
+            margin-top: 24px;
+        }
+        .links a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            display: block;
+            margin: 8px 0;
+        }
+        .links a:hover {
+            text-decoration: underline;
+        }
+        .admin-link {
+            color: #8b5cf6 !important;
+            font-size: 13px;
+        }
+        .error-message, .success-message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            font-size: 14px;
+        }
+        .error-message {
+            background: #fee2e2;
+            color: #dc2626;
+            border-left: 4px solid #dc2626;
+        }
+        .success-message {
+            background: #d1fae5;
+            color: #059669;
+            border-left: 4px solid #059669;
+        }
+        .error-message.show, .success-message.show {
+            display: block;
+        }
+
+        @media (max-width: 480px) {
+            body { padding: 12px; align-items: flex-start; padding-top: 30px; }
+            .register-container { padding: 24px 18px; border-radius: 18px; }
+            .register-header h1 { font-size: 26px; }
+            .register-header p  { font-size: 14px; }
+            .form-group input,
+            .form-group select  { padding: 12px; font-size: 16px; min-height: 44px; }
+            .btn-submit { font-size: 16px; padding: 14px; min-height: 44px; }
+            .checkbox-group { gap: 10px; }
+            .checkbox-group input[type="checkbox"] { width: 20px; height: 20px; flex-shrink: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="register-header">
+            <h1>🌟 Registro</h1>
+            <p>Únete a Soda Silvia Rewards</p>
+        </div>
+        
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+        
+        <form id="registerForm" novalidate>
+            <div class="form-group">
+                <label for="name">
+                    Nombre <span class="optional-tag">(opcional)</span>
+                </label>
+                <input type="text" id="name">
+            </div>
+            
+            <div class="form-group">
+                <label for="loginType">¿Cómo querés iniciar sesión? *</label>
+                <select id="loginType" required>
+                    <option value="phone">Teléfono</option>
+                    <option value="email">Email</option>
+                    <option value="username">Usuario</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="identifier" id="identifierLabel">Teléfono *</label>
+                <input type="tel" id="identifier" placeholder="Ej: 88881234">
+                <p class="field-help" id="identifierHelp" style="color:#dc2626;display:none;"></p>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">
+                    Contraseña <span class="optional-tag">(opcional)</span>
+                </label>
+                <input type="password" id="password">
+                <p class="field-help">Puedes dejar este campo vacío si prefieres no usar contraseña</p>
+            </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="terms" required>
+                <label for="terms">
+                    Acepto los <a href="/cliente/terminos" target="_blank">términos y condiciones</a>
+                </label>
+            </div>
+            
+            <button type="submit" class="btn-submit" id="submitBtn">
+                Registrarse
+            </button>
+        </form>
+        
+        <div class="links">
+            <a href="/cliente/login">¿Ya tienes cuenta? Inicia sesión aquí</a>
+            <a href="/admin/login" class="admin-link">🔐 Acceso Administrador</a>
+        </div>
+    </div>
+    
+    <script src="/static/js/modals.js"></script>
+    <script>
+        function normalizeIdentifier(type, value) {
+            if (type === 'email') return value.trim().toLowerCase();
+            if (type === 'phone') return value.replace(/[\s\-\(\)]/g, '').trim();
+            return value.trim().toLowerCase();
+        }
+
+        function validateEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        function validatePhone(phone) {
+            return /^\d+$/.test(phone);
+        }
+
+        function clearIdentifierError() {
+            const help = document.getElementById('identifierHelp');
+            help.style.display = 'none';
+            help.textContent = '';
+        }
+
+        function showIdentifierError(msg) {
+            const help = document.getElementById('identifierHelp');
+            help.textContent = msg;
+            help.style.display = 'block';
+        }
+
+        document.getElementById('loginType').addEventListener('change', function() {
+            const identifier = document.getElementById('identifier');
+            const label = document.getElementById('identifierLabel');
+            const type = this.value;
+            clearIdentifierError();
+            identifier.value = '';
+
+            if (type === 'phone') {
+                label.textContent = 'Teléfono *';
+                identifier.type = 'tel';
+                identifier.placeholder = 'Ej: 88881234';
+            } else if (type === 'email') {
+                label.textContent = 'Email *';
+                identifier.type = 'text';
+                identifier.placeholder = 'Ej: nombre@dominio.com';
+            } else {
+                label.textContent = 'Usuario *';
+                identifier.type = 'text';
+                identifier.placeholder = '';
+            }
+        });
+
+        // Real-time validation on blur
+        document.getElementById('identifier').addEventListener('blur', function() {
+            const loginType = document.getElementById('loginType').value;
+            const normalized = normalizeIdentifier(loginType, this.value);
+            if (!normalized) {
+                showIdentifierError('Este campo es obligatorio');
+            } else if (loginType === 'email' && !validateEmail(normalized)) {
+                showIdentifierError('❌ Correo inválido — usa el formato nombre@dominio.com');
+            } else if (loginType === 'phone' && !validatePhone(normalized)) {
+                showIdentifierError('❌ El teléfono solo puede contener números');
+            } else {
+                clearIdentifierError();
+            }
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submitBtn');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+
+            errorMessage.classList.remove('show');
+            successMessage.classList.remove('show');
+            clearIdentifierError();
+
+            const loginType = document.getElementById('loginType').value;
+            const rawIdentifier = document.getElementById('identifier').value;
+            const normalized = normalizeIdentifier(loginType, rawIdentifier);
+
+            // Frontend validation
+            if (!normalized) {
+                showIdentifierError('Este campo es obligatorio');
+                document.getElementById('identifier').focus();
+                return;
+            }
+            if (loginType === 'email' && !validateEmail(normalized)) {
+                showIdentifierError('❌ Correo inválido — usa el formato nombre@dominio.com');
+                document.getElementById('identifier').focus();
+                return;
+            }
+            if (loginType === 'phone' && !validatePhone(normalized)) {
+                showIdentifierError('❌ El teléfono solo puede contener números');
+                document.getElementById('identifier').focus();
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Registrando...';
+
+            const passwordValue = document.getElementById('password').value;
+            const nameValue = document.getElementById('name').value.trim();
+
+            const formData = {
+                name: nameValue === '' ? null : nameValue,
+                login_type: loginType,
+                login_identifier: normalized,
+                password: passwordValue === '' ? null : passwordValue
+            };
+            
+            try {
+                const response = await fetch('/cliente/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    let errorMsg = 'Error en el registro';
+                    if (data.detail) {
+                        if (typeof data.detail === 'string') {
+                            errorMsg = data.detail;
+                        } else if (Array.isArray(data.detail)) {
+                            errorMsg = data.detail.map(err => err.msg || err.message || JSON.stringify(err)).join(', ');
+                        } else if (typeof data.detail === 'object') {
+                            errorMsg = JSON.stringify(data.detail);
+                        }
+                    }
+                    throw new Error(errorMsg);
+                }
+                
+                localStorage.setItem('login_type', data.user.login_type);
+                localStorage.setItem('login_identifier', data.user.login_identifier);
+                
+                await ModernModal.alert('¡Registro exitoso! Bienvenido a Soda Silvia Rewards', 'success');
+                window.location.href = '/cliente/dashboard';
+                
+            } catch (error) {
+                errorMessage.textContent = '❌ ' + error.message;
+                errorMessage.classList.add('show');
+                
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Registrarse';
+            }
+        });
+    </script>
+</body>
+</html>

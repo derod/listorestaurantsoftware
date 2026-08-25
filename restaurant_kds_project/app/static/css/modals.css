@@ -1,0 +1,211 @@
+/* MODERN MODAL SYSTEM - Replaces all browser alerts */
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-box {
+    background: white;
+    border-radius: 24px;
+    padding: 32px;
+    max-width: 450px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Modal Header */
+.modal-header {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.modal-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    display: block;
+}
+
+.modal-title {
+    font-size: 24px;
+    font-weight: bold;
+    color: #1f2937;
+    margin-bottom: 8px;
+}
+
+.modal-message {
+    font-size: 16px;
+    color: #6b7280;
+    line-height: 1.5;
+    white-space: pre-line; /* honor \n line breaks in messages */
+}
+
+/* Modal Types */
+.modal-box.success .modal-icon { color: #10b981; }
+.modal-box.error .modal-icon { color: #ef4444; }
+.modal-box.warning .modal-icon { color: #f59e0b; }
+.modal-box.info .modal-icon { color: #3b82f6; }
+.modal-box.question .modal-icon { color: #8b5cf6; }
+
+/* Modal Input (for prompts) */
+.modal-input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 16px;
+    margin-bottom: 24px;
+    transition: all 0.3s;
+}
+
+.modal-input:focus {
+    border-color: #667eea;
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+}
+
+/* Modal Buttons */
+.modal-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.modal-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    min-height: 44px;
+}
+
+.modal-btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.modal-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+}
+
+.modal-btn-secondary {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.modal-btn-secondary:hover {
+    background: #d1d5db;
+}
+
+.modal-btn-danger {
+    background: #ef4444;
+    color: white;
+}
+
+.modal-btn-danger:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+}
+
+.modal-btn-success {
+    background: #10b981;
+    color: white;
+}
+
+.modal-btn-success:hover {
+    background: #059669;
+    transform: translateY(-2px);
+}
+
+/* Loading Spinner */
+.modal-loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+    .modal-box {
+        padding: 24px 18px;
+        margin: 16px;
+        width: calc(100% - 32px);
+        max-width: 92vw;
+        max-height: 85vh;
+        overflow-y: auto;
+        border-radius: 18px;
+    }
+
+    .modal-icon {
+        font-size: 48px;
+    }
+
+    .modal-title {
+        font-size: 20px;
+    }
+
+    .modal-message {
+        font-size: 15px;
+    }
+
+    .modal-buttons {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .modal-btn {
+        width: 100%;
+        text-align: center;
+        min-height: 44px;
+        padding: 12px 16px;
+    }
+
+    .modal-input {
+        font-size: 16px;   /* prevent iOS zoom on focus */
+        padding: 12px 14px;
+    }
+}
