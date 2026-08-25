@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, date
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text, Float
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text, Float, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .database import Base
 
@@ -655,3 +655,76 @@ class OnlineOrderItem(Base):
     note: Mapped[str | None] = mapped_column(String(200), nullable=True)
 
     order = relationship("OnlineOrder", back_populates="items")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Loyalty module (ported from the Soda Silvia rewards app).
+# Customers earn one star per day via QR check-in; rewards/raffle every few
+# stars, surprise every 12 (one full cycle). Kept separate from Waiter (staff).
+# ─────────────────────────────────────────────────────────────────────────────
+class Customer(Base):
+    __tablename__ = "customers"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(40), unique=True, nullable=True, index=True)
+    login_type: Mapped[str] = mapped_column(String(20), nullable=False, default="phone")
+    login_identifier: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
+    hashed_password: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
+
+    visits = relationship("LoyaltyVisit", back_populates="customer", cascade="all, delete-orphan")
+    rewards = relationship("LoyaltyReward", back_populates="customer", cascade="all, delete-orphan")
+    cycles = relationship("LoyaltyCycle", back_populates="customer", cascade="all, delete-orphan")
+    manual_numbers = relationship("LoyaltyManualNumber", back_populates="customer", cascade="all, delete-orphan")
+
+    __table_args__ = (UniqueConstraint("login_type", "login_identifier", name="uq_customer_login"),)
+
+
+class LoyaltyVisit(Base):
+    __tablename__ = "loyalty_visits"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    customer_id: Mapped[int] = mapped_column(ForeignKey("customers.id"), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
+    date_key: Mapped[str] = mapped_column(String(20), nullable=False)   # YYYY-MM-DD (Costa Rica)
+    source: Mapped[str] = mapped_column(String(40), default="qr_scan")
+    stars_earned: Mapped[int] = mapped_column(Integer, default=1)
+
+    customer = relationship("Customer", back_populates="visits")
+
+    __table_args__ = (UniqueConstraint("customer_id", "date_key", name="uq_loyalty_daily_visit"),)
+
+
+class LoyaltyReward(Base):
+    __tablename__ = "loyalty_rewards"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    customer_id: Mapped[int] = mapped_column(ForeignKey("customers.id"), nullable=False, index=True)
+    type: Mapped[str] = mapped_column(String(40), nullable=False)       # RIFA_3 / SURPRISE_12 / …
+    earned_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
+    number: Mapped[str | None] = mapped_column(String(20), nullable=True)   # raffle number 00-99
+    status: Mapped[str] = mapped_column(String(20), default="available")
+    unique_key: Mapped[str] = mapped_column(String(80), nullable=False)     # dedupe per cycle
+
+    customer = relationship("Customer", back_populates="rewards")
+
+    __table_args__ = (UniqueConstraint("customer_id", "unique_key", name="uq_loyalty_reward"),)
+
+
+class LoyaltyCycle(Base):
+    __tablename__ = "loyalty_cycles"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    customer_id: Mapped[int] = mapped_column(ForeignKey("customers.id"), nullable=False, index=True)
+    cycle_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    completed_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
+
+    customer = relationship("Customer", back_populates="cycles")
+
+
+class LoyaltyManualNumber(Base):
+    __tablename__ = "loyalty_manual_numbers"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    customer_id: Mapped[int] = mapped_column(ForeignKey("customers.id"), nullable=False, index=True)
+    number: Mapped[str] = mapped_column(String(20), nullable=False)
+    assigned_date: Mapped[str] = mapped_column(String(20), nullable=False)  # YYYY-MM-DD
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=cr_now)
+
+    customer = relationship("Customer", back_populates="manual_numbers")
