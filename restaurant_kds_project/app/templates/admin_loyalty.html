@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="section-header-row">
+  <h1>⭐ Lealtad — Clientes</h1>
+  <a class="action primary" href="/admin/lealtad/qr" style="min-height:auto;padding:12px 18px;text-decoration:none;">📱 QR de check-in</a>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card"><div class="stat-label">Clientes</div><div class="stat-value">{{ totals.customers }}</div></div>
+  <div class="stat-card"><div class="stat-label">Estrellas totales</div><div class="stat-value">{{ totals.stars }}</div></div>
+  <div class="stat-card"><div class="stat-label">Recompensas</div><div class="stat-value">{{ totals.rewards }}</div></div>
+</div>
+
+<div class="panel">
+  {% if rows %}
+  <div class="table-scroll">
+    <table class="big-table">
+      <thead>
+        <tr><th>Cliente</th><th>Identificador</th><th>Tipo</th><th>Estrellas</th><th>Ciclo</th><th>Última visita</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td>{{ r.name }}</td>
+          <td>{{ r.identifier }}</td>
+          <td>{{ r.login_type }}</td>
+          <td><b>{{ r.stars }}</b> ⭐</td>
+          <td>{{ r.cycle }}/12</td>
+          <td>{{ r.last_visit }}</td>
+          <td><a class="small-action" href="/admin/lealtad/{{ r.id }}" style="text-decoration:none;display:inline-block;">Ver</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty-state">Aún no hay clientes registrados.</p>
+  {% endif %}
+</div>
+{% endblock %}

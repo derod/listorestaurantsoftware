@@ -4,6 +4,7 @@ Ported from the standalone Soda Silvia rewards app and namespaced under
 /cliente/* so it lives alongside the KDS without route collisions. Uses the
 KDS Costa Rica clock (cr_now) and the Customer/Loyalty* models.
 """
+import io
 import os
 import re
 import random
@@ -11,12 +12,14 @@ from pathlib import Path
 
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
+from jinja2 import pass_context as _pass_context
 from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 
 from ..database import get_db
+from ..i18n import t as _i18n_t, dict_for as _i18n_dict, LANGS as _I18N_LANGS, LANG_LABELS as _I18N_LABELS
 from ..models import (
     Customer, LoyaltyVisit, LoyaltyReward, LoyaltyCycle, LoyaltyManualNumber, cr_now,
 )
@@ -25,6 +28,31 @@ router = APIRouter()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+
+
+# i18n globals so base.html-extending admin templates render (same as web.py).
+def _cur_lang(request):
+    try:
+        lang = request.cookies.get("lang")
+    except Exception:
+        lang = None
+    return lang if lang in _I18N_LANGS else "es"
+
+
+@_pass_context
+def _jinja_t(context, key):
+    req = context.get("request")
+    return _i18n_t(_cur_lang(req) if req else "es", key)
+
+
+templates.env.globals.update({
+    "t": _jinja_t, "cur_lang": _cur_lang, "i18n_dict": _i18n_dict,
+    "i18n_langs": _I18N_LANGS, "i18n_labels": _I18N_LABELS,
+})
+
+
+def _require_admin(request: Request) -> bool:
+    return request.session.get("admin_logged_in") is True
 
 # Restaurant QR token the in-app scanner validates. Rotatable later from admin.
 LOYALTY_QR_TOKEN = os.getenv("LOYALTY_QR_TOKEN", os.getenv("RESTAURANT_TOKEN", "soda-silvia-loyalty"))
@@ -311,3 +339,86 @@ def api_visits(login_type: str, login_identifier: str, page: int = 1, per_page: 
                    "stars_earned": v.stars_earned} for v in visits],
         "total": total, "page": page, "per_page": per_page,
     }
+
+
+@router.get("/cliente/checkin")
+def customer_checkin_redirect(request: Request, token: str = ""):
+    """Landing for native-camera scans of the check-in QR: send them to the
+    dashboard (the in-app scanner is what actually posts the check-in)."""
+    return RedirectResponse(url="/cliente/dashboard", status_code=303)
+
+
+# ── Admin: loyalty management (behind the KDS admin session) ──────────────────
+def _customer_row(db: Session, c: Customer):
+    total = get_visits_count(db, c.id)
+    last = db.query(LoyaltyVisit).filter(LoyaltyVisit.customer_id == c.id).order_by(LoyaltyVisit.created_at.desc()).first()
+    return {
+        "id": c.id,
+        "name": c.name or "—",
+        "identifier": c.login_identifier,
+        "login_type": c.login_type,
+        "stars": total,
+        "cycle": total % STARS_PER_CYCLE,
+        "last_visit": last.created_at.strftime("%d/%m/%Y") if last else "—",
+    }
+
+
+@router.get("/admin/lealtad", response_class=HTMLResponse)
+def admin_loyalty(request: Request, db: Session = Depends(get_db)):
+    if not _require_admin(request):
+        return RedirectResponse(url="/admin/login", status_code=303)
+    customers = db.query(Customer).order_by(Customer.created_at.desc()).all()
+    rows = [_customer_row(db, c) for c in customers]
+    rows.sort(key=lambda r: r["stars"], reverse=True)
+    totals = {
+        "customers": len(rows),
+        "stars": sum(r["stars"] for r in rows),
+        "rewards": db.query(LoyaltyReward).count(),
+    }
+    return templates.TemplateResponse("admin_loyalty.html", {
+        "request": request, "page_title": "Lealtad", "rows": rows, "totals": totals,
+    })
+
+
+@router.get("/admin/lealtad/qr", response_class=HTMLResponse)
+def admin_loyalty_qr(request: Request):
+    if not _require_admin(request):
+        return RedirectResponse(url="/admin/login", status_code=303)
+    base = str(request.base_url).rstrip("/")
+    return templates.TemplateResponse("admin_loyalty_qr.html", {
+        "request": request, "page_title": "QR de Lealtad",
+        "token": LOYALTY_QR_TOKEN,
+        "qr_url": f"{base}/cliente/checkin?token={LOYALTY_QR_TOKEN}",
+    })
+
+
+@router.get("/admin/lealtad/qr.png")
+def admin_loyalty_qr_png(request: Request):
+    if not _require_admin(request):
+        return RedirectResponse(url="/admin/login", status_code=303)
+    import qrcode
+    base = str(request.base_url).rstrip("/")
+    img = qrcode.make(f"{base}/cliente/checkin?token={LOYALTY_QR_TOKEN}")
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return StreamingResponse(buf, media_type="image/png", headers={"Cache-Control": "no-store"})
+
+
+@router.get("/admin/lealtad/{customer_id:int}", response_class=HTMLResponse)
+def admin_loyalty_detail(customer_id: int, request: Request, db: Session = Depends(get_db)):
+    if not _require_admin(request):
+        return RedirectResponse(url="/admin/login", status_code=303)
+    customer = db.query(Customer).filter(Customer.id == customer_id).first()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    total = get_visits_count(db, customer.id)
+    visits = db.query(LoyaltyVisit).filter(LoyaltyVisit.customer_id == customer.id).order_by(LoyaltyVisit.created_at.desc()).limit(50).all()
+    rewards = db.query(LoyaltyReward).filter(LoyaltyReward.customer_id == customer.id).order_by(LoyaltyReward.earned_at.desc()).all()
+    manual = db.query(LoyaltyManualNumber).filter(LoyaltyManualNumber.customer_id == customer.id).order_by(LoyaltyManualNumber.assigned_date.desc()).all()
+    return templates.TemplateResponse("admin_loyalty_detail.html", {
+        "request": request, "page_title": customer.name or customer.login_identifier,
+        "customer": customer, "total_stars": total, "cycle": total % STARS_PER_CYCLE,
+        "tier": get_tier_info(total % STARS_PER_CYCLE),
+        "visits": visits, "rewards": rewards, "manual": manual,
+    })

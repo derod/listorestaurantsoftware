@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="section-header-row">
+  <h1>📱 QR de check-in — Lealtad</h1>
+  <a class="small-action" href="/admin/lealtad" style="text-decoration:none;">← Volver</a>
+</div>
+
+<div class="panel" style="text-align:center;max-width:520px;margin:0 auto;">
+  <p style="margin-bottom:18px;">Imprimí este código y ponelo en el local. El cliente lo escanea
+     desde su panel (<b>/cliente</b>) para sumar su estrella del día.</p>
+  <div style="background:#fff;display:inline-block;padding:18px;border-radius:20px;">
+    <img src="/admin/lealtad/qr.png" alt="QR de check-in" style="width:280px;height:280px;display:block;" />
+  </div>
+  <p style="margin-top:16px;color:#b7becd;">Token: <code>{{ token }}</code></p>
+  <p style="word-break:break-all;color:#b7becd;font-size:15px;">{{ qr_url }}</p>
+  <div class="big-actions" style="grid-template-columns:1fr;margin-top:18px;">
+    <button class="action primary" onclick="window.print()">🖨️ Imprimir</button>
+  </div>
+</div>
+{% endblock %}

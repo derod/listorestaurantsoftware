@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="section-header-row">
+  <h1>{{ tier.emoji }} {{ customer.name or customer.login_identifier }}</h1>
+  <a class="small-action" href="/admin/lealtad" style="text-decoration:none;">← Volver</a>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card"><div class="stat-label">Estrellas totales</div><div class="stat-value">{{ total_stars }}</div></div>
+  <div class="stat-card"><div class="stat-label">Ciclo actual</div><div class="stat-value">{{ cycle }}/12</div></div>
+  <div class="stat-card"><div class="stat-label">Nivel</div><div class="stat-value">{{ tier.name }}</div></div>
+</div>
+
+<div class="panel">
+  <p><b>Identificador:</b> {{ customer.login_identifier }} &nbsp;·&nbsp; <b>Tipo:</b> {{ customer.login_type }}
+     {% if customer.hashed_password %}&nbsp;·&nbsp; 🔒 con contraseña{% endif %}</p>
+</div>
+
+<h2 style="margin-top:24px;">Visitas ({{ visits|length }})</h2>
+<div class="panel">
+  {% if visits %}
+  <div class="table-scroll">
+    <table class="big-table">
+      <thead><tr><th>Fecha</th><th>Hora</th><th>Origen</th><th>Estrellas</th></tr></thead>
+      <tbody>
+        {% for v in visits %}
+        <tr><td>{{ v.created_at.strftime('%d/%m/%Y') }}</td><td>{{ v.created_at.strftime('%H:%M') }}</td><td>{{ v.source }}</td><td>+{{ v.stars_earned }} ⭐</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<p class="empty-state">Sin visitas.</p>{% endif %}
+</div>
+
+<h2 style="margin-top:24px;">Recompensas ({{ rewards|length }})</h2>
+<div class="panel">
+  {% if rewards %}
+  <div class="table-scroll">
+    <table class="big-table">
+      <thead><tr><th>Tipo</th><th>Número</th><th>Estado</th><th>Fecha</th></tr></thead>
+      <tbody>
+        {% for r in rewards %}
+        <tr><td>{{ r.type }}</td><td>{{ r.number or '—' }}</td><td>{{ r.status }}</td><td>{{ r.earned_at.strftime('%d/%m/%Y') }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<p class="empty-state">Sin recompensas.</p>{% endif %}
+</div>
+
+{% if manual %}
+<h2 style="margin-top:24px;">Números manuales</h2>
+<div class="panel">
+  <div class="table-scroll">
+    <table class="big-table">
+      <thead><tr><th>Número</th><th>Fecha asignada</th></tr></thead>
+      <tbody>{% for m in manual %}<tr><td>{{ m.number }}</td><td>{{ m.assigned_date }}</td></tr>{% endfor %}</tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
