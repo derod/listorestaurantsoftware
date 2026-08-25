@@ -154,6 +154,7 @@
       <h2>Tu pedido · {{ table_label }}</h2>
       <div id="cartLines"></div>
       <div class="cart-fld"><label>Tu nombre (opcional)</label><input type="text" id="custName" maxlength="120" placeholder="Ej. Juan" /></div>
+      <div class="cart-fld"><label>Teléfono para sumar tu estrella ⭐ (opcional)</label><input type="tel" id="custPhone" maxlength="20" placeholder="Ej. 88880000" /></div>
       <div class="cart-fld"><label>Nota para la cocina (opcional)</label><textarea id="custNote" maxlength="500" placeholder="Ej. sin cebolla, para llevar…"></textarea></div>
       <div class="cart-total"><span>Total</span><span class="t" id="cartTotal"></span></div>
       <div class="cart-actions">
@@ -166,7 +167,7 @@
     <div class="done-box">
       <div class="ok">✅</div>
       <h2>¡Pedido enviado!</h2>
-      <p>El personal lo revisará en un momento. Gracias.</p>
+      <p id="doneMsg">El personal lo revisará en un momento. Gracias.</p>
       <button onclick="location.reload()">Hacer otro pedido</button>
     </div>
   </div>
@@ -222,11 +223,19 @@
           body: JSON.stringify({
             table_id: TABLE_ID,
             customer_name: document.getElementById("custName").value || null,
+            phone: document.getElementById("custPhone").value || null,
             note: document.getElementById("custNote").value || null,
             items: arr.map(function(l){ return {menu_item_id:l.menu_item_id, variant_id:l.variant_id, quantity:l.qty}; })
           })
         });
-        if(res.ok){ closeCart(); document.getElementById("doneOv").classList.add("open"); }
+        if(res.ok){
+          var data = {}; try { data = await res.json(); } catch(e) {}
+          var msg = document.getElementById("doneMsg");
+          if (msg) msg.textContent = data.star_awarded
+            ? "¡Sumaste tu estrella de hoy! ⭐ El personal revisará tu pedido."
+            : "El personal lo revisará en un momento. Gracias.";
+          closeCart(); document.getElementById("doneOv").classList.add("open");
+        }
         else { alert("No se pudo enviar el pedido. Intenta de nuevo."); btn.disabled=false; btn.textContent="Enviar pedido"; }
       }catch(e){ alert("Error de conexión."); btn.disabled=false; btn.textContent="Enviar pedido"; }
     }

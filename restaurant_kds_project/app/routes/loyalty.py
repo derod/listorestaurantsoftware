@@ -150,6 +150,33 @@ def create_rewards_if_needed(db: Session, customer_id: int, total_stars: int):
     return created
 
 
+def award_star_for_phone(db: Session, phone: str, source: str = "pedido", name: str | None = None) -> dict:
+    """Tie ordering to loyalty: upsert a customer by phone and award one star
+    per day (creating the account on first order). Safe with empty/invalid phone.
+    """
+    normalized = normalize_identifier("phone", phone or "")
+    if not normalized or not _PHONE_RE.match(normalized):
+        return {"awarded": False, "reason": "no_phone"}
+    customer = get_customer_by_identifier(db, "phone", normalized)
+    if not customer:
+        customer = Customer(name=(name or None), login_type="phone",
+                            login_identifier=normalized, phone=normalized)
+        db.add(customer)
+        db.commit()
+        db.refresh(customer)
+    today = cr_today()
+    if db.query(LoyaltyVisit).filter(LoyaltyVisit.customer_id == customer.id, LoyaltyVisit.date_key == today).first():
+        return {"awarded": False, "reason": "already_today",
+                "customer_id": customer.id, "total_stars": get_visits_count(db, customer.id)}
+    db.add(LoyaltyVisit(customer_id=customer.id, date_key=today, source=source, stars_earned=calculate_stars_to_add()))
+    db.commit()
+    total = get_visits_count(db, customer.id)
+    return {"awarded": True, "stars_earned": 1, "total_stars": total,
+            "current_cycle_stars": total % STARS_PER_CYCLE,
+            "new_rewards": create_rewards_if_needed(db, customer.id, total),
+            "customer_id": customer.id}
+
+
 # ── pydantic payloads ────────────────────────────────────────────────────────
 class RegisterRequest(BaseModel):
     name: str | None = None

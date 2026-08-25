@@ -168,6 +168,7 @@ class OnlineOrderLine(BaseModel):
 class OnlineOrderIn(BaseModel):
     table_id: int
     customer_name: str | None = None
+    phone: str | None = None
     note: str | None = None
     items: list[OnlineOrderLine]
 
@@ -231,7 +232,15 @@ def public_place_order(slug: str, payload: OnlineOrderIn, request: Request, db: 
         raise HTTPException(400, "No se pudo registrar ninguna línea del pedido")
     order.total = round(total, 2)
     db.commit()
-    return {"ok": True, "order_id": order.id, "total": order.total}
+
+    result = {"ok": True, "order_id": order.id, "total": order.total}
+    # Loyalty: an online order with a phone earns one star per day.
+    if payload.phone:
+        from .loyalty import award_star_for_phone
+        star = award_star_for_phone(db, payload.phone, source="pedido_online", name=order.customer_name)
+        result["star_awarded"] = bool(star.get("awarded"))
+        result["stars_total"] = star.get("total_stars")
+    return result
 
 
 # ══════════════════════════════════════════════════════════════════════════════
