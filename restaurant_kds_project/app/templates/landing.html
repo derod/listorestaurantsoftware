@@ -3,33 +3,43 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Soda Silvia — Comida rica, pedí y recogé</title>
+  <title>Soda Silvia — La calidad y el gusto por el buen comer</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%A5%A4</text></svg>" />
   <style>
     *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
     :root { --grad:linear-gradient(135deg,#667eea 0%,#764ba2 100%); --ink:#1f2430; --muted:#6b7280; --gold:#FFD700; }
     html,body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; color:var(--ink); -webkit-font-smoothing:antialiased; background:#fff; }
     a { text-decoration:none; }
+    img { display:block; max-width:100%; }
 
     /* Top bar */
-    .topbar { display:flex; align-items:center; justify-content:space-between; padding:16px 22px; max-width:1100px; margin:0 auto; }
-    .logo { font-size:22px; font-weight:900; color:var(--ink); }
-    .logo .cup { font-size:24px; }
-    .topbar .links { display:flex; gap:10px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; padding:14px 22px; max-width:1100px; margin:0 auto; }
+    .logo { display:flex; align-items:center; gap:10px; font-size:20px; font-weight:900; color:var(--ink); }
+    .logo .mark { width:42px; height:42px; border-radius:50%; background:#fff; box-shadow:0 2px 10px rgba(0,0,0,.12); padding:3px; }
+    .logo .mark img { width:100%; height:100%; object-fit:contain; border-radius:50%; }
+    .links { display:flex; gap:10px; }
     .btn { display:inline-flex; align-items:center; gap:8px; border:none; border-radius:14px; font-weight:800; cursor:pointer; padding:12px 20px; font-size:16px; }
     .btn-primary { background:var(--grad); color:#fff; }
     .btn-ghost { background:#f3f4f6; color:#4b3fa6; }
     .btn-lg { padding:16px 28px; font-size:18px; border-radius:16px; }
 
     /* Hero */
-    .hero { background:var(--grad); color:#fff; text-align:center; padding:56px 22px 64px; }
-    .hero .cup-big { font-size:72px; line-height:1; }
-    .badge { display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3); color:#fff; font-weight:800; font-size:15px; padding:8px 16px; border-radius:999px; margin-top:14px; }
-    .badge .star { color:var(--gold); }
-    .hero h1 { font-size:44px; font-weight:900; letter-spacing:-1px; margin:16px 0 10px; }
+    .hero { background:var(--grad); color:#fff; text-align:center; padding:52px 22px 62px; }
+    .hero .badge-logo { width:120px; height:120px; border-radius:50%; background:#fff; padding:10px; margin:0 auto 8px; box-shadow:0 12px 40px rgba(0,0,0,.28); }
+    .hero .badge-logo img { width:100%; height:100%; object-fit:contain; border-radius:50%; }
+    .pill { display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3); color:#fff; font-weight:800; font-size:15px; padding:8px 16px; border-radius:999px; margin-top:14px; }
+    .pill .star { color:var(--gold); }
+    .hero h1 { font-size:44px; font-weight:900; letter-spacing:-1px; margin:14px 0 10px; }
     .hero p.lead { font-size:19px; color:rgba(255,255,255,.92); max-width:620px; margin:0 auto; line-height:1.5; }
-    .hero .cta { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-top:28px; }
+    .hero .cta { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-top:26px; }
     .hero .btn-ghost { background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.35); }
+
+    /* Parallax bands */
+    .parallax { position:relative; background-size:cover; background-position:center; background-attachment:fixed; }
+    .parallax::before { content:""; position:absolute; inset:0; background:linear-gradient(rgba(31,25,60,.55),rgba(31,25,60,.65)); }
+    .parallax .pcontent { position:relative; max-width:900px; margin:0 auto; padding:96px 22px; text-align:center; color:#fff; }
+    .parallax h2 { font-size:34px; font-weight:900; letter-spacing:-.5px; }
+    .parallax p { font-size:19px; color:rgba(255,255,255,.92); margin-top:10px; }
 
     /* Features */
     .section { max-width:1100px; margin:0 auto; padding:56px 22px; }
@@ -40,6 +50,10 @@
     .card .ic { font-size:40px; }
     .card h3 { font-size:21px; font-weight:900; margin:12px 0 8px; }
     .card p { color:var(--muted); font-size:16px; line-height:1.55; }
+
+    /* Gallery */
+    .gallery { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+    .gallery img { width:100%; height:220px; object-fit:cover; border-radius:16px; box-shadow:0 6px 20px rgba(0,0,0,.10); }
 
     /* Experience strip */
     .strip { background:#f6f5ff; }
@@ -61,14 +75,18 @@
       .hero h1 { font-size:34px; }
       .hero p.lead { font-size:17px; }
       .grid { grid-template-columns:1fr; }
-      .topbar .links .btn { padding:10px 14px; font-size:14px; }
+      .gallery { grid-template-columns:repeat(2,1fr); }
+      .gallery img { height:150px; }
       .section { padding:40px 18px; }
+      .parallax { background-attachment:scroll; } /* fixed causes jank on mobile */
+      .parallax .pcontent { padding:64px 20px; }
+      .parallax h2 { font-size:26px; }
     }
   </style>
 </head>
 <body>
   <div class="topbar">
-    <div class="logo"><span class="cup">🥤</span> Soda Silvia</div>
+    <div class="logo"><span class="mark"><img src="/static/images/logo.jpg" alt="Soda Silvia" /></span> Soda Silvia</div>
     <div class="links">
       <a class="btn btn-ghost" href="/cliente/login">⭐ Mis estrellas</a>
       <a class="btn btn-primary" href="/m/soda-silvia">Ver menú</a>
@@ -77,41 +95,47 @@
 
   <!-- HERO -->
   <header class="hero">
-    <div class="cup-big">🥤</div>
-    <div class="badge"><span class="star">⭐</span> 26 años de experiencia</div>
+    <div class="badge-logo"><img src="/static/images/logo.jpg" alt="Soda Silvia" /></div>
+    <div class="pill"><span class="star">⭐</span> 26 años de experiencia · desde el 2000</div>
     <h1>Bienvenido a Soda Silvia</h1>
-    <p class="lead">Comida rica y casera. Pedí desde tu celular, recogé sin filas y sumá estrellas en cada visita.</p>
+    <p class="lead">La calidad y el gusto por el buen comer. Pedí desde tu celular, recogé sin filas y sumá estrellas en cada visita.</p>
     <div class="cta">
       <a class="btn btn-primary btn-lg" href="/m/soda-silvia">Pedí y recogé</a>
       <a class="btn btn-ghost btn-lg" href="/cliente/register">Sumar estrellas ⭐</a>
     </div>
   </header>
 
+  <!-- PARALLAX 1 -->
+  <section class="parallax" style="background-image:url('/static/images/food-5.jpg');">
+    <div class="pcontent">
+      <h2>Comida casera, hecha con amor</h2>
+      <p>Ingredientes naturales y porciones generosas — el sabor de siempre.</p>
+    </div>
+  </section>
+
   <!-- FEATURES -->
   <section class="section">
     <h2>¿Qué podés hacer?</h2>
     <p class="sub">Todo desde el celular, rápido y sin complicarte.</p>
     <div class="grid">
-      <div class="card">
-        <div class="ic">🛍️</div>
-        <h3>Pedí y recogé</h3>
-        <p>Hacé tu pedido en línea y recogelo listo en el local, sin filas ni esperas.</p>
-      </div>
-      <div class="card">
-        <div class="ic">👥</div>
-        <h3>Pedidos grupales para tu empresa</h3>
-        <p>Express scheduled: coordiná pedidos grupales programados para tu oficina, equipo o evento.</p>
-      </div>
-      <div class="card">
-        <div class="ic">🧾</div>
-        <h3>Factura electrónica</h3>
-        <p>Emitimos factura electrónica al instante — ideal para tu empresa.</p>
-      </div>
-      <div class="card">
-        <div class="ic">🍱</div>
-        <h3>Paquetes de comidas</h3>
-        <p>Planes de almuerzo para que nunca te falte qué comer durante la semana.</p>
-      </div>
+      <div class="card"><div class="ic">🛍️</div><h3>Pedí y recogé</h3><p>Hacé tu pedido en línea y recogelo listo en el local, sin filas ni esperas.</p></div>
+      <div class="card"><div class="ic">👥</div><h3>Pedidos grupales para tu empresa</h3><p>Express scheduled: coordiná pedidos grupales programados para tu oficina, equipo o evento.</p></div>
+      <div class="card"><div class="ic">🧾</div><h3>Factura electrónica</h3><p>Emitimos factura electrónica al instante — ideal para tu empresa.</p></div>
+      <div class="card"><div class="ic">🍱</div><h3>Paquetes de comidas</h3><p>Planes de almuerzo para que nunca te falte qué comer durante la semana.</p></div>
+    </div>
+  </section>
+
+  <!-- GALLERY -->
+  <section class="section" style="padding-top:0;">
+    <h2>Un vistazo a nuestra cocina</h2>
+    <p class="sub">Así se ve el buen comer.</p>
+    <div class="gallery">
+      <img src="/static/images/food-2.jpg" alt="Desayuno tico" loading="lazy" />
+      <img src="/static/images/food-1.jpg" alt="Plato Soda Silvia" loading="lazy" />
+      <img src="/static/images/food-6.jpg" alt="Almuerzo casero" loading="lazy" />
+      <img src="/static/images/food-3.jpg" alt="Plato Soda Silvia" loading="lazy" />
+      <img src="/static/images/food-8.jpg" alt="Comida rica" loading="lazy" />
+      <img src="/static/images/food-7.jpg" alt="Especialidad de la casa" loading="lazy" />
     </div>
   </section>
 
@@ -120,19 +144,27 @@
     <div class="inner">
       <div class="num">26 años</div>
       <div class="num-label">cocinando para vos</div>
-      <p>Casi tres décadas sirviendo comida casera de calidad. Gracias por ser parte de la familia Soda Silvia. 🥤</p>
+      <p>Desde el año 2000 sirviendo comida casera de calidad. Gracias por ser parte de la familia Soda Silvia. 🥤</p>
+    </div>
+  </section>
+
+  <!-- PARALLAX 2 -->
+  <section class="parallax" style="background-image:url('/static/images/food-2.jpg');">
+    <div class="pcontent">
+      <h2>¿Con hambre?</h2>
+      <p>Mirá el menú completo y hacé tu pedido en segundos.</p>
     </div>
   </section>
 
   <!-- FINAL CTA -->
   <section class="final">
-    <h2>¿Con hambre?</h2>
-    <p>Mirá el menú y hacé tu pedido en segundos.</p>
+    <h2>Pedí ahora</h2>
+    <p>Comida rica, lista para recoger.</p>
     <a class="btn btn-primary btn-lg" href="/m/soda-silvia">Ver menú y pedir</a>
   </section>
 
   <footer>
-    <b>🥤 Soda Silvia</b> — 26 años de experiencia · Pedí y recogé
+    <b>🥤 Soda Silvia</b> — La calidad y el gusto por el buen comer · desde el 2000
   </footer>
 </body>
 </html>
