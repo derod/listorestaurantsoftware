@@ -661,6 +661,8 @@ class OnlineOrder(Base):
     table_id: Mapped[int | None] = mapped_column(ForeignKey("tables.id"), nullable=True, index=True)
     table_label: Mapped[str | None] = mapped_column(String(60), nullable=True)  # snapshot ("Mesa 5")
     customer_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(40), nullable=True)          # teléfono a llamar
+    pickup_time: Mapped[str | None] = mapped_column(String(20), nullable=True)     # hora para recoger (HH:MM)
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="pendiente", index=True)
     total: Mapped[float] = mapped_column(Float, default=0)

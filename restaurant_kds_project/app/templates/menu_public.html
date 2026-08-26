@@ -107,7 +107,7 @@
     <p style="color:rgba(255,255,255,.85);">Este menú no existe o fue ocultado.</p>
   </div>
   {% else %}
-  {% if ordering %}<div class="order-banner">Pedido para <b>{{ table_label }}</b> — agrega platillos y envía tu orden.</div>{% endif %}
+  {% if ordering %}<div class="order-banner">{% if pickup %}🥤 <b>Pedido para recoger</b> — armá tu orden y elegí la hora.{% else %}Pedido para <b>{{ table_label }}</b> — agrega platillos y envía tu orden.{% endif %}</div>{% endif %}
   <div class="wrap">
     <img class="cover" src="{{ page.cover_image_path or '/static/images/food-5.jpg' }}" alt="" />
     <div class="brand">
@@ -175,10 +175,15 @@
   <button class="fab" id="fab" onclick="openCart()">🛒 Ver pedido <span class="badge" id="fabCount">0</span> · <span id="fabTotal"></span></button>
   <div class="cart-ov" id="cartOv">
     <div class="cart">
-      <h2>Tu pedido · {{ table_label }}</h2>
+      <h2>{% if pickup %}Tu pedido para recoger 🥤{% else %}Tu pedido · {{ table_label }}{% endif %}</h2>
       <div id="cartLines"></div>
-      <div class="cart-fld"><label>Tu nombre (opcional)</label><input type="text" id="custName" maxlength="120" placeholder="Ej. Juan" /></div>
+      <div class="cart-fld"><label>Tu nombre{% if pickup %}{% else %} (opcional){% endif %}</label><input type="text" id="custName" maxlength="120" placeholder="Ej. Juan" /></div>
+      {% if pickup %}
+      <div class="cart-fld"><label>Hora para recoger</label><input type="time" id="custPickup" /></div>
+      <div class="cart-fld"><label>Teléfono a llamar</label><input type="tel" id="custPhone" maxlength="20" placeholder="Ej. 88880000" /></div>
+      {% else %}
       <div class="cart-fld"><label>Teléfono para sumar tu estrella ⭐ (opcional)</label><input type="tel" id="custPhone" maxlength="20" placeholder="Ej. 88880000" /></div>
+      {% endif %}
       <div class="cart-fld"><label>Nota para la cocina (opcional)</label><textarea id="custNote" maxlength="500" placeholder="Ej. sin cebolla, para llevar…"></textarea></div>
       <div class="cart-total"><span>Total</span><span class="t" id="cartTotal"></span></div>
       <div class="cart-actions">
@@ -222,7 +227,8 @@
   <script>
     var CART = {};
     var CURRENCY = {{ currency|tojson }};
-    var TABLE_ID = {{ table_id }};
+    var TABLE_ID = {{ table_id|tojson }};
+    var IS_PICKUP = {{ 'true' if pickup else 'false' }};
     var SLUG = {{ page.slug|tojson }};
     function money(n){ return CURRENCY + Math.round(n).toLocaleString("es-CR"); }
     function cartAdd(id, vid, name, vlabel, price){
@@ -339,18 +345,41 @@
       openCart();
     }
     document.getElementById("custOv").addEventListener("click", function(e){ if(e.target===this) closeCustomize(); });
+    // Pickup: prefill name/phone from the logged-in loyalty customer.
+    if (IS_PICKUP) {
+      try {
+        var _lt = localStorage.getItem('login_type');
+        var _li = localStorage.getItem('login_identifier');
+        if (_li && _lt === 'phone') { var pe = document.getElementById('custPhone'); if(pe) pe.value = _li; }
+        if (_lt && _li) {
+          fetch('/cliente/api/me?login_type='+encodeURIComponent(_lt)+'&login_identifier='+encodeURIComponent(_li))
+            .then(function(r){ return r.ok ? r.json() : null; })
+            .then(function(d){ if(d && d.user && d.user.name && d.user.name !== 'Usuario'){ var ne=document.getElementById('custName'); if(ne) ne.value = d.user.name; } })
+            .catch(function(){});
+        }
+      } catch(e) {}
+    }
     async function sendOrder(){
       var arr = cartArr();
       if(!arr.length) return;
+      var pickupEl = document.getElementById("custPickup");
+      var name = document.getElementById("custName").value.trim();
+      var phone = document.getElementById("custPhone").value.trim();
+      var pickupTime = pickupEl ? pickupEl.value : "";
+      if(IS_PICKUP){
+        if(!name){ alert("Escribí tu nombre."); return; }
+        if(!pickupTime){ alert("Elegí la hora para recoger."); return; }
+        if(!phone){ alert("Escribí un teléfono a llamar."); return; }
+      }
       var btn = document.getElementById("sendBtn");
       btn.disabled = true; btn.textContent = "Enviando…";
       try{
         var res = await fetch("/m/"+SLUG+"/pedido", {
           method:"POST", headers:{"Content-Type":"application/json"},
           body: JSON.stringify({
-            table_id: TABLE_ID,
-            customer_name: document.getElementById("custName").value || null,
-            phone: document.getElementById("custPhone").value || null,
+            table_id: TABLE_ID, pickup: IS_PICKUP, pickup_time: pickupTime || null,
+            customer_name: name || null,
+            phone: phone || null,
             note: document.getElementById("custNote").value || null,
             items: arr.map(function(l){ return {menu_item_id:l.menu_item_id, variant_id:l.variant_id, quantity:l.qty, option_ids:(l.option_ids||null)}; })
           })

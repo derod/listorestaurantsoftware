@@ -114,7 +114,7 @@ def _sections(items: list[MenuItem]):
 # ══════════════════════════════════════════════════════════════════════════════
 
 @router.get("/m/{slug}")
-def public_menu(slug: str, request: Request, mesa: str = "", db: Session = Depends(get_db)):
+def public_menu(slug: str, request: Request, mesa: str = "", pickup: str = "", db: Session = Depends(get_db)):
     page = (
         db.query(MenuPage)
         .options(
@@ -129,10 +129,11 @@ def public_menu(slug: str, request: Request, mesa: str = "", db: Session = Depen
             {"request": request, "page": None, "page_title": "Menú no encontrado"},
             status_code=404,
         )
-    # Contexto de mesa (solo si el QR trae una mesa válida se habilita el pedido).
+    # Contexto de mesa (QR) o modo "recoger" (cliente logueado desde /cliente).
     table = None
     if mesa.isdigit():
         table = db.query(Table).filter(Table.id == int(mesa)).first()
+    is_pickup = pickup in ("1", "true", "si", "yes")
     menus = sorted([m for m in page.menus if m.active], key=lambda m: (m.display_order, m.id))
     now = cr_now()
     now_min = now.hour * 60 + now.minute
@@ -151,7 +152,8 @@ def public_menu(slug: str, request: Request, mesa: str = "", db: Session = Depen
             "request": request, "page": page, "menus": menus_view,
             "active_index": active_index, "currency": page.currency or "₡",
             "theme": page.theme_color or "#ff8c42",
-            "ordering": table is not None,
+            "ordering": (table is not None) or is_pickup,
+            "pickup": is_pickup,
             "table_id": table.id if table else None,
             "table_label": (("Mesa " + str(table.number)) + ((" · " + table.name) if table.name else "")) if table else None,
             "page_title": page.name,
@@ -170,7 +172,9 @@ class OnlineOrderLine(BaseModel):
 
 
 class OnlineOrderIn(BaseModel):
-    table_id: int
+    table_id: int | None = None
+    pickup: bool = False
+    pickup_time: str | None = None
     customer_name: str | None = None
     phone: str | None = None
     note: str | None = None
@@ -184,18 +188,24 @@ def public_place_order(slug: str, payload: OnlineOrderIn, request: Request, db: 
     page = db.query(MenuPage).filter(MenuPage.slug == slug, MenuPage.active == True).first()  # noqa: E712
     if not page:
         raise HTTPException(404, "Menú no encontrado")
-    table = db.query(Table).filter(Table.id == payload.table_id).first()
-    if not table:
-        raise HTTPException(400, "Mesa inválida")
+    is_pickup = bool(payload.pickup)
+    table = None
+    if not is_pickup:
+        table = db.query(Table).filter(Table.id == payload.table_id).first()
+        if not table:
+            raise HTTPException(400, "Mesa inválida")
     if not payload.items or len(payload.items) > 40:
         raise HTTPException(400, "Pedido vacío o demasiado grande")
 
     # IDs de menús activos de esta página (para no aceptar ítems ajenos).
     menu_ids = {m.id for m in page.menus if m.active}
     order = OnlineOrder(
-        page_id=page.id, table_id=table.id,
-        table_label=("Mesa " + str(table.number)),
+        page_id=page.id,
+        table_id=(table.id if table else None),
+        table_label=(("Mesa " + str(table.number)) if table else None),
         customer_name=(payload.customer_name or "").strip()[:120] or None,
+        phone=(payload.phone or "").strip()[:40] or None,
+        pickup_time=(payload.pickup_time or "").strip()[:20] or None,
         note=(payload.note or "").strip()[:500] or None,
         status="pendiente", total=0,
     )
@@ -785,10 +795,20 @@ def _bridge_to_kds(db: Session, o: OnlineOrder) -> None:
     if o.kds_order_id:
         return
     try:
+        if o.table_id:
+            src = "🌐 " + (o.table_label or "Online")
+            olabel = None
+        else:
+            src = "🥤 Pedido de Cliente: " + (o.customer_name or "Cliente")
+            bits = []
+            if o.pickup_time:
+                bits.append("Recoger " + o.pickup_time)
+            if o.phone:
+                bits.append("Tel " + o.phone)
+            olabel = " · ".join(bits) or None
         kds = Order(
             source_role="online", requires_acceptance=True, status="nuevo",
-            waiter_name=("🌐 " + (o.table_label or "Online")),
-            table_id=o.table_id,
+            waiter_name=src, order_label=olabel, table_id=o.table_id,
         )
         db.add(kds)
         db.flush()
