@@ -336,15 +336,7 @@ def seed_menu_demo(db: Session):
     db.add_all([desayuno, almuerzo])
     db.flush()
 
-    # Desayuno
-    d_items = [
-        ("Gallo Pinto", "Platillos", 1800, "Con natilla y tortilla."),
-        ("Huevos al gusto", "Platillos", 1500, "Fritos, revueltos o estrellados."),
-        ("Café", "Bebidas", 700, None),
-        ("Jugo natural", "Bebidas", 1200, None),
-    ]
-    for i, (n, sec, pr, desc) in enumerate(d_items):
-        db.add(MenuItem(menu_id=desayuno.id, name=n, section=sec, price=pr, description=desc, display_order=i))
+    # Desayuno: los productos reales se cargan en seed_breakfast_combos (sin demos).
 
     # Almuerzo: Casado con variantes + otros
     casado = MenuItem(menu_id=almuerzo.id, name="Casado", section="Platos fuertes",
@@ -458,6 +450,29 @@ def seed_breakfast_combos(db: Session):
         db.commit()
 
 
+_DEMO_BREAKFAST = [("Gallo Pinto", 1800), ("Huevos al gusto", 1500), ("Café", 700), ("Jugo natural", 1200)]
+
+
+def cleanup_demo_breakfast(db: Session):
+    """Remove the old demo breakfast placeholders that duplicated the real
+    combos. Exact name+price match and no option groups, so real items the
+    owner built are never deleted. Idempotent."""
+    page = db.query(MenuPage).filter(MenuPage.slug == "soda-silvia").first()
+    if not page:
+        return
+    desayuno = db.query(Menu).filter(Menu.page_id == page.id, Menu.name == "Desayuno").first()
+    if not desayuno:
+        return
+    changed = False
+    for name, price in _DEMO_BREAKFAST:
+        for it in db.query(MenuItem).filter(MenuItem.menu_id == desayuno.id, MenuItem.name == name).all():
+            if abs(float(it.price or 0) - price) < 0.5 and not it.option_groups:
+                db.delete(it)
+                changed = True
+    if changed:
+        db.commit()
+
+
 def seed_initial_data(db: Session):
     if db.query(Product).count() == 0:
         for idx, name in enumerate(DEFAULT_PRODUCTS):
@@ -474,3 +489,4 @@ def seed_initial_data(db: Session):
     seed_sanitario_soda_silvia(db)
     seed_menu_demo(db)
     seed_breakfast_combos(db)
+    cleanup_demo_breakfast(db)
