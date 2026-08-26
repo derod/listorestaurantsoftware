@@ -75,6 +75,28 @@
     .done-box h2 { font-size:26px; margin:8px 0; color:var(--ink); }
     .done-box p { color:var(--muted); font-size:16px; }
     .done-box button { margin-top:18px; min-height:52px; padding:0 28px; border:none; border-radius:14px; background:var(--grad); color:#fff; font-size:17px; font-weight:900; cursor:pointer; }
+    .addbtn-wide { width:auto; border-radius:14px; padding:0 16px; height:38px; font-size:15px; }
+    /* Customize sheet */
+    .cust-ov { display:none; position:fixed; inset:0; background:rgba(31,36,48,.6); z-index:35; align-items:flex-end; justify-content:center; }
+    .cust-ov.open { display:flex; }
+    .cust { background:#fff; width:100%; max-width:720px; max-height:92vh; display:flex; flex-direction:column; border-radius:24px 24px 0 0; box-shadow:0 -10px 40px rgba(0,0,0,.25); }
+    .cust-head { display:flex; align-items:center; gap:12px; padding:18px 18px 8px; }
+    .cust-head h2 { font-size:20px; color:var(--ink); flex:1; }
+    .cust-x { background:#f3f4f6; border:none; width:36px; height:36px; border-radius:50%; font-size:18px; cursor:pointer; color:var(--text); }
+    #custBody { overflow-y:auto; padding:6px 18px 12px; flex:1; }
+    .cg { padding:14px 0; border-bottom:1px solid var(--border); }
+    .cg-title { font-weight:800; font-size:16px; color:var(--ink); }
+    .cg-note { font-size:13px; color:var(--muted); margin:2px 0 10px; }
+    .cg-note.req { color:#c0392b; font-weight:700; }
+    .opt { display:flex; align-items:center; gap:12px; padding:11px 0; cursor:pointer; }
+    .opt input { width:22px; height:22px; accent-color:var(--acc); flex:0 0 auto; }
+    .opt .ol { flex:1; font-size:16px; }
+    .opt .op { font-weight:800; color:var(--acc); font-size:15px; }
+    .opt .pop { background:#fff3cd; color:#8a6d00; font-size:11px; font-weight:800; padding:2px 7px; border-radius:999px; margin-left:6px; }
+    .cust-foot { padding:14px 18px 20px; border-top:1px solid var(--border); }
+    .cust-foot .cart-total { margin:0 0 12px; }
+    .cust-foot .btn-send { width:100%; min-height:54px; border:none; border-radius:14px; font-size:18px; font-weight:900; cursor:pointer; }
+    .cust-foot .btn-send:disabled { opacity:.5; cursor:not-allowed; }
   </style>
 </head>
 <body>
@@ -115,7 +137,9 @@
             <div style="display:flex;gap:12px;align-items:center;">
               <div class="iname">{{ it.name }}</div>
               {% if not it.variants %}<div class="price">{{ currency }}{{ '{:,.0f}'.format(it.price or 0) }}</div>{% endif %}
-              {% if ordering and not it.variants %}
+              {% if ordering and it.option_groups %}
+              <button class="addbtn addbtn-wide" style="margin-left:auto;" onclick="openCustomize({{ it.id }})">Personalizar</button>
+              {% elif ordering and not it.variants %}
               <button class="addbtn" style="margin-left:auto;" onclick="cartAdd({{ it.id }},0,{{ it.name|tojson }},null,{{ (it.price or 0) }})">＋</button>
               {% endif %}
             </div>
@@ -163,6 +187,17 @@
       </div>
     </div>
   </div>
+  <div class="cust-ov" id="custOv">
+    <div class="cust">
+      <div class="cust-head"><h2 id="custTitle"></h2><button class="cust-x" onclick="closeCustomize()">✕</button></div>
+      <div id="custBody"></div>
+      <div class="cust-foot">
+        <div class="cart-total"><span>Total</span><span class="t" id="custTotal"></span></div>
+        <button class="btn-send" id="custAddBtn" onclick="confirmCustomize()">Agregar al pedido</button>
+      </div>
+    </div>
+  </div>
+
   <div class="done-ov" id="doneOv">
     <div class="done-box">
       <div class="ok">✅</div>
@@ -171,6 +206,18 @@
       <button onclick="location.reload()">Hacer otro pedido</button>
     </div>
   </div>
+
+  <script>
+    // Options data for customizable items (only those with option groups).
+    var ITEM_OPTS = {};
+    {% for m in menus %}{% for sec, items in m.sections %}{% for it in items %}{% if it.option_groups %}
+    ITEM_OPTS[{{ it.id }}] = { name: {{ it.name|tojson }}, base: {{ (it.price or 0) }}, groups: [
+      {% for g in it.option_groups %}{ id: {{ g.id }}, title: {{ g.title|tojson }}, min: {{ g.min_select }}, max: {{ g.max_select }}, required: {{ 'true' if g.required else 'false' }}, options: [
+        {% for o in g.options %}{ id: {{ o.id }}, label: {{ o.label|tojson }}, price: {{ (o.price_delta or 0) }}, pop: {{ 'true' if o.popular else 'false' }} }{{ ',' if not loop.last }}{% endfor %}
+      ] }{{ ',' if not loop.last }}{% endfor %}
+    ] };
+    {% endif %}{% endfor %}{% endfor %}{% endfor %}
+  </script>
 
   <script>
     var CART = {};
@@ -182,6 +229,13 @@
       var key = id + "-" + (vid||0);
       if(!CART[key]) CART[key] = {menu_item_id:id, variant_id:(vid||null), name:name, variant_label:vlabel, price:price, qty:0};
       CART[key].qty++;
+      renderCart();
+    }
+    var CUST_N = 0;
+    function cartAddCustom(itemId, name, price, modText, optionIds){
+      var key = "c" + (++CUST_N);
+      CART[key] = {menu_item_id:itemId, variant_id:null, name:name, variant_label:null,
+                   mods:modText, option_ids:optionIds, price:price, qty:1};
       renderCart();
     }
     function cartChange(key, d){
@@ -205,6 +259,7 @@
       host.innerHTML = arr.map(function(l){
         return '<div class="cart-line"><div class="cl-info"><div class="cl-name">'+l.name+'</div>'+
           (l.variant_label?'<div class="cl-sub">'+l.variant_label+'</div>':'')+
+          (l.mods?'<div class="cl-sub">'+l.mods+'</div>':'')+
           '<div class="cl-sub">'+money(l.price)+' c/u</div></div>'+
           '<div class="qtyc"><button onclick="cartChange(\''+l.key+'\',-1)">−</button><span>'+l.qty+'</span>'+
           '<button onclick="cartChange(\''+l.key+'\',1)">＋</button></div></div>';
@@ -212,6 +267,78 @@
     }
     function openCart(){ document.getElementById("cartOv").classList.add("open"); }
     function closeCart(){ document.getElementById("cartOv").classList.remove("open"); }
+
+    // ── Customization sheet ──
+    var CUR = null;
+    function openCustomize(id){
+      var it = ITEM_OPTS[id]; if(!it) return;
+      CUR = { id:id, sel:{} };
+      document.getElementById("custTitle").textContent = it.name;
+      var html = "";
+      it.groups.forEach(function(g){
+        var note = g.max===1 ? (g.required ? "Elegí 1 · obligatorio" : "Elegí 1 (opcional)") : ("Elegí hasta " + g.max);
+        html += '<div class="cg" data-g="'+g.id+'"><div class="cg-title">'+g.title+'</div>'+
+                '<div class="cg-note'+(g.required?' req':'')+'">'+note+'</div>';
+        g.options.forEach(function(o){
+          html += '<label class="opt"><input type="checkbox" onchange="custPick('+g.id+','+o.id+','+g.max+',this)" />'+
+                  '<span class="ol">'+o.label+(o.pop?'<span class="pop">Popular</span>':'')+'</span>'+
+                  (o.price>0?'<span class="op">+'+money(o.price)+'</span>':'')+'</label>';
+        });
+        html += '</div>';
+      });
+      document.getElementById("custBody").innerHTML = html;
+      document.getElementById("custBody").scrollTop = 0;
+      custRecalc();
+      document.getElementById("custOv").classList.add("open");
+    }
+    function closeCustomize(){ document.getElementById("custOv").classList.remove("open"); CUR = null; }
+    function custPick(gid, oid, max, el){
+      if(!CUR) return;
+      if(max===1){
+        if(el.checked){
+          var box = document.querySelector('.cg[data-g="'+gid+'"]');
+          box.querySelectorAll('input').forEach(function(i){ if(i!==el) i.checked=false; });
+          CUR.sel[gid] = [oid];
+        } else { CUR.sel[gid] = []; }
+      } else {
+        var sel = CUR.sel[gid] || [];
+        if(el.checked){ if(sel.length >= max){ el.checked=false; return; } sel.push(oid); }
+        else { sel = sel.filter(function(x){ return x!==oid; }); }
+        CUR.sel[gid] = sel;
+      }
+      custRecalc();
+    }
+    function custTotal(){
+      var it = ITEM_OPTS[CUR.id]; var t = it.base;
+      it.groups.forEach(function(g){ (CUR.sel[g.id]||[]).forEach(function(oid){
+        var o = g.options.find(function(x){ return x.id===oid; }); if(o) t += o.price; }); });
+      return t;
+    }
+    function custValid(){
+      var it = ITEM_OPTS[CUR.id]; var ok = true;
+      it.groups.forEach(function(g){ var n = (CUR.sel[g.id]||[]).length;
+        if((g.required || g.min>0) && n < Math.max(1, g.min)) ok = false; });
+      return ok;
+    }
+    function custRecalc(){
+      document.getElementById("custTotal").textContent = money(custTotal());
+      document.getElementById("custAddBtn").disabled = !custValid();
+    }
+    function confirmCustomize(){
+      if(!CUR || !custValid()) return;
+      var it = ITEM_OPTS[CUR.id]; var parts = []; var ids = [];
+      it.groups.forEach(function(g){
+        var sel = CUR.sel[g.id] || [];
+        if(sel.length){
+          var labels = sel.map(function(oid){ var o = g.options.find(function(x){ return x.id===oid; }); ids.push(oid); return o?o.label:""; });
+          parts.push(labels.join(", "));
+        }
+      });
+      cartAddCustom(CUR.id, it.name, custTotal(), parts.join(" · "), ids);
+      closeCustomize();
+      openCart();
+    }
+    document.getElementById("custOv").addEventListener("click", function(e){ if(e.target===this) closeCustomize(); });
     async function sendOrder(){
       var arr = cartArr();
       if(!arr.length) return;
@@ -225,7 +352,7 @@
             customer_name: document.getElementById("custName").value || null,
             phone: document.getElementById("custPhone").value || null,
             note: document.getElementById("custNote").value || null,
-            items: arr.map(function(l){ return {menu_item_id:l.menu_item_id, variant_id:l.variant_id, quantity:l.qty}; })
+            items: arr.map(function(l){ return {menu_item_id:l.menu_item_id, variant_id:l.variant_id, quantity:l.qty, option_ids:(l.option_ids||null)}; })
           })
         });
         if(res.ok){

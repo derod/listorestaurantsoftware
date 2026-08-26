@@ -23,7 +23,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from ..database import get_db, DATA_DIR
 from ..models import (
-    MenuPage, Menu, MenuItem, MenuItemVariant, Product, Table,
+    MenuPage, Menu, MenuItem, MenuItemVariant, MenuOptionGroup, MenuOption, Product, Table,
     OnlineOrder, OnlineOrderItem, ONLINE_ORDER_STATES,
     Order, OrderItem, OrderEvent, cr_now,
 )
@@ -117,7 +117,10 @@ def _sections(items: list[MenuItem]):
 def public_menu(slug: str, request: Request, mesa: str = "", db: Session = Depends(get_db)):
     page = (
         db.query(MenuPage)
-        .options(joinedload(MenuPage.menus).joinedload(Menu.items).joinedload(MenuItem.variants))
+        .options(
+            joinedload(MenuPage.menus).joinedload(Menu.items).joinedload(MenuItem.variants),
+            joinedload(MenuPage.menus).joinedload(Menu.items).joinedload(MenuItem.option_groups).joinedload(MenuOptionGroup.options),
+        )
         .filter(MenuPage.slug == slug, MenuPage.active == True).first()  # noqa: E712
     )
     if not page:
@@ -163,6 +166,7 @@ class OnlineOrderLine(BaseModel):
     variant_id: int | None = None
     quantity: int = 1
     note: str | None = None
+    option_ids: list[int] | None = None
 
 
 class OnlineOrderIn(BaseModel):
@@ -217,12 +221,27 @@ def public_place_order(slug: str, payload: OnlineOrderIn, request: Request, db: 
         elif it.variants:
             # el ítem exige variante y no se eligió → se omite la línea
             continue
+        # Modifiers (option groups): recompute price on the server from the
+        # chosen option ids that actually belong to this item.
+        modifiers_text = None
+        if line.option_ids:
+            opts = (
+                db.query(MenuOption)
+                .join(MenuOptionGroup, MenuOption.group_id == MenuOptionGroup.id)
+                .filter(MenuOption.id.in_(line.option_ids), MenuOptionGroup.item_id == it.id)
+                .order_by(MenuOptionGroup.display_order, MenuOption.display_order)
+                .all()
+            )
+            if opts:
+                unit += sum(float(o.price_delta or 0) for o in opts)
+                modifiers_text = " · ".join(o.label for o in opts)[:500]
         line_total = round(unit * qty, 2)
         total += line_total
         db.add(OnlineOrderItem(
             online_order_id=order.id, menu_item_id=it.id, name=it.name,
             variant_label=variant_label, unit_price=unit, quantity=qty,
             line_total=line_total, note=(line.note or "").strip()[:200] or None,
+            modifiers=modifiers_text,
         ))
         line_count += 1
 
@@ -680,6 +699,8 @@ def _bridge_to_kds(db: Session, o: OnlineOrder) -> None:
                 ph = ph or _placeholder_product(db)
                 pid = ph.id
             label = it.name + (f" ({it.variant_label})" if it.variant_label else "")
+            if it.modifiers:
+                label += f" — {it.modifiers}"
             if it.note:
                 label += f" – {it.note}"
             db.add(OrderItem(order_id=kds.id, product_id=pid, quantity=it.quantity, item_name=label[:200]))
