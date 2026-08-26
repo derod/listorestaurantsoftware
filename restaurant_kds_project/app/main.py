@@ -170,6 +170,11 @@ def _ensure_schema():
         if "kds_order_id" not in oo_cols:
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE online_orders ADD COLUMN kds_order_id INTEGER"))
+    if "online_order_items" in insp.get_table_names():
+        ooi_cols = {c["name"] for c in insp.get_columns("online_order_items")}
+        if "modifiers" not in ooi_cols:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE online_order_items ADD COLUMN modifiers TEXT"))
     if "waiters" in insp.get_table_names():
         wt_cols = {c["name"] for c in insp.get_columns("waiters")}
         if "supervisor" not in wt_cols:

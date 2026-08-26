@@ -600,6 +600,8 @@ class MenuItem(Base):
     menu = relationship("Menu", back_populates="items")
     product = relationship("Product")
     variants = relationship("MenuItemVariant", back_populates="item", cascade="all, delete-orphan")
+    option_groups = relationship("MenuOptionGroup", back_populates="item",
+                                 cascade="all, delete-orphan", order_by="MenuOptionGroup.display_order")
 
 
 class MenuItemVariant(Base):
@@ -612,6 +614,36 @@ class MenuItemVariant(Base):
     display_order: Mapped[int] = mapped_column(Integer, default=0)
 
     item = relationship("MenuItem", back_populates="variants")
+
+
+class MenuOptionGroup(Base):
+    """A modifier group on a menu item, e.g. 'Elige la preparación' (choose 1,
+    required) or 'Extras' (choose up to 5). Options can add to the price."""
+    __tablename__ = "menu_option_groups"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    item_id: Mapped[int] = mapped_column(ForeignKey("menu_items.id"), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(160), nullable=False)
+    min_select: Mapped[int] = mapped_column(Integer, default=0)
+    max_select: Mapped[int] = mapped_column(Integer, default=1)
+    required: Mapped[bool] = mapped_column(Boolean, default=False)
+    display_order: Mapped[int] = mapped_column(Integer, default=0)
+
+    item = relationship("MenuItem", back_populates="option_groups")
+    options = relationship("MenuOption", back_populates="group",
+                           cascade="all, delete-orphan", order_by="MenuOption.display_order")
+
+
+class MenuOption(Base):
+    """One selectable option inside a MenuOptionGroup."""
+    __tablename__ = "menu_options"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("menu_option_groups.id"), nullable=False, index=True)
+    label: Mapped[str] = mapped_column(String(160), nullable=False)
+    price_delta: Mapped[float] = mapped_column(Float, default=0)   # +CRC added to base
+    popular: Mapped[bool] = mapped_column(Boolean, default=False)
+    display_order: Mapped[int] = mapped_column(Integer, default=0)
+
+    group = relationship("MenuOptionGroup", back_populates="options")
 
 
 # ─── Pedidos Online (Fase 2) ─────────────────────────────────────────────────
@@ -653,6 +685,7 @@ class OnlineOrderItem(Base):
     quantity: Mapped[int] = mapped_column(Integer, default=1)
     line_total: Mapped[float] = mapped_column(Float, default=0)
     note: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    modifiers: Mapped[str | None] = mapped_column(Text, nullable=True)  # snapshot of chosen options
 
     order = relationship("OnlineOrder", back_populates="items")
 

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from .models import (
     Product, AudioSettings, Ingredient, Table, Order,
     CleaningArea, CleaningTask, TemperatureEquipment,
-    MenuPage, Menu, MenuItem, MenuItemVariant,
+    MenuPage, Menu, MenuItem, MenuItemVariant, MenuOptionGroup, MenuOption,
 )
 
 # Real master inventory data (loaded once). name, category, base unit, purchase
@@ -362,6 +362,102 @@ def seed_menu_demo(db: Session):
     db.commit()
 
 
+# ── Desayunos con grupos de opciones (modificadores) ─────────────────────────
+# Cada opción es (label, price_delta[, "pop"]). Grupo: (title, min, max, required, options).
+_PREP = [("Huevo frito", 0), ("Huevo revuelto", 0), ("Huevo revuelto con cebolla", 0), ("Huevo revuelto con cebollin", 0)]
+_PROT = [("Jamón", 0), ("Salchicha", 0), ("Salchichón", 0)]
+_TEA = [("Té frío de limón", 0)]
+_COFFEE = [("Cafe", 1100), ("Cafe con Leche", 1200), ("Te de Manzanilla", 950, "pop")]
+_SODA = [("Coca-Cola Zero 600ml", 1600), ("Ginger Ale Light 600ml", 1600)]
+
+
+def _extras(salchichon, queso_blanco, huevito):
+    return [("Dos porciones de jamón", 900), ("Salchicha", 900),
+            ("Cuatro porciones de salchichón", salchichon), ("Queso blanco", queso_blanco),
+            ("Queso frito", 900), ("Huevito Extra", huevito, "pop")]
+
+
+BREAKFAST_COMBOS = [
+    {
+        "name": "Gallo Pinto Típico Especial", "price": 2850,
+        "description": "Huevo al gusto, delicioso gallo pinto, pan, natilla y platanitos maduros. Te incluye una bebida té frío.",
+        "groups": [
+            ("Elige el tipo de preparación", 1, 1, True, _PREP),
+            ("¿Deseas unos deliciosos extras?", 0, 5, False, _extras(950, 900, 900)),
+            ("Elige el que prefieras (gratis)", 0, 1, False, _TEA),
+            ("Un Cafecito?", 0, 5, False, _COFFEE),
+            ("Agrega una gaseosa grande a tu pedido", 0, 2, False, _SODA),
+        ],
+    },
+    {
+        "name": "Two Pack de Gallo Pinto", "price": 5500,
+        "description": "Dos platos deliciosos: huevos al gusto, puede incluir jamón, salchicha o salchichón de gratis. Gallo pinto, pan, natilla y platanitos maduros.",
+        "groups": [
+            ("Elige el tipo de preparación", 1, 1, True, _PREP),
+            ("Elige el tipo de preparación del segundo plato", 1, 1, True, _PREP),
+            ("Elige tu proteína favorita", 0, 1, False, _PROT),
+            ("Elige tu proteína favorita — segundo plato", 0, 1, False, _PROT),
+            ("Elige lo que prefieras (Gratis)", 0, 1, False, _TEA),
+            ("¿Deseas unos deliciosos extras?", 0, 5, False, _extras(950, 900, 900)),
+            ("Elige lo que prefieras (Gratis) — segundo plato", 0, 1, False, _TEA),
+            ("¿Deseas unos deliciosos extras? Platillo 2", 0, 5, False, _extras(750, 750, 750)),
+            ("Un Cafecito?", 0, 5, False, _COFFEE),
+            ("Agrega una gaseosa grande a tu pedido", 0, 2, False, _SODA),
+        ],
+    },
+    {
+        "name": "Three Pack de Gallo Pinto (Special Promo)", "price": 7500,
+        "description": "Tres deliciosos platillos completos: huevos al gusto (fritos o revueltos), con jamón, salchicha o salchichón, gallo pinto, pan, natilla y platanitos maduros.",
+        "groups": [
+            ("Elige el tipo de preparación del primer plato", 1, 1, True, _PREP),
+            ("Elige el tipo de preparación del segundo plato", 1, 1, True, _PREP),
+            ("Elige el tipo de preparación del tercer plato", 1, 1, True, _PREP),
+            ("Elige tu proteína preferida del primer plato", 0, 1, False, _PROT),
+            ("Elige tu proteína preferida del segundo plato", 0, 1, False, _PROT),
+            ("Elige el tipo de proteína del tercer plato", 0, 1, False, _PROT),
+            ("Elige lo que prefieras del primer plato (Gratis)", 0, 1, False, _TEA),
+            ("Elige lo que prefieras del segundo plato (Gratis)", 0, 1, False, _TEA),
+            ("Elige lo que prefieras del tercer plato (Gratis)", 0, 1, False, _TEA),
+            ("¿Deseas unos deliciosos extras? Platillo 1", 0, 5, False, _extras(750, 750, 900)),
+            ("¿Deseas unos deliciosos extras? Platillo 2", 0, 5, False, _extras(750, 900, 750)),
+            ("¿Deseas unos deliciosos extras? Platillo 3", 0, 5, False, _extras(750, 750, 750)),
+        ],
+    },
+]
+
+
+def seed_breakfast_combos(db: Session):
+    """Add the 3 breakfast combos with their option groups (idempotent by name)."""
+    page = db.query(MenuPage).filter(MenuPage.slug == "soda-silvia").first()
+    if not page:
+        return
+    desayuno = db.query(Menu).filter(Menu.page_id == page.id, Menu.name == "Desayuno").first()
+    if not desayuno:
+        return
+    existing = {i.name for i in db.query(MenuItem).filter(MenuItem.menu_id == desayuno.id).all()}
+    order0 = db.query(func.count(MenuItem.id)).filter(MenuItem.menu_id == desayuno.id).scalar() or 0
+    changed = False
+    for pdef in BREAKFAST_COMBOS:
+        if pdef["name"] in existing:
+            continue
+        item = MenuItem(menu_id=desayuno.id, section="Desayuno", name=pdef["name"],
+                        description=pdef["description"], price=pdef["price"], display_order=order0)
+        db.add(item)
+        db.flush()
+        order0 += 1
+        for gi, (title, mn, mx, req, opts) in enumerate(pdef["groups"]):
+            g = MenuOptionGroup(item_id=item.id, title=title, min_select=mn, max_select=mx, required=req, display_order=gi)
+            db.add(g)
+            db.flush()
+            for oi, opt in enumerate(opts):
+                price = opt[1] if len(opt) > 1 else 0
+                pop = len(opt) > 2 and opt[2] == "pop"
+                db.add(MenuOption(group_id=g.id, label=opt[0], price_delta=price, popular=pop, display_order=oi))
+        changed = True
+    if changed:
+        db.commit()
+
+
 def seed_initial_data(db: Session):
     if db.query(Product).count() == 0:
         for idx, name in enumerate(DEFAULT_PRODUCTS):
@@ -377,3 +473,4 @@ def seed_initial_data(db: Session):
     seed_table_capacities(db)
     seed_sanitario_soda_silvia(db)
     seed_menu_demo(db)
+    seed_breakfast_combos(db)
