@@ -157,6 +157,7 @@
         <div class="imeta">
           {{ it.section }} ·
           {% if it.variants %}{{ it.variants|length }} variante(s){% else %}{{ page.currency }}{{ '{:,.0f}'.format(it.price or 0) }}{% endif %}
+          {% if it.option_groups %} · {{ it.option_groups|length }} grupo(s) de opciones{% endif %}
           {% if it.product_id %} · vinculado a producto{% endif %}
         </div>
         {% if it.description %}<div class="imeta">{{ it.description }}</div>{% endif %}
@@ -195,6 +196,52 @@
                 <input type="text" name="label" placeholder="Ej. Pollo" required style="flex:1;min-height:42px;border-radius:10px;border:1px solid var(--border);background:#10141b;color:var(--text);padding:8px 12px;" />
                 <input type="number" step="any" name="price" placeholder="Precio" required style="width:120px;min-height:42px;border-radius:10px;border:1px solid var(--border);background:#10141b;color:var(--text);padding:8px 12px;" />
                 <button type="submit" class="btn primary small">+ Variante</button>
+              </form>
+            </div>
+            <div style="margin-top:16px;">
+              <div class="sec-title" style="margin-top:6px;">Grupos de opciones (modificadores)</div>
+              {% for g in it.option_groups %}
+              <div style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <b>{{ g.title }}</b>
+                  {% if g.required %}<span style="background:#7a1f1f;color:#ffb3b3;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:800;">Obligatorio</span>{% endif %}
+                  <span class="imeta">Elegí {{ g.min_select }}–{{ g.max_select }}</span>
+                  <form method="post" action="/admin/menu/optgroups/{{ g.id }}/delete" style="margin-left:auto;" onsubmit="return confirm('¿Borrar el grupo y sus opciones?')"><button class="btn danger small">✕ Grupo</button></form>
+                </div>
+                <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">
+                  {% for o in g.options %}
+                  <form method="post" action="/admin/menu/options/{{ o.id }}/edit" class="inline" style="gap:6px;">
+                    <input type="text" name="label" value="{{ o.label }}" required style="flex:1;min-height:38px;border-radius:8px;border:1px solid var(--border);background:#10141b;color:var(--text);padding:6px 10px;" />
+                    <input type="number" step="any" name="price" value="{{ o.price_delta or 0 }}" title="+precio" style="width:100px;min-height:38px;border-radius:8px;border:1px solid var(--border);background:#10141b;color:var(--text);padding:6px 10px;" />
+                    <label style="display:flex;align-items:center;gap:4px;font-size:12px;"><input type="checkbox" name="popular" {% if o.popular %}checked{% endif %} /> Pop</label>
+                    <button class="btn ghost small">Guardar</button>
+                    <button class="btn danger small" formaction="/admin/menu/options/{{ o.id }}/delete">✕</button>
+                  </form>
+                  {% endfor %}
+                </div>
+                <form method="post" action="/admin/menu/optgroups/{{ g.id }}/options" class="inline" style="margin-top:8px;gap:6px;">
+                  <input type="text" name="label" placeholder="Nueva opción" required style="flex:1;min-height:38px;border-radius:8px;border:1px solid var(--border);background:#10141b;color:var(--text);padding:6px 10px;" />
+                  <input type="number" step="any" name="price" value="0" title="+precio" style="width:100px;min-height:38px;border-radius:8px;border:1px solid var(--border);background:#10141b;color:var(--text);padding:6px 10px;" />
+                  <label style="display:flex;align-items:center;gap:4px;font-size:12px;"><input type="checkbox" name="popular" /> Pop</label>
+                  <button class="btn primary small">+ Opción</button>
+                </form>
+                <details style="margin-top:8px;"><summary style="font-size:13px;cursor:pointer;">Editar grupo (título, mín/máx, obligatorio)</summary>
+                  <form method="post" action="/admin/menu/optgroups/{{ g.id }}/edit" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                    <input type="text" name="title" value="{{ g.title }}" required style="flex:1;min-width:160px;min-height:38px;border-radius:8px;border:1px solid var(--border);background:#10141b;color:var(--text);padding:6px 10px;" />
+                    <label style="font-size:12px;">Mín <input type="number" name="min_select" value="{{ g.min_select }}" style="width:56px;min-height:38px;border-radius:8px;border:1px solid var(--border);background:#10141b;color:var(--text);padding:6px;" /></label>
+                    <label style="font-size:12px;">Máx <input type="number" name="max_select" value="{{ g.max_select }}" style="width:56px;min-height:38px;border-radius:8px;border:1px solid var(--border);background:#10141b;color:var(--text);padding:6px;" /></label>
+                    <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" name="required" {% if g.required %}checked{% endif %} /> Obligatorio</label>
+                    <button class="btn ghost small">Guardar grupo</button>
+                  </form>
+                </details>
+              </div>
+              {% endfor %}
+              <form method="post" action="/admin/menu/items/{{ it.id }}/optgroups" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px;">
+                <input type="text" name="title" placeholder="Nuevo grupo (ej. Elige la preparación)" required style="flex:1;min-width:200px;min-height:40px;border-radius:8px;border:1px solid var(--border);background:#10141b;color:var(--text);padding:8px 12px;" />
+                <label style="font-size:12px;">Mín <input type="number" name="min_select" value="0" style="width:56px;min-height:40px;border-radius:8px;border:1px solid var(--border);background:#10141b;color:var(--text);padding:6px;" /></label>
+                <label style="font-size:12px;">Máx <input type="number" name="max_select" value="1" style="width:56px;min-height:40px;border-radius:8px;border:1px solid var(--border);background:#10141b;color:var(--text);padding:6px;" /></label>
+                <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" name="required" /> Obligatorio</label>
+                <button class="btn primary small">+ Grupo</button>
               </form>
             </div>
             <form method="post" action="/admin/menu/items/{{ it.id }}/delete" onsubmit="return confirmDelItem(this)" style="margin-top:12px;">

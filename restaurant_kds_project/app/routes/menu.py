@@ -300,7 +300,10 @@ def admin_menu_builder(page_id: int, request: Request, db: Session = Depends(get
         return RedirectResponse(url="/admin/login")
     page = (
         db.query(MenuPage)
-        .options(joinedload(MenuPage.menus).joinedload(Menu.items).joinedload(MenuItem.variants))
+        .options(
+            joinedload(MenuPage.menus).joinedload(Menu.items).joinedload(MenuItem.variants),
+            joinedload(MenuPage.menus).joinedload(Menu.items).joinedload(MenuItem.option_groups).joinedload(MenuOptionGroup.options),
+        )
         .filter(MenuPage.id == page_id).first()
     )
     if not page:
@@ -525,6 +528,107 @@ def admin_variant_delete(variant_id: int, request: Request, db: Session = Depend
         it = db.query(MenuItem).filter(MenuItem.id == v.item_id).first()
         pid = _item_page_id(db, it)
         db.delete(v)
+        db.commit()
+    return RedirectResponse(url=f"/admin/menu/{pid}", status_code=303)
+
+
+# ─── Grupos de opciones (modificadores) ──────────────────────────────────────
+def _int(v, default=0):
+    try:
+        return int(str(v).strip())
+    except (TypeError, ValueError):
+        return default
+
+
+def _group_page_id(db, group):
+    if not group:
+        return 0
+    it = db.query(MenuItem).filter(MenuItem.id == group.item_id).first()
+    return _item_page_id(db, it)
+
+
+@router.post("/admin/menu/items/{item_id}/optgroups")
+def admin_optgroup_add(item_id: int, request: Request, title: str = Form(...),
+                       min_select: str = Form("0"), max_select: str = Form("1"),
+                       required: str = Form(None), db: Session = Depends(get_db)):
+    if not _admin(request):
+        return RedirectResponse(url="/admin/login")
+    it = db.query(MenuItem).filter(MenuItem.id == item_id).first()
+    if it and title.strip():
+        last = db.query(func.max(MenuOptionGroup.display_order)).filter(MenuOptionGroup.item_id == item_id).scalar() or 0
+        db.add(MenuOptionGroup(item_id=item_id, title=title.strip()[:160],
+                               min_select=max(0, _int(min_select, 0)), max_select=max(1, _int(max_select, 1)),
+                               required=bool(required), display_order=last + 1))
+        db.commit()
+    return RedirectResponse(url=f"/admin/menu/{_item_page_id(db, it)}", status_code=303)
+
+
+@router.post("/admin/menu/optgroups/{group_id}/edit")
+def admin_optgroup_edit(group_id: int, request: Request, title: str = Form(...),
+                        min_select: str = Form("0"), max_select: str = Form("1"),
+                        required: str = Form(None), db: Session = Depends(get_db)):
+    if not _admin(request):
+        return RedirectResponse(url="/admin/login")
+    g = db.query(MenuOptionGroup).filter(MenuOptionGroup.id == group_id).first()
+    if g and title.strip():
+        g.title = title.strip()[:160]
+        g.min_select = max(0, _int(min_select, 0))
+        g.max_select = max(1, _int(max_select, 1))
+        g.required = bool(required)
+        db.commit()
+    return RedirectResponse(url=f"/admin/menu/{_group_page_id(db, g)}", status_code=303)
+
+
+@router.post("/admin/menu/optgroups/{group_id}/delete")
+def admin_optgroup_delete(group_id: int, request: Request, db: Session = Depends(get_db)):
+    if not _admin(request):
+        return RedirectResponse(url="/admin/login")
+    g = db.query(MenuOptionGroup).filter(MenuOptionGroup.id == group_id).first()
+    pid = _group_page_id(db, g)
+    if g:
+        db.delete(g)
+        db.commit()
+    return RedirectResponse(url=f"/admin/menu/{pid}", status_code=303)
+
+
+@router.post("/admin/menu/optgroups/{group_id}/options")
+def admin_option_add(group_id: int, request: Request, label: str = Form(...),
+                     price: str = Form("0"), popular: str = Form(None), db: Session = Depends(get_db)):
+    if not _admin(request):
+        return RedirectResponse(url="/admin/login")
+    g = db.query(MenuOptionGroup).filter(MenuOptionGroup.id == group_id).first()
+    if g and label.strip():
+        last = db.query(func.max(MenuOption.display_order)).filter(MenuOption.group_id == group_id).scalar() or 0
+        db.add(MenuOption(group_id=group_id, label=label.strip()[:160],
+                          price_delta=_to_float(price), popular=bool(popular), display_order=last + 1))
+        db.commit()
+    return RedirectResponse(url=f"/admin/menu/{_group_page_id(db, g)}", status_code=303)
+
+
+@router.post("/admin/menu/options/{option_id}/edit")
+def admin_option_edit(option_id: int, request: Request, label: str = Form(...),
+                      price: str = Form("0"), popular: str = Form(None), db: Session = Depends(get_db)):
+    if not _admin(request):
+        return RedirectResponse(url="/admin/login")
+    o = db.query(MenuOption).filter(MenuOption.id == option_id).first()
+    g = db.query(MenuOptionGroup).filter(MenuOptionGroup.id == o.group_id).first() if o else None
+    if o and label.strip():
+        o.label = label.strip()[:160]
+        o.price_delta = _to_float(price)
+        o.popular = bool(popular)
+        db.commit()
+    return RedirectResponse(url=f"/admin/menu/{_group_page_id(db, g)}", status_code=303)
+
+
+@router.post("/admin/menu/options/{option_id}/delete")
+def admin_option_delete(option_id: int, request: Request, db: Session = Depends(get_db)):
+    if not _admin(request):
+        return RedirectResponse(url="/admin/login")
+    o = db.query(MenuOption).filter(MenuOption.id == option_id).first()
+    g = db.query(MenuOptionGroup).filter(MenuOptionGroup.id == o.group_id).first() if o else None
+    pid = _group_page_id(db, g)
+    if o:
+        db.delete(o)
         db.commit()
     return RedirectResponse(url=f"/admin/menu/{pid}", status_code=303)
 
