@@ -68,11 +68,13 @@
   {% for o in active %}
   <div class="ord {{ o.status }}">
     <div class="ord-head">
-      <div class="ord-table">{{ o.table_label or 'Sin mesa' }}</div>
+      <div class="ord-table">{{ o.table_label or ('🥤 Para recoger' if o.pickup_time or not o.table_id else 'Sin mesa') }}</div>
       <span class="badge {{ o.status }}">{{ o.status }}</span>
     </div>
     <div class="ord-time">#{{ o.id }} · {{ o.created_at.strftime('%d/%m %H:%M') }}</div>
     {% if o.customer_name %}<div class="cust">👤 {{ o.customer_name }}</div>{% endif %}
+    {% if o.pickup_time %}<div class="cust">🕒 Recoger a las <b>{{ o.pickup_time }}</b></div>{% endif %}
+    {% if o.phone %}<div class="cust">📞 <a href="tel:{{ o.phone }}" style="color:var(--accent);text-decoration:none;">{{ o.phone }}</a></div>{% endif %}
     {{ line_list(o) }}
     {% if o.note %}<div class="note">📝 {{ o.note }}</div>{% endif %}
     <div class="tot"><span>Total</span><span class="v">₡{{ '{:,.0f}'.format(o.total or 0) }}</span></div>
@@ -105,7 +107,7 @@
       {% for o in recent %}
       <tr>
         <td>{{ o.id }}</td>
-        <td>{{ o.table_label or '—' }}</td>
+        <td>{{ o.table_label or ('🥤 Recoger' + (' · ' + o.customer_name if o.customer_name else '')) if not o.table_id else o.table_label }}</td>
         <td>₡{{ '{:,.0f}'.format(o.total or 0) }}</td>
         <td><span class="badge {{ o.status }}">{{ o.status }}</span></td>
         <td>{{ o.updated_at.strftime('%d/%m %H:%M') }}</td>
